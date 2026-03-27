@@ -55,6 +55,13 @@ const VIEW_PATHS: Record<ViewKey, string> = {
   profile: "/profile",
 };
 
+const ACCOUNT_PROGRESS_SUGGESTIONS = {
+  completed_quests: ["bone voyage", "waterfall quest", "recipe for disaster", "monkey madness ii"],
+  unlocked_transports: ["digsite pendant", "fairy rings", "100 museum kudos", "spirit tree access"],
+  owned_gear: ["ahrim's robes", "toxic trident", "whip", "fighter torso"],
+  active_unlocks: ["quest cape", "barrows gloves", "fire cape", "zulrah ready"],
+} as const;
+
 function getViewFromPath(pathname: string): ViewKey {
   const normalizedPath = pathname.replace(/\/+$/, "") || "/";
 
@@ -132,6 +139,16 @@ function parseListDraft(value: string): string[] {
     .split(/\n|,/)
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function appendListDraft(currentValue: string, entry: string): string {
+  const existing = new Set(parseListDraft(currentValue).map((item) => item.toLowerCase()));
+  if (existing.has(entry.toLowerCase())) {
+    return currentValue;
+  }
+
+  const trimmed = currentValue.trim();
+  return trimmed ? `${trimmed}\n${entry}` : entry;
 }
 
 export function App() {
@@ -1968,6 +1985,23 @@ function DashboardView(props: {
                 }
                 placeholder={"bone voyage\nwaterfall quest"}
               />
+              <div className="chip-row suggestion-row">
+                {ACCOUNT_PROGRESS_SUGGESTIONS.completed_quests.map((entry) => (
+                  <button
+                    key={entry}
+                    className="chip-button"
+                    onClick={() =>
+                      setProgressDraft((current) => ({
+                        ...current,
+                        completed_quests: appendListDraft(current.completed_quests, entry),
+                      }))
+                    }
+                    type="button"
+                  >
+                    + {entry}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="detail-card">
@@ -1986,6 +2020,23 @@ function DashboardView(props: {
                 }
                 placeholder={"digsite pendant\n100 museum kudos"}
               />
+              <div className="chip-row suggestion-row">
+                {ACCOUNT_PROGRESS_SUGGESTIONS.unlocked_transports.map((entry) => (
+                  <button
+                    key={entry}
+                    className="chip-button"
+                    onClick={() =>
+                      setProgressDraft((current) => ({
+                        ...current,
+                        unlocked_transports: appendListDraft(current.unlocked_transports, entry),
+                      }))
+                    }
+                    type="button"
+                  >
+                    + {entry}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="detail-card">
@@ -2004,6 +2055,23 @@ function DashboardView(props: {
                 }
                 placeholder={"ahrim's robes\ntoxic trident"}
               />
+              <div className="chip-row suggestion-row">
+                {ACCOUNT_PROGRESS_SUGGESTIONS.owned_gear.map((entry) => (
+                  <button
+                    key={entry}
+                    className="chip-button"
+                    onClick={() =>
+                      setProgressDraft((current) => ({
+                        ...current,
+                        owned_gear: appendListDraft(current.owned_gear, entry),
+                      }))
+                    }
+                    type="button"
+                  >
+                    + {entry}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="detail-card">
@@ -2022,6 +2090,23 @@ function DashboardView(props: {
                 }
                 placeholder={"quest cape\nbarrows gloves"}
               />
+              <div className="chip-row suggestion-row">
+                {ACCOUNT_PROGRESS_SUGGESTIONS.active_unlocks.map((entry) => (
+                  <button
+                    key={entry}
+                    className="chip-button"
+                    onClick={() =>
+                      setProgressDraft((current) => ({
+                        ...current,
+                        active_unlocks: appendListDraft(current.active_unlocks, entry),
+                      }))
+                    }
+                    type="button"
+                  >
+                    + {entry}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="detail-card wide-card">

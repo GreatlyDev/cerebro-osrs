@@ -538,6 +538,10 @@ textarea {
   border-color: rgba(210, 168, 93, 0.4);
 }
 
+.suggestion-row {
+  margin-top: 12px;
+}
+
 .wide-card {
   grid-column: 1 / -1;
 }
