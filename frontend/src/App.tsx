@@ -75,6 +75,31 @@ function formatTimestamp(value: string): string {
   });
 }
 
+function buildWorkspaceChecklist(profile: Profile | null, accounts: Account[], goals: Goal[]) {
+  return [
+    {
+      title: "Set your planning baseline",
+      done: Boolean(profile?.display_name && profile?.goals_focus && profile?.play_style),
+      detail: "Profile preferences shape recommendation tone and default goal direction.",
+    },
+    {
+      title: "Link at least one RuneScape account",
+      done: accounts.length > 0,
+      detail: "Accounts unlock sync, snapshots, rankings, and account-specific advice.",
+    },
+    {
+      title: "Pick a primary RSN",
+      done: Boolean(profile?.primary_account_rsn),
+      detail: "A primary account makes recommendations feel like they belong to one workspace.",
+    },
+    {
+      title: "Create your first real goal",
+      done: goals.length > 0,
+      detail: "Goals give the planner a real target instead of falling back to generic guidance.",
+    },
+  ];
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -519,6 +544,14 @@ export function App() {
   const selectedAccount =
     accounts.find((account) => account.id === selectedAccountId) ?? accounts[0] ?? null;
   const selectedAccountRsn = selectedAccount?.rsn ?? null;
+  const workspaceChecklist = buildWorkspaceChecklist(profile, accounts, goals);
+  const workspaceProgress = workspaceChecklist.filter((item) => item.done).length;
+
+  useEffect(() => {
+    if (selectedAccountRsn && !newGoalTargetRsn) {
+      setNewGoalTargetRsn(selectedAccountRsn);
+    }
+  }, [selectedAccountRsn, newGoalTargetRsn]);
 
   function handleSelectAccount(accountId: number | null) {
     setSelectedAccountId(accountId);
@@ -627,22 +660,22 @@ export function App() {
       <main className="main-panel">
         <header className="hero-card">
           <div>
-            <p className="eyebrow">Frontend foundation</p>
+            <p className="eyebrow">Your workspace</p>
             <h2>
               {profile
                 ? `Welcome back, ${profile.display_name}.`
                 : "Cerebro frontend is coming online."}
             </h2>
             <p className="hero-copy">
-              The first pass is focused on real backend integration: accounts, ranked
-              next actions, goals, snapshots, and chat.
+              This workspace now runs on your own accounts, goals, chat sessions, and
+              recommendation context instead of one shared planner for everyone.
             </p>
           </div>
 
           <div className="hero-stats">
             <Metric label="Accounts" value={accounts.length} />
             <Metric label="Goals" value={goals.length} />
-            <Metric label="Active RSN" value={selectedAccountRsn ?? "n/a"} />
+            <Metric label="Setup" value={`${workspaceProgress}/4`} />
           </div>
         </header>
 
@@ -655,8 +688,11 @@ export function App() {
               <DashboardView
                 accounts={accounts}
                 busyAction={busyAction}
+                currentUser={currentUser}
                 goals={goals}
                 nextActions={nextActions}
+                onGoToGoals={() => navigateToView("goals")}
+                onGoToProfile={() => navigateToView("profile")}
                 onCreateAccount={handleCreateAccount}
                 onInspectAccount={handleInspectAccount}
                 onGeneratePlan={handleGeneratePlan}
@@ -666,6 +702,8 @@ export function App() {
                 newAccountRsn={newAccountRsn}
                 selectedAccountId={selectedAccountId}
                 setNewAccountRsn={setNewAccountRsn}
+                workspaceChecklist={workspaceChecklist}
+                workspaceProgress={workspaceProgress}
               />
             ) : null}
 
@@ -692,9 +730,9 @@ export function App() {
                 }
               >
                 <div className="chat-preview">
-                  <div className="page-tip">
-                    Best for quick guidance questions like progression, quest choices, or what to do next on the selected account.
-                  </div>
+                <div className="page-tip">
+                  Best for quick guidance questions tied to your own workspace, like progression, quest choices, or what to do next on the selected account.
+                </div>
                   <div>
                     <p className="section-label">Sessions</p>
                   <div className="chip-row">
@@ -742,7 +780,7 @@ export function App() {
                   ) : (
                     <EmptyState
                       title="No chat history yet"
-                      body="Send a prompt or use a quick prompt to start building a session."
+                      body="Send a prompt or use a quick prompt to start building a history for your account workspace."
                     />
                   )}
                 </div>
@@ -803,7 +841,7 @@ export function App() {
                 ) : (
                   <EmptyState
                     title="No skill loaded"
-                    body="Choose a skill card to fetch live recommendations from the backend."
+                    body="Choose a skill card to fetch live recommendations for the selected account in your workspace."
                   />
                 )}
               </SectionCard>
@@ -926,6 +964,13 @@ export function App() {
                       placeholder="Target RSN (optional)"
                     />
                     <button
+                      className="ghost-button"
+                      onClick={() => setNewGoalTargetRsn(selectedAccountRsn ?? "")}
+                      type="button"
+                    >
+                      Use selected account
+                    </button>
+                    <button
                       className="primary-button"
                       onClick={handleCreateGoal}
                       type="button"
@@ -991,7 +1036,7 @@ export function App() {
                 ) : (
                   <EmptyState
                     title="No plan selected"
-                    body="Generate a goal plan to inspect steps and recommendation payloads here."
+                    body="Generate a goal plan to inspect the steps and recommendation payload for one of your goals."
                   />
                 )}
               </SectionCard>
@@ -1058,7 +1103,7 @@ export function App() {
                 ) : (
                   <EmptyState
                     title="No gear recommendations yet"
-                    body="Pick a combat style and budget tier, then fetch upgrade recommendations."
+                    body="Pick a combat style and budget tier, then fetch upgrade recommendations for the selected account."
                   />
                 )}
               </SectionCard>
@@ -1132,7 +1177,7 @@ export function App() {
                 ) : (
                   <EmptyState
                     title="No route calculated yet"
-                    body="Pick a destination and run the route finder to see recommended travel options."
+                    body="Pick a destination and run the route finder to see travel options for your current workspace account."
                   />
                 )}
               </SectionCard>
@@ -1246,8 +1291,11 @@ export function App() {
 function DashboardView(props: {
   accounts: Account[];
   busyAction: string | null;
+  currentUser: AuthUser;
   goals: Goal[];
   nextActions: NextActionResponse | null;
+  onGoToGoals: () => void;
+  onGoToProfile: () => void;
   onCreateAccount: () => void;
   onInspectAccount: (account: Account) => void;
   onGeneratePlan: (goal: Goal) => void;
@@ -1257,12 +1305,17 @@ function DashboardView(props: {
   newAccountRsn: string;
   selectedAccountId: number | null;
   setNewAccountRsn: (value: string) => void;
+  workspaceChecklist: Array<{ title: string; done: boolean; detail: string }>;
+  workspaceProgress: number;
 }) {
   const {
     accounts,
     busyAction,
+    currentUser,
     goals,
     nextActions,
+    onGoToGoals,
+    onGoToProfile,
     onCreateAccount,
     onInspectAccount,
     onGeneratePlan,
@@ -1272,10 +1325,61 @@ function DashboardView(props: {
     newAccountRsn,
     selectedAccountId,
     setNewAccountRsn,
+    workspaceChecklist,
+    workspaceProgress,
   } = props;
 
   return (
     <div className="dashboard-grid">
+      <SectionCard
+        title="Workspace Setup"
+        subtitle={`Your planning workspace is ${workspaceProgress}/${workspaceChecklist.length} steps ready.`}
+      >
+        <div className="setup-progress">
+          <div className="progress-track">
+            <div
+              className="progress-fill"
+              style={{ width: `${(workspaceProgress / workspaceChecklist.length) * 100}%` }}
+            />
+          </div>
+          <span className="muted-copy">
+            Signed in as {currentUser.display_name}. Finish the basics once and the rest of the app gets much smarter.
+          </span>
+        </div>
+        <div className="stack-list">
+          {workspaceChecklist.map((item) => (
+            <div className="list-row checklist-row" key={item.title}>
+              <div>
+                <strong>{item.done ? "Ready" : "Next"} | {item.title}</strong>
+                <p>{item.detail}</p>
+              </div>
+              <span className={`pill ${item.done ? "pill-success" : ""}`}>
+                {item.done ? "done" : "pending"}
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="quick-link-row">
+          <button className="tile-button compact-tile" onClick={onGoToProfile} type="button">
+            <span>Open profile</span>
+            <small>Set your play style, focus, and primary RSN</small>
+          </button>
+          <button className="tile-button compact-tile" onClick={onGoToGoals} type="button">
+            <span>Open goals</span>
+            <small>Turn this workspace into a real progression plan</small>
+          </button>
+          <button
+            className="tile-button compact-tile"
+            onClick={() => onInspectAccount(accounts[0])}
+            type="button"
+            disabled={accounts.length === 0}
+          >
+            <span>Review account</span>
+            <small>Jump into the first linked account and inspect it</small>
+          </button>
+        </div>
+      </SectionCard>
+
       <SectionCard
         title="Cerebro Pulse"
         subtitle="A quick read on where the account stands right now."
@@ -1293,14 +1397,21 @@ function DashboardView(props: {
                 </div>
               </>
             ) : (
-              <p className="muted-copy">No top action available yet.</p>
+              <p className="muted-copy">No top action yet. Link an account and goal so Cerebro can rank real next moves.</p>
             )}
+          </div>
+          <div className="detail-card">
+            <h3>Workspace owner</h3>
+            <strong>{currentUser.display_name}</strong>
+            <p className="muted-copy">
+              {currentUser.email} | Play style: {profile?.play_style ?? "unknown"}
+            </p>
           </div>
           <div className="detail-card">
             <h3>Primary account</h3>
             <strong>{profile?.primary_account_rsn ?? accounts[0]?.rsn ?? "Not set"}</strong>
             <p className="muted-copy">
-              Play style: {profile?.play_style ?? "unknown"} | Goal focus:{" "}
+              Goal focus:{" "}
               {profile?.goals_focus ?? "unknown"}
             </p>
           </div>
@@ -1318,7 +1429,7 @@ function DashboardView(props: {
                 </p>
               </>
             ) : (
-              <p className="muted-copy">Sync an account to see live progression signal.</p>
+              <p className="muted-copy">Sync one of your accounts to see live progression signal.</p>
             )}
           </div>
         </div>

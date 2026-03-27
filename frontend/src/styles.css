@@ -227,7 +227,7 @@ input {
 
 .pulse-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -257,6 +257,26 @@ input {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.setup-progress {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d2a85d, #6ed3a8);
 }
 
 .text-input,
@@ -342,6 +362,12 @@ input {
   background: var(--accent-soft);
   border: 1px solid var(--border);
   color: var(--text);
+}
+
+.pill-success {
+  border-color: rgba(110, 211, 168, 0.3);
+  background: rgba(110, 211, 168, 0.12);
+  color: #dce7c6;
 }
 
 .snapshot-grid {
@@ -460,6 +486,10 @@ input {
   gap: 8px;
 }
 
+.checklist-row {
+  align-items: center;
+}
+
 .wide-card {
   grid-column: 1 / -1;
 }
@@ -544,7 +574,7 @@ input {
   }
 
   .pulse-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .quick-link-row {
