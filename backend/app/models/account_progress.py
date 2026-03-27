@@ -19,6 +19,8 @@ class AccountProgress(Base):
     )
     completed_quests: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     unlocked_transports: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    owned_gear: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+    active_unlocks: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
     notes: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

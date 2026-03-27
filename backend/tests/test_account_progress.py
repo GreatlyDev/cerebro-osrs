@@ -12,6 +12,8 @@ async def test_account_progress_can_be_created_and_read(client: AsyncClient) -> 
         json={
             "completed_quests": ["Fairytale I - Growing Pains"],
             "unlocked_transports": ["100 museum kudos", "digsite progress"],
+            "owned_gear": ["Ahrim's robes"],
+            "active_unlocks": ["Bone Voyage"],
         },
     )
     get_response = await client.get(f"/api/accounts/{account_id}/progress")
@@ -20,3 +22,5 @@ async def test_account_progress_can_be_created_and_read(client: AsyncClient) -> 
     assert get_response.status_code == 200
     assert "fairytale i - growing pains" in get_response.json()["completed_quests"]
     assert "100 museum kudos" in get_response.json()["unlocked_transports"]
+    assert "ahrim's robes" in get_response.json()["owned_gear"]
+    assert "bone voyage" in get_response.json()["active_unlocks"]

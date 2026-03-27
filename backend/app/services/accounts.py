@@ -93,6 +93,8 @@ class AccountService:
         progress = await self._get_or_create_progress(db_session=db_session, account_id=account_id)
         progress.completed_quests = payload.completed_quests
         progress.unlocked_transports = payload.unlocked_transports
+        progress.owned_gear = payload.owned_gear
+        progress.active_unlocks = payload.active_unlocks
         await db_session.commit()
         await db_session.refresh(progress)
         return AccountProgressResponse.model_validate(progress)

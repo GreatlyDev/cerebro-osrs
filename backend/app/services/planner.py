@@ -41,7 +41,7 @@ class PlannerService:
             payload=GearRecommendationRequest(
                 combat_style=combat_style,
                 budget_tier="midgame",
-                current_gear=[],
+                current_gear=progress.owned_gear if progress else [],
                 account_rsn=target_rsn,
             ),
         )

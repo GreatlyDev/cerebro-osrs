@@ -54,6 +54,7 @@ class RecommendationService:
             goal=goal,
             account_rsn=account_rsn,
             recommendations=recommendations,
+            progress=progress,
         )
         ordered = sorted(actions, key=lambda action: action.score, reverse=True)
         trimmed = ordered[: payload.limit]
@@ -69,6 +70,8 @@ class RecommendationService:
                 "profile_goals_focus": profile.goals_focus if profile else None,
                 "snapshot_available": snapshot is not None,
                 "progress_available": progress is not None,
+                "owned_gear_count": len(progress.owned_gear) if progress else 0,
+                "active_unlock_count": len(progress.active_unlocks) if progress else 0,
                 "goal_influenced": goal is not None,
                 "returned_action_count": len(trimmed),
             },
@@ -122,12 +125,15 @@ class RecommendationService:
         goal: Goal | None,
         account_rsn: str | None,
         recommendations: dict[str, object],
+        progress,
     ) -> list[NextActionRecommendation]:
         skill = recommendations["recommended_skill"]
         quest = recommendations["recommended_quest"]
         gear = recommendations["recommended_gear"]
         teleport = recommendations["recommended_teleport"]
         readiness = quest["readiness"]
+        owned_gear = {item.strip().lower() for item in (progress.owned_gear if progress else [])}
+        active_unlocks = {item.strip().lower() for item in (progress.active_unlocks if progress else [])}
 
         skill_blockers = []
         current_level = skill.get("current_level")
@@ -147,19 +153,23 @@ class RecommendationService:
             for requirement in teleport.get("requirements", [])
             if requirement
         ]
+        gear_owned = gear["item_name"].strip().lower() in owned_gear
+        quest_matches_active_unlock = quest["name"].strip().lower() in active_unlocks
+        travel_matches_active_unlock = teleport["destination"].strip().lower() in active_unlocks
 
         actions = [
             NextActionRecommendation(
                 action_type="quest",
                 title=f"Push toward {quest['name']}",
                 summary=quest["why_it_matters"],
-                score=max(40, 92 - (len(quest_blockers) * 8)),
+                score=max(40, 92 - (len(quest_blockers) * 8) + (8 if quest_matches_active_unlock else 0)),
                 priority="high" if len(quest_blockers) <= 2 else "medium",
                 target={"quest_id": quest["id"], "goal_title": goal.title if goal else None},
                 blockers=quest_blockers,
                 supporting_data={
                     "readiness": readiness,
                     "goal_type": goal.goal_type if goal else None,
+                    "active_unlock_match": quest_matches_active_unlock,
                 },
             ),
             NextActionRecommendation(
@@ -180,24 +190,31 @@ class RecommendationService:
                 action_type="gear",
                 title=f"Upgrade into {gear['item_name']}",
                 summary=gear["upgrade_reason"],
-                score=72,
-                priority="medium",
+                score=44 if gear_owned else 72,
+                priority="low" if gear_owned else "medium",
                 target={"item_name": gear["item_name"], "slot": gear["slot"]},
-                blockers=[],
-                supporting_data={"account_rsn": account_rsn},
+                blockers=["Already tracked as owned"] if gear_owned else [],
+                supporting_data={
+                    "account_rsn": account_rsn,
+                    "already_owned": gear_owned,
+                },
             ),
             NextActionRecommendation(
                 action_type="travel",
                 title=f"Set up {teleport['method']}",
                 summary=f"Travel plan for {teleport['destination']}: {teleport['travel_notes']}",
-                score=68 if "fallback" not in teleport.get("route_type", "") else 58,
+                score=(68 if "fallback" not in teleport.get("route_type", "") else 58)
+                + (6 if travel_matches_active_unlock else 0),
                 priority="medium",
                 target={
                     "destination": teleport["destination"],
                     "method": teleport["method"],
                 },
                 blockers=teleport_blockers,
-                supporting_data={"account_rsn": account_rsn},
+                supporting_data={
+                    "account_rsn": account_rsn,
+                    "active_unlock_match": travel_matches_active_unlock,
+                },
             ),
         ]
         return actions
