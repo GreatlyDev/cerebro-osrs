@@ -1278,6 +1278,54 @@ export function App() {
                     <span>Prefer profitable methods</span>
                   </label>
                 </div>
+                <div className="detail-card onboarding-card">
+                  <div className="section-split">
+                    <div>
+                      <p className="section-label">Linked accounts</p>
+                      <h3>Choose a primary account for this workspace.</h3>
+                    </div>
+                    {accounts.length > 0 ? (
+                      <button
+                        className="ghost-button"
+                        onClick={() =>
+                          setProfileDraft((current) => ({
+                            ...current,
+                            primary_account_rsn: selectedAccountRsn ?? current.primary_account_rsn,
+                          }))
+                        }
+                        type="button"
+                      >
+                        Use selected account
+                      </button>
+                    ) : null}
+                  </div>
+                  {accounts.length > 0 ? (
+                    <div className="chip-row">
+                      {accounts.map((account) => (
+                        <button
+                          key={account.id}
+                          className={`chip-button${
+                            profileDraft.primary_account_rsn === account.rsn ? " is-active" : ""
+                          }`}
+                          onClick={() =>
+                            setProfileDraft((current) => ({
+                              ...current,
+                              primary_account_rsn: account.rsn,
+                            }))
+                          }
+                          type="button"
+                        >
+                          {account.rsn}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      title="No linked accounts yet"
+                      body="Add an RSN on the dashboard first, then come back here to mark it as the primary account for this workspace."
+                    />
+                  )}
+                </div>
               </SectionCard>
             ) : null}
 
@@ -1485,6 +1533,13 @@ function DashboardView(props: {
             <EmptyState
               title="No accounts yet"
               body="Add your first RSN to bring the dashboard to life and unlock sync, snapshots, and planning."
+              action={
+                <div className="empty-action-row">
+                  <button className="ghost-button" onClick={onGoToProfile} type="button">
+                    Finish profile first
+                  </button>
+                </div>
+              }
             />
           ) : null}
           {accounts.map((account) => (
@@ -1546,6 +1601,13 @@ function DashboardView(props: {
             <EmptyState
               title="No ranked actions yet"
               body="Create an account or goal to give the recommendation engine more context."
+              action={
+                <div className="empty-action-row">
+                  <button className="ghost-button" onClick={onGoToGoals} type="button">
+                    Create a goal
+                  </button>
+                </div>
+              }
             />
           )}
         </div>
@@ -1622,6 +1684,13 @@ function DashboardView(props: {
             <EmptyState
               title="No goals yet"
               body="Create a goal to start generating plans and connect the dashboard to a real target."
+              action={
+                <div className="empty-action-row">
+                  <button className="ghost-button" onClick={onGoToGoals} type="button">
+                    Open goals
+                  </button>
+                </div>
+              }
             />
           ) : null}
           {goals.slice(0, 4).map((goal) => (
@@ -1668,11 +1737,12 @@ function SectionCard(props: {
   );
 }
 
-function EmptyState(props: { title: string; body: string }) {
+function EmptyState(props: { title: string; body: string; action?: ReactNode }) {
   return (
     <div className="empty-state">
       <strong>{props.title}</strong>
       <p>{props.body}</p>
+      {props.action ? props.action : null}
     </div>
   );
 }

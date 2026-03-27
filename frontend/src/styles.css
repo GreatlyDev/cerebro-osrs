@@ -403,11 +403,30 @@ input {
   padding: 16px;
 }
 
+.onboarding-card {
+  margin-top: 14px;
+  display: grid;
+  gap: 14px;
+}
+
+.section-split {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: start;
+}
+
 .empty-state {
   border-radius: 18px;
   border: 1px dashed var(--border);
   background: rgba(255, 255, 255, 0.02);
   padding: 18px;
+}
+
+.empty-action-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
 }
 
 .page-tip {
@@ -488,6 +507,20 @@ input {
 
 .checklist-row {
   align-items: center;
+}
+
+.chip-button {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.chip-button.is-active {
+  background: rgba(210, 168, 93, 0.16);
+  border-color: rgba(210, 168, 93, 0.4);
 }
 
 .wide-card {
@@ -582,6 +615,10 @@ input {
   }
 
   .hero-card {
+    flex-direction: column;
+  }
+
+  .section-split {
     flex-direction: column;
   }
 }
