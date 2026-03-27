@@ -264,8 +264,7 @@ export function App() {
     setBusyAction(`skill-${skillKey}`);
     setError(null);
     try {
-      const primaryRsn = profile?.primary_account_rsn ?? accounts[0]?.rsn ?? null;
-      const response = await api.getSkillRecommendations(skillKey, primaryRsn);
+      const response = await api.getSkillRecommendations(skillKey, selectedAccountRsn);
       setSkillRecommendations(response);
     } catch (err) {
       setError(
@@ -315,7 +314,7 @@ export function App() {
           .split(",")
           .map((item) => item.trim())
           .filter(Boolean),
-        account_rsn: profile?.primary_account_rsn ?? accounts[0]?.rsn ?? null,
+        account_rsn: selectedAccountRsn,
       });
       setGearRecommendations(response);
       setActiveView("gear");
@@ -333,7 +332,7 @@ export function App() {
       const response = await api.getTeleportRoute({
         destination: teleportDestination,
         preference: teleportPreference === "balanced" ? null : teleportPreference,
-        account_rsn: profile?.primary_account_rsn ?? accounts[0]?.rsn ?? null,
+        account_rsn: selectedAccountRsn,
       });
       setTeleportRoute(response);
       setActiveView("teleports");
@@ -375,6 +374,9 @@ export function App() {
       .toLowerCase()
       .includes(questSearch.trim().toLowerCase()),
   );
+  const selectedAccount =
+    accounts.find((account) => account.id === selectedAccountId) ?? accounts[0] ?? null;
+  const selectedAccountRsn = selectedAccount?.rsn ?? null;
 
   return (
     <div className="app-shell">
@@ -421,7 +423,7 @@ export function App() {
           <div className="hero-stats">
             <Metric label="Accounts" value={accounts.length} />
             <Metric label="Goals" value={goals.length} />
-            <Metric label="Actions" value={nextActions?.actions.length ?? 0} />
+            <Metric label="Active RSN" value={selectedAccountRsn ?? "n/a"} />
           </div>
         </header>
 
@@ -555,7 +557,8 @@ export function App() {
                   <div className="detail-card">
                     <h3>{skillRecommendations.skill} recommendations</h3>
                     <p className="muted-copy">
-                      Preference: {skillRecommendations.preference} | Current level:{" "}
+                      Account: {selectedAccountRsn ?? "none"} | Preference:{" "}
+                      {skillRecommendations.preference} | Current level:{" "}
                       {skillRecommendations.current_level ?? "unknown"}
                     </p>
                     {skillRecommendations.recommendations.slice(0, 2).map((recommendation) => (
@@ -769,6 +772,9 @@ export function App() {
               >
                 {gearRecommendations ? (
                   <div className="stack-list">
+                    <p className="muted-copy">
+                      Showing upgrades for {selectedAccountRsn ?? "no selected account"}.
+                    </p>
                     {gearRecommendations.recommendations.map((item) => (
                       <div className="detail-row" key={item.item_name}>
                         <strong>
@@ -830,6 +836,8 @@ export function App() {
                 {teleportRoute ? (
                   <div className="plan-panel">
                     <div className="detail-card">
+                      <p className="section-label">Selected account</p>
+                      <p className="muted-copy">{selectedAccountRsn ?? "none"}</p>
                       <h3>{teleportRoute.recommended_route.method}</h3>
                       <p className="muted-copy">
                         {teleportRoute.recommended_route.travel_notes}
