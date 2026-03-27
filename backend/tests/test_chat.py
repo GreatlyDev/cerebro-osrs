@@ -63,3 +63,4 @@ async def test_chat_can_suggest_next_action_from_latest_goal(client: AsyncClient
     assert response.status_code == 201
     assert "quest cape" in response.json()["assistant_message"]["content"].lower()
     assert "bone voyage" in response.json()["assistant_message"]["content"].lower()
+    assert "museum kudos" in response.json()["assistant_message"]["content"].lower()

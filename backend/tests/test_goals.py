@@ -53,3 +53,7 @@ async def test_generate_goal_plan_uses_snapshot_context(client: AsyncClient) -> 
     assert any("AFK" in step or "AFK-friendly" in step for step in response.json()["steps"])
     assert response.json()["recommendations"]["recommended_skill"]["skill"] == "magic"
     assert response.json()["recommendations"]["recommended_quest"]["id"] == "bone-voyage"
+    assert response.json()["recommendations"]["recommended_quest"]["readiness"]["other_requirements"] == [
+        "100 museum kudos",
+        "Digsite progress",
+    ]

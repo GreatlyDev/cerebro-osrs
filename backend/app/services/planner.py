@@ -49,6 +49,10 @@ class PlannerService:
             ),
         )
         quest = quest_service.get_quest(quest_id)
+        readiness = quest_service.evaluate_readiness(
+            quest_id=quest_id,
+            skills=snapshot.summary.get("skills") if snapshot else None,
+        )
 
         return {
             "recommended_skill": {
@@ -61,6 +65,7 @@ class PlannerService:
                 "id": quest.id,
                 "name": quest.name,
                 "why_it_matters": quest.why_it_matters,
+                "readiness": readiness,
             },
             "recommended_gear": {
                 "item_name": gear_recommendations.recommendations[0].item_name,
@@ -80,9 +85,27 @@ class PlannerService:
         skill = recommendations["recommended_skill"]
         quest = recommendations["recommended_quest"]
         gear = recommendations["recommended_gear"]
+        readiness = quest.get("readiness", {})
+        missing_skills = readiness.get("missing_skills", [])
+        other_requirements = readiness.get("other_requirements", [])
+
+        if missing_skills:
+            top_gap = missing_skills[0]
+            readiness_text = (
+                f"You're still short on {top_gap['skill']} "
+                f"({top_gap['current_level']} -> {top_gap['required_level']}) for {quest['name']}."
+            )
+        elif other_requirements:
+            readiness_text = (
+                f"The main blockers for {quest['name']} are {', '.join(other_requirements).lower()}."
+            )
+        else:
+            readiness_text = f"Your current snapshot is already in a good spot for {quest['name']}."
+
         return (
             f"For {goal.title}, start by pushing {skill['skill']} with {skill['method']}. "
-            f"Then prioritize {quest['name']} and line up {gear['item_name']} as the next meaningful gear upgrade."
+            f"Then prioritize {quest['name']} and line up {gear['item_name']} as the next meaningful gear upgrade. "
+            f"{readiness_text}"
         )
 
     def _goal_skill(self, goal_type: str) -> str:

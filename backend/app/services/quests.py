@@ -75,6 +75,57 @@ QUEST_CATALOG: dict[str, QuestDetailResponse] = {
     ),
 }
 
+QUEST_REQUIREMENTS: dict[str, dict[str, object]] = {
+    "waterfall-quest": {
+        "skill_requirements": {},
+        "quest_requirements": [],
+        "other_requirements": ["Basic survivability and food"],
+    },
+    "fairytale-ii": {
+        "skill_requirements": {
+            "farming": 49,
+            "herblore": 57,
+            "thieving": 40,
+        },
+        "quest_requirements": ["Nature Spirit", "Fairytale I - Growing Pains"],
+        "other_requirements": ["Partial quest progression for fairy rings"],
+    },
+    "recipe-for-disaster": {
+        "skill_requirements": {
+            "cooking": 70,
+            "agility": 48,
+            "mining": 50,
+            "fishing": 53,
+        },
+        "quest_requirements": [
+            "Big Chompy Bird Hunting",
+            "Desert Treasure I",
+            "Horror from the Deep",
+            "Monkey Madness I",
+        ],
+        "other_requirements": ["Broad subquest progression", "Combat readiness"],
+    },
+    "monkey-madness-ii": {
+        "skill_requirements": {
+            "crafting": 70,
+            "hunter": 60,
+            "slayer": 69,
+            "firemaking": 55,
+        },
+        "quest_requirements": [
+            "Monkey Madness I",
+            "Enlightened Journey",
+            "Troll Stronghold",
+        ],
+        "other_requirements": ["Advanced combat preparation"],
+    },
+    "bone-voyage": {
+        "skill_requirements": {},
+        "quest_requirements": [],
+        "other_requirements": ["100 museum kudos", "Digsite progress"],
+    },
+}
+
 
 class QuestService:
     def list_quests(self) -> QuestListResponse:
@@ -99,6 +150,43 @@ class QuestService:
                 detail=f"Quest '{quest_id}' is not supported yet.",
             )
         return quest
+
+    def get_requirement_profile(self, quest_id: str) -> dict[str, object]:
+        normalized = quest_id.strip().lower()
+        if normalized not in QUEST_REQUIREMENTS:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Quest '{quest_id}' is not supported yet.",
+            )
+        return QUEST_REQUIREMENTS[normalized]
+
+    def evaluate_readiness(
+        self,
+        quest_id: str,
+        skills: dict[str, dict[str, int]] | None,
+    ) -> dict[str, object]:
+        requirement_profile = self.get_requirement_profile(quest_id)
+        skill_requirements = requirement_profile["skill_requirements"]
+        missing_skills: list[dict[str, int | str]] = []
+
+        for skill_name, required_level in skill_requirements.items():
+            current_level = 1
+            if skills and skill_name in skills and isinstance(skills[skill_name], dict):
+                current_level = int(skills[skill_name].get("level", 1))
+            if current_level < required_level:
+                missing_skills.append(
+                    {
+                        "skill": skill_name,
+                        "current_level": current_level,
+                        "required_level": required_level,
+                    }
+                )
+
+        return {
+            "missing_skills": missing_skills,
+            "quest_requirements": requirement_profile["quest_requirements"],
+            "other_requirements": requirement_profile["other_requirements"],
+        }
 
 
 quest_service = QuestService()
