@@ -342,6 +342,55 @@ export function App() {
     }
   }
 
+  async function handleSetPrimaryAccount(account: Account) {
+    setBusyAction(`primary-${account.id}`);
+    setError(null);
+    try {
+      const updated = await api.updateProfile({
+        primary_account_rsn: account.rsn,
+      });
+      setProfile(updated);
+      setProfileDraft((current) => ({
+        ...current,
+        primary_account_rsn: updated.primary_account_rsn ?? "",
+      }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to set the primary account.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleQuickstartAccount() {
+    if (!newAccountRsn.trim()) {
+      return;
+    }
+    setBusyAction("quickstart-account");
+    setError(null);
+    try {
+      const account = await api.createAccount(newAccountRsn.trim());
+      await api.syncAccount(account.id);
+      const snapshot = await api.getAccountSnapshot(account.id);
+      const updatedProfile = await api.updateProfile({
+        primary_account_rsn: account.rsn,
+      });
+      setNewAccountRsn("");
+      setSelectedSnapshot(snapshot);
+      setSelectedAccountId(account.id);
+      setProfile(updatedProfile);
+      setProfileDraft((current) => ({
+        ...current,
+        primary_account_rsn: updatedProfile.primary_account_rsn ?? "",
+      }));
+      await loadDashboard();
+      navigateToView("goals");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to finish the quick account setup.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   async function handleSyncAccount(account: Account) {
     setBusyAction(`sync-${account.id}`);
     setError(null);
@@ -695,7 +744,9 @@ export function App() {
                 onGoToProfile={() => navigateToView("profile")}
                 onCreateAccount={handleCreateAccount}
                 onInspectAccount={handleInspectAccount}
+                onQuickstartAccount={handleQuickstartAccount}
                 onGeneratePlan={handleGeneratePlan}
+                onSetPrimaryAccount={handleSetPrimaryAccount}
                 onSyncAccount={handleSyncAccount}
                 profile={profile}
                 selectedSnapshot={selectedSnapshot}
@@ -1346,7 +1397,9 @@ function DashboardView(props: {
   onGoToProfile: () => void;
   onCreateAccount: () => void;
   onInspectAccount: (account: Account) => void;
+  onQuickstartAccount: () => void;
   onGeneratePlan: (goal: Goal) => void;
+  onSetPrimaryAccount: (account: Account) => void;
   onSyncAccount: (account: Account) => void;
   profile: Profile | null;
   selectedSnapshot: AccountSnapshot | null;
@@ -1366,7 +1419,9 @@ function DashboardView(props: {
     onGoToProfile,
     onCreateAccount,
     onInspectAccount,
+    onQuickstartAccount,
     onGeneratePlan,
+    onSetPrimaryAccount,
     onSyncAccount,
     profile,
     selectedSnapshot,
@@ -1525,6 +1580,9 @@ function DashboardView(props: {
             <button className="primary-button" onClick={onCreateAccount} type="button">
               {busyAction === "create-account" ? "Adding..." : "Add account"}
             </button>
+            <button className="ghost-button" onClick={onQuickstartAccount} type="button">
+              {busyAction === "quickstart-account" ? "Setting up..." : "Add + sync + set primary"}
+            </button>
           </div>
         }
       >
@@ -1549,6 +1607,7 @@ function DashboardView(props: {
                 <p>
                   {account.is_active ? "Active account" : "Inactive account"}
                   {selectedAccountId === account.id ? " | viewing snapshot" : ""}
+                  {profile?.primary_account_rsn === account.rsn ? " | primary account" : ""}
                 </p>
               </div>
               <div className="inline-actions">
@@ -1565,6 +1624,13 @@ function DashboardView(props: {
                   type="button"
                 >
                   {busyAction === `sync-${account.id}` ? "Syncing..." : "Sync"}
+                </button>
+                <button
+                  className="ghost-button"
+                  onClick={() => onSetPrimaryAccount(account)}
+                  type="button"
+                >
+                  {busyAction === `primary-${account.id}` ? "Saving..." : "Set primary"}
                 </button>
               </div>
             </div>
