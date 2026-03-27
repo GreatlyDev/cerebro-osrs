@@ -3,9 +3,11 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "./api";
+import { storeSessionToken } from "./api";
 import type {
   Account,
   AccountSnapshot,
+  AuthUser,
   ChatExchange,
   ChatSession,
   GearRecommendationResponse,
@@ -122,12 +124,16 @@ export function App() {
     prefers_profitable_methods: false,
   });
   const [loading, setLoading] = useState(true);
+  const [authReady, setAuthReady] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginDisplayName, setLoginDisplayName] = useState("");
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");
 
   useEffect(() => {
-    void loadDashboard();
+    void initializeApplication();
   }, []);
 
   useEffect(() => {
@@ -186,6 +192,29 @@ export function App() {
     navigate(VIEW_PATHS[view]);
   }
 
+  async function initializeApplication() {
+    setLoading(true);
+    setError(null);
+    setBackendStatus("checking");
+    try {
+      const healthResponse = await api.getHealth();
+      setBackendStatus(healthResponse.status === "ok" ? "online" : "offline");
+      try {
+        const user = await api.getSession();
+        setCurrentUser(user);
+        await loadDashboard();
+      } catch {
+        setCurrentUser(null);
+      }
+    } catch (err) {
+      setBackendStatus("offline");
+      setError(err instanceof Error ? err.message : "Unable to reach Cerebro.");
+    } finally {
+      setAuthReady(true);
+      setLoading(false);
+    }
+  }
+
   async function loadDashboard() {
     setLoading(true);
     setError(null);
@@ -222,6 +251,9 @@ export function App() {
           .catch(() => null);
         setSelectedSnapshot(latestSnapshot);
         setSelectedAccountId(latestAccount.id);
+      } else {
+        setSelectedSnapshot(null);
+        setSelectedAccountId(null);
       }
     } catch (err) {
       setBackendStatus("offline");
@@ -229,6 +261,43 @@ export function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleDevLogin() {
+    if (!loginEmail.trim()) {
+      return;
+    }
+    setBusyAction("login");
+    setError(null);
+    try {
+      const session = await api.devLogin({
+        email: loginEmail.trim(),
+        display_name: loginDisplayName.trim() || null,
+      });
+      storeSessionToken(session.session_token);
+      setCurrentUser(session.user);
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sign in.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  function handleSignOut() {
+    storeSessionToken(null);
+    setCurrentUser(null);
+    setProfile(null);
+    setAccounts([]);
+    setGoals([]);
+    setNextActions(null);
+    setSelectedGoalPlan(null);
+    setSelectedSnapshot(null);
+    setSelectedAccountId(null);
+    setChatSessions([]);
+    setChatHistory([]);
+    setChatReply("");
+    setError(null);
   }
 
   async function handleCreateAccount() {
@@ -465,6 +534,40 @@ export function App() {
     }
   }
 
+  if (!authReady) {
+    return <div className="app-shell auth-shell"><div className="banner">Loading Cerebro...</div></div>;
+  }
+
+  if (backendStatus === "offline" && !currentUser) {
+    return (
+      <AuthView
+        backendStatus={backendStatus}
+        busyAction={busyAction}
+        error={error}
+        loginDisplayName={loginDisplayName}
+        loginEmail={loginEmail}
+        onLogin={handleDevLogin}
+        setLoginDisplayName={setLoginDisplayName}
+        setLoginEmail={setLoginEmail}
+      />
+    );
+  }
+
+  if (!currentUser) {
+    return (
+      <AuthView
+        backendStatus={backendStatus}
+        busyAction={busyAction}
+        error={error}
+        loginDisplayName={loginDisplayName}
+        loginEmail={loginEmail}
+        onLogin={handleDevLogin}
+        setLoginDisplayName={setLoginDisplayName}
+        setLoginEmail={setLoginEmail}
+      />
+    );
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -481,6 +584,14 @@ export function App() {
           <div className={`status-pill is-${backendStatus}`}>
             <span className="status-dot" />
             Backend {backendStatus}
+          </div>
+          <div className="detail-card compact-user-card">
+            <p className="section-label">Signed in</p>
+            <strong>{currentUser.display_name}</strong>
+            <p className="muted-copy">{currentUser.email}</p>
+            <button className="ghost-button" onClick={handleSignOut} type="button">
+              Sign out
+            </button>
           </div>
           <select
             className="select-input"
@@ -1460,6 +1571,52 @@ function Metric(props: { label: string; value: string | number }) {
     <div className="metric-card">
       <span>{props.label}</span>
       <strong>{props.value}</strong>
+    </div>
+  );
+}
+
+function AuthView(props: {
+  backendStatus: "online" | "offline" | "checking";
+  busyAction: string | null;
+  error: string | null;
+  loginEmail: string;
+  loginDisplayName: string;
+  setLoginEmail: (value: string) => void;
+  setLoginDisplayName: (value: string) => void;
+  onLogin: () => void;
+}) {
+  return (
+    <div className="auth-shell">
+      <section className="auth-card">
+        <p className="eyebrow">Cerebro OSRS</p>
+        <h2>Sign in to your planner cockpit.</h2>
+        <p className="hero-copy">
+          This is a lightweight dev sign-in for now, but it gives the app a real user
+          identity instead of one shared profile for everyone.
+        </p>
+        <div className={`status-pill is-${props.backendStatus}`}>
+          <span className="status-dot" />
+          Backend {props.backendStatus}
+        </div>
+        {props.error ? <div className="banner error-banner">{props.error}</div> : null}
+        <div className="auth-form">
+          <input
+            className="text-input"
+            value={props.loginEmail}
+            onChange={(event) => props.setLoginEmail(event.target.value)}
+            placeholder="Email address"
+          />
+          <input
+            className="text-input"
+            value={props.loginDisplayName}
+            onChange={(event) => props.setLoginDisplayName(event.target.value)}
+            placeholder="Display name (optional)"
+          />
+          <button className="primary-button" onClick={props.onLogin} type="button">
+            {props.busyAction === "login" ? "Signing in..." : "Continue"}
+          </button>
+        </div>
+      </section>
     </div>
   );
 }

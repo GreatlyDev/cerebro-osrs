@@ -10,6 +10,19 @@ export type HealthCheck = {
   status: string;
 };
 
+export type AuthUser = {
+  id: number;
+  email: string;
+  display_name: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AuthSession = {
+  user: AuthUser;
+  session_token: string;
+};
+
 export type AccountSnapshot = {
   id: number;
   account_id: number;

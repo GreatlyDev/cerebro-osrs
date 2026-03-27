@@ -6,6 +6,8 @@ from app.models.account_snapshot import AccountSnapshot
 from app.models.chat import ChatMessage, ChatSession
 from app.models.goal import Goal
 from app.models.profile import Profile
+from app.models.user import User
+from app.models.user_session import UserSession
 
 __all__ = [
     "Account",
@@ -15,4 +17,6 @@ __all__ = [
     "ChatSession",
     "Goal",
     "Profile",
+    "User",
+    "UserSession",
 ]

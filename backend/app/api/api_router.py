@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from app.api.routes.accounts import router as accounts_router
+from app.api.routes.auth import router as auth_router
 from app.api.routes.chat import router as chat_router
 from app.api.routes.gear import router as gear_router
 from app.api.routes.goals import router as goals_router
@@ -14,6 +15,7 @@ from app.api.routes.teleports import router as teleports_router
 api_router = APIRouter()
 api_router.include_router(health_router, tags=["health"])
 api_router.include_router(accounts_router, prefix="/api/accounts", tags=["accounts"])
+api_router.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 api_router.include_router(chat_router, prefix="/api/chat", tags=["chat"])
 api_router.include_router(gear_router, prefix="/api/gear", tags=["gear"])
 api_router.include_router(goals_router, prefix="/api/goals", tags=["goals"])

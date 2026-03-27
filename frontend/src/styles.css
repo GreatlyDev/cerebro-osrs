@@ -38,6 +38,29 @@ input {
   min-height: 100vh;
 }
 
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+}
+
+.auth-card {
+  width: min(520px, 100%);
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 28px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.auth-form {
+  display: grid;
+  gap: 12px;
+}
+
 .sidebar {
   padding: 28px;
   border-right: 1px solid var(--border);
@@ -430,6 +453,11 @@ input {
   font-size: 0.78rem;
   max-height: 220px;
   overflow: auto;
+}
+
+.compact-user-card {
+  display: grid;
+  gap: 8px;
 }
 
 .wide-card {

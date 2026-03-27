@@ -38,6 +38,16 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     app.dependency_overrides.clear()
 
 
+@pytest_asyncio.fixture
+async def auth_headers(client: AsyncClient) -> dict[str, str]:
+    response = await client.post(
+        "/api/auth/dev-login",
+        json={"email": "planner@example.com", "display_name": "Planner"},
+    )
+    payload = response.json()
+    return {"Authorization": f"Bearer {payload['session_token']}"}
+
+
 @pytest.fixture(autouse=True)
 def mock_hiscores_client(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:

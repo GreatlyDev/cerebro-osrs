@@ -1,6 +1,8 @@
 import type {
   Account,
   AccountSnapshot,
+  AuthSession,
+  AuthUser,
   ChatReply,
   ChatSession,
   GearRecommendationResponse,
@@ -18,6 +20,25 @@ import type {
 } from "./types";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "/api";
+const SESSION_TOKEN_KEY = "cerebro.sessionToken";
+
+function getSessionToken(): string | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  return window.localStorage.getItem(SESSION_TOKEN_KEY);
+}
+
+export function storeSessionToken(sessionToken: string | null): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (sessionToken === null) {
+    window.localStorage.removeItem(SESSION_TOKEN_KEY);
+    return;
+  }
+  window.localStorage.setItem(SESSION_TOKEN_KEY, sessionToken);
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const target = path.startsWith("http")
@@ -26,9 +47,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
       ? `${API_BASE_URL.replace(/\/api$/, "")}${path}`
       : `${API_BASE_URL}${path}`;
   const headers = new Headers(init?.headers);
+  const sessionToken = getSessionToken();
 
   if (init?.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
+  }
+  if (sessionToken && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${sessionToken}`);
   }
 
   const response = await fetch(target, {
@@ -46,6 +71,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   getHealth: () => request<HealthCheck>("/health"),
+  getSession: () => request<AuthUser>("/auth/session"),
+  devLogin: (payload: { email: string; display_name?: string | null }) =>
+    request<AuthSession>("/auth/dev-login", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   getProfile: () => request<Profile>("/profile"),
   updateProfile: (payload: ProfileUpdate) =>
     request<Profile>("/profile", {
