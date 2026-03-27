@@ -74,6 +74,14 @@ function getViewFromPath(pathname: string): ViewKey {
   return "dashboard";
 }
 
+function getAccountDetailIdFromPath(pathname: string): number | null {
+  const match = pathname.match(/^\/accounts\/(\d+)\/?$/);
+  if (!match) {
+    return null;
+  }
+  return Number(match[1]);
+}
+
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString([], {
     month: "short",
@@ -195,6 +203,7 @@ export function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const activeView = getViewFromPath(location.pathname);
+  const accountDetailId = getAccountDetailIdFromPath(location.pathname);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -262,7 +271,11 @@ export function App() {
   }, [activeView]);
 
   useEffect(() => {
-    if (location.pathname !== "/" && !(Object.values(VIEW_PATHS) as string[]).includes(location.pathname)) {
+    if (
+      location.pathname !== "/" &&
+      !(Object.values(VIEW_PATHS) as string[]).includes(location.pathname) &&
+      getAccountDetailIdFromPath(location.pathname) === null
+    ) {
       navigate(VIEW_PATHS.dashboard, { replace: true });
     }
   }, [location.pathname, navigate]);
@@ -642,7 +655,7 @@ export function App() {
     }
   }
 
-  async function handleInspectAccount(account: Account) {
+  async function handleInspectAccount(account: Account, options?: { openPage?: boolean }) {
     setBusyAction(`inspect-${account.id}`);
     setError(null);
     try {
@@ -661,7 +674,11 @@ export function App() {
         active_unlocks: formatListDraft(progress?.active_unlocks ?? []),
       });
       setSelectedAccountId(account.id);
-      navigateToView("dashboard");
+      if (options?.openPage ?? true) {
+        navigate(`/accounts/${account.id}`);
+      } else {
+        navigateToView("dashboard");
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "No snapshot found for that account yet.");
     } finally {
@@ -798,6 +815,19 @@ export function App() {
     }
   }, [selectedAccountRsn, newGoalTargetRsn]);
 
+  useEffect(() => {
+    if (accountDetailId === null || accounts.length === 0) {
+      return;
+    }
+    if (selectedAccountId === accountDetailId) {
+      return;
+    }
+    const account = accounts.find((item) => item.id === accountDetailId);
+    if (account) {
+      void handleInspectAccount(account, { openPage: false });
+    }
+  }, [accountDetailId, accounts, selectedAccountId]);
+
   function handleSelectAccount(accountId: number | null) {
     setSelectedAccountId(accountId);
 
@@ -811,7 +841,7 @@ export function App() {
 
     const account = accounts.find((item) => item.id === accountId);
     if (account) {
-      void handleInspectAccount(account);
+      void handleInspectAccount(account, { openPage: accountDetailId !== null });
     }
   }
 
@@ -967,7 +997,28 @@ export function App() {
               />
             ) : null}
 
-            {activeView === "ask-cerebro" ? (
+            {accountDetailId !== null ? (
+              <AccountDetailView
+                accountGoals={goals.filter((goal) => goal.target_account_rsn === selectedAccount?.rsn)}
+                busyAction={busyAction}
+                nextActions={nextActions}
+                onGeneratePlan={handleGeneratePlan}
+                onGoToGoals={() => navigateToView("goals")}
+                onSaveAccountProgress={handleSaveAccountProgress}
+                onSetPrimaryAccount={handleSetPrimaryAccount}
+                onSyncAccount={handleSyncAccount}
+                profile={profile}
+                progressDraft={progressDraft}
+                selectedAccount={selectedAccount}
+                selectedProgress={selectedProgress}
+                selectedSnapshot={selectedSnapshot}
+                selectedSnapshotDelta={snapshotDelta}
+                selectedSnapshotHistory={selectedSnapshotHistory}
+                setProgressDraft={setProgressDraft}
+              />
+            ) : null}
+
+            {activeView === "ask-cerebro" && accountDetailId === null ? (
               <SectionCard
                 title="Ask Cerebro"
                 subtitle="Chat is still deterministic, but it already uses the real planning stack."
@@ -1047,7 +1098,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "skills" ? (
+            {activeView === "skills" && accountDetailId === null ? (
               <SectionCard
                 title="Skills"
                 subtitle="Live catalog and recommendation fetches from the backend."
@@ -1107,7 +1158,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "quests" ? (
+            {activeView === "quests" && accountDetailId === null ? (
               <SectionCard
                 title="Quests"
                 subtitle="Structured quest catalog from the backend service layer."
@@ -1196,7 +1247,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "goals" ? (
+            {activeView === "goals" && accountDetailId === null ? (
               <SectionCard
                 title="Goals"
                 subtitle="Active goals with one-click plan generation."
@@ -1302,7 +1353,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "gear" ? (
+            {activeView === "gear" && accountDetailId === null ? (
               <SectionCard
                 title="Gear"
                 subtitle="Generate live gear upgrade recommendations from the backend."
@@ -1369,7 +1420,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "teleports" ? (
+            {activeView === "teleports" && accountDetailId === null ? (
               <SectionCard
                 title="Teleports"
                 subtitle="Get a live route recommendation for a destination."
@@ -1443,7 +1494,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "profile" ? (
+            {activeView === "profile" && accountDetailId === null ? (
               <SectionCard
                 title="Profile"
                 subtitle="Edit the frontend defaults that shape backend recommendations."
@@ -2315,6 +2366,292 @@ function DashboardView(props: {
               </button>
             </div>
           ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function AccountDetailView(props: {
+  accountGoals: Goal[];
+  busyAction: string | null;
+  nextActions: NextActionResponse | null;
+  onGeneratePlan: (goal: Goal) => void;
+  onGoToGoals: () => void;
+  onSaveAccountProgress: () => void;
+  onSetPrimaryAccount: (account: Account) => void;
+  onSyncAccount: (account: Account) => void;
+  profile: Profile | null;
+  progressDraft: {
+    completed_quests: string;
+    unlocked_transports: string;
+    owned_gear: string;
+    active_unlocks: string;
+  };
+  selectedAccount: Account | null;
+  selectedProgress: AccountProgress | null;
+  selectedSnapshot: AccountSnapshot | null;
+  selectedSnapshotDelta: {
+    overallLevelDelta: number;
+    combatLevelDelta: number;
+    improvedSkills: Array<{ skill: string; previousLevel: number; currentLevel: number | undefined }>;
+    currentSyncAt: string;
+    previousSyncAt: string;
+    newNinetyPlusCount: number;
+  } | null;
+  selectedSnapshotHistory: AccountSnapshot[];
+  setProgressDraft: Dispatch<
+    SetStateAction<{
+      completed_quests: string;
+      unlocked_transports: string;
+      owned_gear: string;
+      active_unlocks: string;
+    }>
+  >;
+}) {
+  const {
+    accountGoals,
+    busyAction,
+    nextActions,
+    onGeneratePlan,
+    onGoToGoals,
+    onSaveAccountProgress,
+    onSetPrimaryAccount,
+    onSyncAccount,
+    profile,
+    progressDraft,
+    selectedAccount,
+    selectedProgress,
+    selectedSnapshot,
+    selectedSnapshotDelta,
+    selectedSnapshotHistory,
+    setProgressDraft,
+  } = props;
+
+  if (!selectedAccount) {
+    return (
+      <SectionCard
+        title="Account Detail"
+        subtitle="Pick a linked account to open its full planning workspace."
+      >
+        <EmptyState
+          title="No account loaded"
+          body="Select an account from the sidebar or dashboard to inspect its sync history, progress tracking, and account-specific goals."
+        />
+      </SectionCard>
+    );
+  }
+
+  const accountActionMatches = nextActions?.actions.filter(
+    (action) => (action.target.account_rsn as string | undefined | null) === selectedAccount.rsn,
+  ) ?? [];
+
+  return (
+    <div className="detail-page-grid">
+      <SectionCard
+        title="Account Detail"
+        subtitle={`Deep workspace view for ${selectedAccount.rsn}.`}
+        action={
+          <div className="inline-actions">
+            <button
+              className="ghost-button"
+              onClick={() => onSetPrimaryAccount(selectedAccount)}
+              type="button"
+            >
+              {busyAction === `primary-${selectedAccount.id}` ? "Saving..." : "Set primary"}
+            </button>
+            <button
+              className="primary-button"
+              onClick={() => onSyncAccount(selectedAccount)}
+              type="button"
+            >
+              {busyAction === `sync-${selectedAccount.id}` ? "Syncing..." : "Sync now"}
+            </button>
+          </div>
+        }
+      >
+        <div className="detail-page-hero">
+          <div className="detail-card">
+            <h3>Workspace status</h3>
+            <strong>{selectedAccount.rsn}</strong>
+            <p className="muted-copy">
+              {profile?.primary_account_rsn === selectedAccount.rsn ? "Primary account" : "Linked account"}
+              {" | "}
+              {selectedSnapshot ? `Last sync ${formatTimestamp(selectedSnapshot.created_at)}` : "No sync yet"}
+            </p>
+            <div className="chip-row">
+              <span className="chip">Goals {accountGoals.length}</span>
+              <span className="chip">Quests {selectedProgress?.completed_quests.length ?? 0}</span>
+              <span className="chip">Unlocks {selectedProgress?.active_unlocks.length ?? 0}</span>
+            </div>
+          </div>
+          <div className="detail-card">
+            <h3>Current power read</h3>
+            <strong>
+              Overall {selectedSnapshot?.summary.overall_level ?? "n/a"} | Combat {selectedSnapshot?.summary.combat_level ?? "n/a"}
+            </strong>
+            <p className="muted-copy">
+              Highest tracked skill: {selectedSnapshot?.summary.progression_profile?.highest_skill ?? "unknown"}
+            </p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Sync History"
+        subtitle="Recent progression movement and sync timeline for this account."
+      >
+        {selectedSnapshotDelta ? (
+          <div className="snapshot-change-grid">
+            <Metric
+              label="Overall Delta"
+              value={selectedSnapshotDelta.overallLevelDelta >= 0
+                ? `+${selectedSnapshotDelta.overallLevelDelta}`
+                : selectedSnapshotDelta.overallLevelDelta}
+            />
+            <Metric
+              label="Combat Delta"
+              value={selectedSnapshotDelta.combatLevelDelta >= 0
+                ? `+${selectedSnapshotDelta.combatLevelDelta}`
+                : selectedSnapshotDelta.combatLevelDelta}
+            />
+            <Metric label="Skills Improved" value={selectedSnapshotDelta.improvedSkills.length} />
+            <Metric label="New 90+ Skills" value={selectedSnapshotDelta.newNinetyPlusCount} />
+            <div className="detail-card wide-card">
+              <h3>Recent sync timeline</h3>
+              <div className="stack-list">
+                {selectedSnapshotHistory.map((snapshot, index) => (
+                  <div className="list-row" key={snapshot.id}>
+                    <div>
+                      <strong>{index === 0 ? "Latest" : "Previous"} | {formatTimestamp(snapshot.created_at)}</strong>
+                      <p>
+                        Overall {snapshot.summary.overall_level} | Combat {snapshot.summary.combat_level ?? "n/a"}
+                      </p>
+                    </div>
+                    <span className="pill">{snapshot.sync_status}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <EmptyState
+            title="No sync comparison yet"
+            body="Run this account through sync at least twice and Cerebro will start showing movement over time here."
+          />
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Planning Context"
+        subtitle="Manual progress, unlocks, and owned gear that the planner should remember."
+        action={
+          <button className="primary-button" onClick={onSaveAccountProgress} type="button">
+            {busyAction === "account-progress" ? "Saving..." : "Save account workspace"}
+          </button>
+        }
+      >
+        <div className="account-workspace-grid">
+          <div className="detail-card">
+            <h3>Completed quests</h3>
+            <textarea
+              className="text-area"
+              value={progressDraft.completed_quests}
+              onChange={(event) =>
+                setProgressDraft((current) => ({
+                  ...current,
+                  completed_quests: event.target.value,
+                }))
+              }
+              placeholder={"bone voyage\nwaterfall quest"}
+            />
+          </div>
+          <div className="detail-card">
+            <h3>Unlocked transports</h3>
+            <textarea
+              className="text-area"
+              value={progressDraft.unlocked_transports}
+              onChange={(event) =>
+                setProgressDraft((current) => ({
+                  ...current,
+                  unlocked_transports: event.target.value,
+                }))
+              }
+              placeholder={"digsite pendant\nfairy rings"}
+            />
+          </div>
+          <div className="detail-card">
+            <h3>Owned gear</h3>
+            <textarea
+              className="text-area"
+              value={progressDraft.owned_gear}
+              onChange={(event) =>
+                setProgressDraft((current) => ({
+                  ...current,
+                  owned_gear: event.target.value,
+                }))
+              }
+              placeholder={"ahrim's robes\ntoxic trident"}
+            />
+          </div>
+          <div className="detail-card">
+            <h3>Active unlock chains</h3>
+            <textarea
+              className="text-area"
+              value={progressDraft.active_unlocks}
+              onChange={(event) =>
+                setProgressDraft((current) => ({
+                  ...current,
+                  active_unlocks: event.target.value,
+                }))
+              }
+              placeholder={"quest cape\nbarrows gloves"}
+            />
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Account Goals"
+        subtitle="Goal plans and ranked actions that currently point at this account."
+        action={
+          <button className="ghost-button" onClick={onGoToGoals} type="button">
+            Open goals
+          </button>
+        }
+      >
+        <div className="stack-list">
+          {accountGoals.length > 0 ? (
+            accountGoals.map((goal) => (
+              <div className="list-row" key={goal.id}>
+                <div>
+                  <strong>{goal.title}</strong>
+                  <p>{goal.goal_type}</p>
+                </div>
+                <button className="ghost-button" onClick={() => onGeneratePlan(goal)} type="button">
+                  {busyAction === `plan-${goal.id}` ? "Generating..." : "Generate plan"}
+                </button>
+              </div>
+            ))
+          ) : (
+            <EmptyState
+              title="No goals tied to this account"
+              body="Create a goal with this RSN as the target and it will start showing up here."
+            />
+          )}
+          {accountActionMatches.length > 0 ? (
+            <div className="detail-card">
+              <h3>Account-specific next actions</h3>
+              <div className="stack-list">
+                {accountActionMatches.slice(0, 3).map((action) => (
+                  <div className="detail-row" key={`${action.action_type}-${action.title}`}>
+                    <strong>{action.title}</strong>
+                    <p>{action.summary}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </SectionCard>
     </div>
