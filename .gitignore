@@ -37,6 +37,7 @@ pnpm-debug.log*
 # Database
 *.sqlite3
 *.db
+*.tsbuildinfo
 
 # Logs
 *.log
