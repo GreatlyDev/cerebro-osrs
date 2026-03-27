@@ -5,7 +5,9 @@ from app.models.account import Account
 from app.models.account_progress import AccountProgress
 from app.models.account_snapshot import AccountSnapshot
 from app.models.profile import Profile
+from app.models.user import User
 from app.schemas.teleport import TeleportOption, TeleportRouteRequest, TeleportRouteResponse
+from app.services.user_context import user_context_service
 
 TELEPORT_LIBRARY: dict[str, list[TeleportOption]] = {
     "barrows": [
@@ -86,6 +88,7 @@ class TeleportService:
     async def get_route(
         self,
         db_session: AsyncSession,
+        user: User,
         payload: TeleportRouteRequest,
     ) -> TeleportRouteResponse:
         destination = payload.destination
@@ -110,10 +113,19 @@ class TeleportService:
 
         effective_preference = await self._resolve_preference(
             db_session=db_session,
+            user=user,
             preference=payload.preference,
         )
-        snapshot = await self._get_latest_snapshot(db_session=db_session, account_rsn=payload.account_rsn)
-        progress = await self._get_progress(db_session=db_session, account_rsn=payload.account_rsn)
+        snapshot = await self._get_latest_snapshot(
+            db_session=db_session,
+            user=user,
+            account_rsn=payload.account_rsn,
+        )
+        progress = await self._get_progress(
+            db_session=db_session,
+            user=user,
+            account_rsn=payload.account_rsn,
+        )
 
         ordered = self._rank_options(
             options=options,
@@ -152,12 +164,13 @@ class TeleportService:
     async def _resolve_preference(
         self,
         db_session: AsyncSession,
+        user: User,
         preference: str | None,
     ) -> str:
         if preference:
             return preference
 
-        profile = await db_session.get(Profile, 1)
+        profile = await user_context_service.get_profile(db_session=db_session, user=user)
         if profile and profile.prefers_afk_methods:
             return "convenience"
         if profile and profile.prefers_profitable_methods:
@@ -167,12 +180,15 @@ class TeleportService:
     async def _get_latest_snapshot(
         self,
         db_session: AsyncSession,
+        user: User,
         account_rsn: str | None,
     ) -> AccountSnapshot | None:
         if account_rsn is None:
             return None
 
-        account = await db_session.scalar(select(Account).where(Account.rsn == account_rsn))
+        account = await db_session.scalar(
+            select(Account).where(Account.user_id == user.id, Account.rsn == account_rsn)
+        )
         if account is None:
             return None
 
@@ -185,12 +201,15 @@ class TeleportService:
     async def _get_progress(
         self,
         db_session: AsyncSession,
+        user: User,
         account_rsn: str | None,
     ) -> AccountProgress | None:
         if account_rsn is None:
             return None
 
-        account = await db_session.scalar(select(Account).where(Account.rsn == account_rsn))
+        account = await db_session.scalar(
+            select(Account).where(Account.user_id == user.id, Account.rsn == account_rsn)
+        )
         if account is None:
             return None
 

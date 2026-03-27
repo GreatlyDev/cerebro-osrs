@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.account import Account
 from app.models.account_snapshot import AccountSnapshot
 from app.models.profile import Profile
+from app.models.user import User
+from app.services.user_context import user_context_service
 from app.schemas.skill import (
     SkillListResponse,
     SkillRecommendation,
@@ -187,6 +189,7 @@ class SkillService:
     async def get_recommendations(
         self,
         db_session: AsyncSession,
+        user: User,
         skill_name: str,
         account_rsn: str | None,
         preference: str | None,
@@ -200,10 +203,12 @@ class SkillService:
 
         effective_preference = await self._resolve_preference(
             db_session=db_session,
+            user=user,
             preference=preference,
         )
         current_level = await self._get_current_level(
             db_session=db_session,
+            user=user,
             account_rsn=account_rsn,
             skill_name=normalized_skill,
         )
@@ -238,12 +243,13 @@ class SkillService:
     async def _resolve_preference(
         self,
         db_session: AsyncSession,
+        user: User,
         preference: str | None,
     ) -> str:
         if preference:
             return preference.strip().lower()
 
-        profile = await db_session.get(Profile, 1)
+        profile = await user_context_service.get_profile(db_session=db_session, user=user)
         if profile is None:
             return "balanced"
         if profile.prefers_afk_methods:
@@ -255,13 +261,16 @@ class SkillService:
     async def _get_current_level(
         self,
         db_session: AsyncSession,
+        user: User,
         account_rsn: str | None,
         skill_name: str,
     ) -> int | None:
         if account_rsn is None:
             return None
 
-        account = await db_session.scalar(select(Account).where(Account.rsn == account_rsn))
+        account = await db_session.scalar(
+            select(Account).where(Account.user_id == user.id, Account.rsn == account_rsn)
+        )
         if account is None:
             return None
 

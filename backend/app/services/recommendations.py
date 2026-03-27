@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.account import Account
 from app.models.goal import Goal
 from app.models.profile import Profile
+from app.models.user import User
 from app.schemas.gear import GearRecommendationRequest
 from app.schemas.recommendation import (
     NextActionRecommendation,
@@ -17,32 +18,38 @@ from app.services.planner import planner_service
 from app.services.quests import quest_service
 from app.services.skills import skill_service
 from app.services.teleports import teleport_service
+from app.services.user_context import user_context_service
 
 
 class RecommendationService:
     async def get_next_actions(
         self,
         db_session: AsyncSession,
+        user: User,
         payload: NextActionRequest,
     ) -> NextActionResponse:
-        profile = await db_session.get(Profile, 1)
-        goal = await self._resolve_goal(db_session=db_session, goal_id=payload.goal_id)
+        profile = await user_context_service.get_profile(db_session=db_session, user=user)
+        goal = await self._resolve_goal(db_session=db_session, user=user, goal_id=payload.goal_id)
         account_rsn = await self._resolve_account_rsn(
             db_session=db_session,
+            user=user,
             requested_account_rsn=payload.account_rsn,
             goal=goal,
             profile=profile,
         )
         snapshot = await account_context_service.get_latest_snapshot(
             db_session=db_session,
+            user=user,
             account_rsn=account_rsn,
         )
         previous_snapshot = await account_context_service.get_previous_snapshot(
             db_session=db_session,
+            user=user,
             account_rsn=account_rsn,
         )
         progress = await account_context_service.get_progress(
             db_session=db_session,
+            user=user,
             account_rsn=account_rsn,
         )
         snapshot_delta = self._build_snapshot_delta(
@@ -53,6 +60,7 @@ class RecommendationService:
         goal_like = goal or self._build_default_goal(account_rsn=account_rsn, profile=profile)
         recommendations = await planner_service.build_goal_recommendations(
             db_session=db_session,
+            user=user,
             goal=goal_like,
             profile=profile,
             snapshot=snapshot,
@@ -92,15 +100,21 @@ class RecommendationService:
     async def _resolve_goal(
         self,
         db_session: AsyncSession,
+        user: User,
         goal_id: int | None,
     ) -> Goal | None:
         if goal_id is not None:
-            return await db_session.get(Goal, goal_id)
-        return await db_session.scalar(select(Goal).order_by(desc(Goal.id)))
+            return await db_session.scalar(
+                select(Goal).where(Goal.id == goal_id, Goal.user_id == user.id)
+            )
+        return await db_session.scalar(
+            select(Goal).where(Goal.user_id == user.id).order_by(desc(Goal.id))
+        )
 
     async def _resolve_account_rsn(
         self,
         db_session: AsyncSession,
+        user: User,
         requested_account_rsn: str | None,
         goal: Goal | None,
         profile: Profile | None,
@@ -112,7 +126,9 @@ class RecommendationService:
         if profile and profile.primary_account_rsn:
             return profile.primary_account_rsn
 
-        latest_account = await db_session.scalar(select(Account).order_by(desc(Account.id)))
+        latest_account = await db_session.scalar(
+            select(Account).where(Account.user_id == user.id).order_by(desc(Account.id))
+        )
         return latest_account.rsn if latest_account else None
 
     def _build_default_goal(

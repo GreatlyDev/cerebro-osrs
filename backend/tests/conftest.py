@@ -26,7 +26,7 @@ async def db_session() -> AsyncIterator[AsyncSession]:
 
 
 @pytest_asyncio.fixture
-async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
+async def unauthenticated_client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
     async def override_get_db_session() -> AsyncIterator[AsyncSession]:
         yield db_session
 
@@ -39,13 +39,22 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
 
 
 @pytest_asyncio.fixture
-async def auth_headers(client: AsyncClient) -> dict[str, str]:
-    response = await client.post(
+async def auth_headers(unauthenticated_client: AsyncClient) -> dict[str, str]:
+    response = await unauthenticated_client.post(
         "/api/auth/dev-login",
         json={"email": "planner@example.com", "display_name": "Planner"},
     )
     payload = response.json()
     return {"Authorization": f"Bearer {payload['session_token']}"}
+
+
+@pytest_asyncio.fixture
+async def client(
+    unauthenticated_client: AsyncClient,
+    auth_headers: dict[str, str],
+) -> AsyncIterator[AsyncClient]:
+    unauthenticated_client.headers.update(auth_headers)
+    yield unauthenticated_client
 
 
 @pytest.fixture(autouse=True)

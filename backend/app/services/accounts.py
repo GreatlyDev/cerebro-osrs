@@ -12,6 +12,7 @@ from app.integrations.osrs_hiscores import (
 from app.models.account import Account
 from app.models.account_progress import AccountProgress
 from app.models.account_snapshot import AccountSnapshot
+from app.models.user import User
 from app.schemas.account import (
     AccountCreateRequest,
     AccountListResponse,
@@ -29,9 +30,12 @@ class AccountService:
     async def _get_account_or_404(
         self,
         db_session: AsyncSession,
+        user: User,
         account_id: int,
     ) -> Account:
-        account = await db_session.get(Account, account_id)
+        account = await db_session.scalar(
+            select(Account).where(Account.id == account_id, Account.user_id == user.id)
+        )
         if account is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -42,8 +46,15 @@ class AccountService:
     async def list_accounts(
         self,
         db_session: AsyncSession,
+        user: User,
     ) -> AccountListResponse:
-        accounts = list((await db_session.scalars(select(Account).order_by(Account.id))).all())
+        accounts = list(
+            (
+                await db_session.scalars(
+                    select(Account).where(Account.user_id == user.id).order_by(Account.id)
+                )
+            ).all()
+        )
         return AccountListResponse(
             items=[AccountResponse.model_validate(account) for account in accounts],
             total=len(accounts),
@@ -52,9 +63,14 @@ class AccountService:
     async def get_account(
         self,
         db_session: AsyncSession,
+        user: User,
         account_id: int,
     ) -> AccountResponse:
-        account = await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        account = await self._get_account_or_404(
+            db_session=db_session,
+            user=user,
+            account_id=account_id,
+        )
         return AccountResponse.model_validate(account)
 
     async def _get_or_create_progress(
@@ -77,19 +93,21 @@ class AccountService:
     async def get_account_progress(
         self,
         db_session: AsyncSession,
+        user: User,
         account_id: int,
     ) -> AccountProgressResponse:
-        await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        await self._get_account_or_404(db_session=db_session, user=user, account_id=account_id)
         progress = await self._get_or_create_progress(db_session=db_session, account_id=account_id)
         return AccountProgressResponse.model_validate(progress)
 
     async def update_account_progress(
         self,
         db_session: AsyncSession,
+        user: User,
         account_id: int,
         payload: AccountProgressUpdateRequest,
     ) -> AccountProgressResponse:
-        await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        await self._get_account_or_404(db_session=db_session, user=user, account_id=account_id)
         progress = await self._get_or_create_progress(db_session=db_session, account_id=account_id)
         progress.completed_quests = payload.completed_quests
         progress.unlocked_transports = payload.unlocked_transports
@@ -102,10 +120,11 @@ class AccountService:
     async def create_account(
         self,
         db_session: AsyncSession,
+        user: User,
         payload: AccountCreateRequest,
     ) -> AccountResponse:
         existing_account = await db_session.scalar(
-            select(Account).where(Account.rsn == payload.rsn)
+            select(Account).where(Account.user_id == user.id, Account.rsn == payload.rsn)
         )
         if existing_account is not None:
             raise HTTPException(
@@ -113,7 +132,7 @@ class AccountService:
                 detail="An account with that RSN already exists.",
             )
 
-        account = Account(rsn=payload.rsn)
+        account = Account(user_id=user.id, rsn=payload.rsn)
         db_session.add(account)
         await db_session.commit()
         await db_session.refresh(account)
@@ -123,9 +142,14 @@ class AccountService:
     async def sync_account(
         self,
         db_session: AsyncSession,
+        user: User,
         account_id: int,
     ) -> AccountSyncResponse:
-        account = await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        account = await self._get_account_or_404(
+            db_session=db_session,
+            user=user,
+            account_id=account_id,
+        )
 
         try:
             summary = await self.ingestion_service.fetch_enriched_account_summary(account.rsn)
@@ -160,9 +184,10 @@ class AccountService:
     async def get_account_snapshot(
         self,
         db_session: AsyncSession,
+        user: User,
         account_id: int,
     ) -> AccountSnapshotResponse:
-        await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        await self._get_account_or_404(db_session=db_session, user=user, account_id=account_id)
 
         snapshot = await db_session.scalar(
             select(AccountSnapshot)

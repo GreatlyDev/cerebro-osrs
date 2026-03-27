@@ -84,7 +84,7 @@ async def test_next_actions_downrank_owned_gear_and_boost_active_unlocks(client:
 
 @pytest.mark.asyncio
 async def test_next_actions_report_snapshot_momentum(client: AsyncClient, db_session: AsyncSession) -> None:
-    account = Account(rsn="Momentum")
+    account = Account(user_id=1, rsn="Momentum")
     db_session.add(account)
     await db_session.commit()
     await db_session.refresh(account)

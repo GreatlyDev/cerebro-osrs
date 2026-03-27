@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account import Account
 from app.models.account_snapshot import AccountSnapshot
+from app.models.user import User
 from app.schemas.gear import (
     GearRecommendationRequest,
     GearRecommendationResponse,
@@ -152,6 +153,7 @@ class GearService:
     async def get_recommendations(
         self,
         db_session: AsyncSession,
+        user: User,
         payload: GearRecommendationRequest,
     ) -> GearRecommendationResponse:
         style_library = GEAR_LIBRARY.get(payload.combat_style, {})
@@ -165,6 +167,7 @@ class GearService:
 
         snapshot = await self._get_latest_snapshot(
             db_session=db_session,
+            user=user,
             account_rsn=payload.account_rsn,
         )
 
@@ -189,12 +192,15 @@ class GearService:
     async def _get_latest_snapshot(
         self,
         db_session: AsyncSession,
+        user: User,
         account_rsn: str | None,
     ) -> AccountSnapshot | None:
         if account_rsn is None:
             return None
 
-        account = await db_session.scalar(select(Account).where(Account.rsn == account_rsn))
+        account = await db_session.scalar(
+            select(Account).where(Account.user_id == user.id, Account.rsn == account_rsn)
+        )
         if account is None:
             return None
 

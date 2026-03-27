@@ -5,13 +5,17 @@ from app.models.account import Account
 from app.models.account_snapshot import AccountSnapshot
 from app.models.goal import Goal
 from app.models.profile import Profile
+from app.models.user import User
 from app.schemas.goal import GoalCreateRequest, GoalListResponse, GoalPlanResponse, GoalResponse
 from app.services.planner import planner_service
+from app.services.user_context import user_context_service
 
 
 class GoalService:
-    async def _get_goal_or_404(self, db_session: AsyncSession, goal_id: int) -> Goal:
-        goal = await db_session.get(Goal, goal_id)
+    async def _get_goal_or_404(self, db_session: AsyncSession, user: User, goal_id: int) -> Goal:
+        goal = await db_session.scalar(
+            select(Goal).where(Goal.id == goal_id, Goal.user_id == user.id)
+        )
         if goal is None:
             from fastapi import HTTPException, status
 
@@ -21,9 +25,11 @@ class GoalService:
     async def create_goal(
         self,
         db_session: AsyncSession,
+        user: User,
         payload: GoalCreateRequest,
     ) -> GoalResponse:
         goal = Goal(
+            user_id=user.id,
             title=payload.title,
             goal_type=payload.goal_type,
             target_account_rsn=payload.target_account_rsn,
@@ -35,8 +41,14 @@ class GoalService:
         await db_session.refresh(goal)
         return GoalResponse.model_validate(goal)
 
-    async def list_goals(self, db_session: AsyncSession) -> GoalListResponse:
-        goals = list((await db_session.scalars(select(Goal).order_by(desc(Goal.id)))).all())
+    async def list_goals(self, db_session: AsyncSession, user: User) -> GoalListResponse:
+        goals = list(
+            (
+                await db_session.scalars(
+                    select(Goal).where(Goal.user_id == user.id).order_by(desc(Goal.id))
+                )
+            ).all()
+        )
         return GoalListResponse(
             items=[GoalResponse.model_validate(goal) for goal in goals],
             total=len(goals),
@@ -45,15 +57,18 @@ class GoalService:
     async def generate_plan(
         self,
         db_session: AsyncSession,
+        user: User,
         goal_id: int,
     ) -> GoalPlanResponse:
-        goal = await self._get_goal_or_404(db_session=db_session, goal_id=goal_id)
+        goal = await self._get_goal_or_404(db_session=db_session, user=user, goal_id=goal_id)
 
-        profile = await db_session.get(Profile, 1)
+        profile = await user_context_service.get_profile(db_session=db_session, user=user)
         target_rsn = goal.target_account_rsn or (profile.primary_account_rsn if profile else None)
         snapshot = None
         if target_rsn is not None:
-            account = await db_session.scalar(select(Account).where(Account.rsn == target_rsn))
+            account = await db_session.scalar(
+                select(Account).where(Account.user_id == user.id, Account.rsn == target_rsn)
+            )
             if account is not None:
                 snapshot = await db_session.scalar(
                     select(AccountSnapshot)
@@ -71,6 +86,7 @@ class GoalService:
         steps = self._build_steps(goal=goal, profile=profile, snapshot=snapshot)
         recommendations = await planner_service.build_goal_recommendations(
             db_session=db_session,
+            user=user,
             goal=goal,
             profile=profile,
             snapshot=snapshot,

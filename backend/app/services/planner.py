@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.account_snapshot import AccountSnapshot
 from app.models.goal import Goal
 from app.models.profile import Profile
+from app.models.user import User
 from app.services.account_context import account_context_service
 from app.schemas.gear import GearRecommendationRequest
 from app.schemas.teleport import TeleportRouteRequest
@@ -16,6 +17,7 @@ class PlannerService:
     async def build_goal_recommendations(
         self,
         db_session: AsyncSession,
+        user: User,
         goal: Goal,
         profile: Profile | None,
         snapshot: AccountSnapshot | None,
@@ -23,6 +25,7 @@ class PlannerService:
     ) -> dict[str, object]:
         progress = await account_context_service.get_progress(
             db_session=db_session,
+            user=user,
             account_rsn=target_rsn,
         )
         skill_name = self._goal_skill(goal.goal_type)
@@ -32,12 +35,14 @@ class PlannerService:
 
         skill_recommendations = await skill_service.get_recommendations(
             db_session=db_session,
+            user=user,
             skill_name=skill_name,
             account_rsn=target_rsn,
             preference=None,
         )
         gear_recommendations = await gear_service.get_recommendations(
             db_session=db_session,
+            user=user,
             payload=GearRecommendationRequest(
                 combat_style=combat_style,
                 budget_tier="midgame",
@@ -47,6 +52,7 @@ class PlannerService:
         )
         teleport_route = await teleport_service.get_route(
             db_session=db_session,
+            user=user,
             payload=TeleportRouteRequest(
                 destination=destination,
                 account_rsn=target_rsn,
