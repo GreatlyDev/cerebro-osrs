@@ -64,6 +64,15 @@ function getViewFromPath(pathname: string): ViewKey {
   return "dashboard";
 }
 
+function formatTimestamp(value: string): string {
+  return new Date(value).toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -1336,6 +1345,23 @@ function DashboardView(props: {
               label="Tracked Activities"
               value={selectedSnapshot.summary.activity_overview?.tracked_activity_count ?? "n/a"}
             />
+            <div className="detail-card">
+              <h3>Sync details</h3>
+              <strong>{formatTimestamp(selectedSnapshot.created_at)}</strong>
+              <p className="muted-copy">
+                Source: {selectedSnapshot.source} | Status: {selectedSnapshot.sync_status}
+              </p>
+            </div>
+            <div className="detail-card">
+              <h3>Activity signal</h3>
+              <strong>
+                {selectedSnapshot.summary.activity_overview?.active_activity_count ?? 0} active rows
+              </strong>
+              <p className="muted-copy">
+                Top skills tracked: {selectedSnapshot.summary.top_skills?.length ?? 0} | 90+ skills:{" "}
+                {selectedSnapshot.summary.progression_profile?.total_skills_at_90_plus ?? 0}
+              </p>
+            </div>
             <div className="detail-card wide-card">
               <div className="snapshot-header">
                 <div>
