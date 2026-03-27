@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "./api";
 import type {
@@ -40,15 +41,46 @@ const NAV_ITEMS: Array<{ key: ViewKey; label: string; blurb: string }> = [
   { key: "profile", label: "Profile", blurb: "Preferences and account defaults" },
 ];
 
+const VIEW_PATHS: Record<ViewKey, string> = {
+  dashboard: "/",
+  "ask-cerebro": "/chat",
+  skills: "/skills",
+  quests: "/quests",
+  gear: "/gear",
+  teleports: "/teleports",
+  goals: "/goals",
+  profile: "/profile",
+};
+
+function getViewFromPath(pathname: string): ViewKey {
+  const normalizedPath = pathname.replace(/\/+$/, "") || "/";
+
+  for (const [view, path] of Object.entries(VIEW_PATHS) as Array<[ViewKey, string]>) {
+    if (path === normalizedPath) {
+      return view;
+    }
+  }
+
+  return "dashboard";
+}
+
 export function App() {
-  const [activeView, setActiveView] = useState<ViewKey>("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeView = getViewFromPath(location.pathname);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
   const [selectedGoalPlan, setSelectedGoalPlan] = useState<GoalPlanResponse | null>(null);
   const [nextActions, setNextActions] = useState<NextActionResponse | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<AccountSnapshot | null>(null);
-  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
+    const stored = window.localStorage.getItem("cerebro.selectedAccountId");
+    return stored ? Number(stored) : null;
+  });
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatExchange[]>([]);
   const [chatReply, setChatReply] = useState("");
@@ -83,10 +115,34 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");
 
   useEffect(() => {
     void loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("cerebro.activeView", activeView);
+    }
+  }, [activeView]);
+
+  useEffect(() => {
+    if (location.pathname !== "/" && !(Object.values(VIEW_PATHS) as string[]).includes(location.pathname)) {
+      navigate(VIEW_PATHS.dashboard, { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (selectedAccountId === null) {
+      window.localStorage.removeItem("cerebro.selectedAccountId");
+      return;
+    }
+    window.localStorage.setItem("cerebro.selectedAccountId", String(selectedAccountId));
+  }, [selectedAccountId]);
 
   useEffect(() => {
     if (activeView === "skills" && skills.length === 0) {
@@ -117,17 +173,24 @@ export function App() {
     }
   }, [activeView, chatSessions.length, quests.length, skills.length]);
 
+  function navigateToView(view: ViewKey) {
+    navigate(VIEW_PATHS[view]);
+  }
+
   async function loadDashboard() {
     setLoading(true);
     setError(null);
+    setBackendStatus("checking");
     try {
-      const [profileResponse, accountsResponse, goalsResponse, nextActionsResponse] =
+      const [healthResponse, profileResponse, accountsResponse, goalsResponse, nextActionsResponse] =
         await Promise.all([
+          api.getHealth(),
           api.getProfile(),
           api.listAccounts(),
           api.listGoals(),
           api.getNextActions({ limit: 4 }),
         ]);
+      setBackendStatus(healthResponse.status === "ok" ? "online" : "offline");
       setProfile(profileResponse);
       setProfileDraft({
         display_name: profileResponse.display_name,
@@ -152,6 +215,7 @@ export function App() {
         setSelectedAccountId(latestAccount.id);
       }
     } catch (err) {
+      setBackendStatus("offline");
       setError(err instanceof Error ? err.message : "Unable to load Cerebro.");
     } finally {
       setLoading(false);
@@ -222,7 +286,7 @@ export function App() {
       const plan = await api.generateGoalPlan(goal.id);
       setSelectedGoalPlan(plan);
       await loadDashboard();
-      setActiveView("goals");
+      navigateToView("goals");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create goal.");
     } finally {
@@ -282,7 +346,7 @@ export function App() {
       const snapshot = await api.getAccountSnapshot(account.id);
       setSelectedSnapshot(snapshot);
       setSelectedAccountId(account.id);
-      setActiveView("dashboard");
+      navigateToView("dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No snapshot found for that account yet.");
     } finally {
@@ -317,7 +381,7 @@ export function App() {
         account_rsn: selectedAccountRsn,
       });
       setGearRecommendations(response);
-      setActiveView("gear");
+      navigateToView("gear");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load gear suggestions.");
     } finally {
@@ -335,7 +399,7 @@ export function App() {
         account_rsn: selectedAccountRsn,
       });
       setTeleportRoute(response);
-      setActiveView("teleports");
+      navigateToView("teleports");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load teleport route.");
     } finally {
@@ -357,7 +421,7 @@ export function App() {
       });
       setProfile(updated);
       await loadDashboard();
-      setActiveView("profile");
+      navigateToView("profile");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to update profile.");
     } finally {
@@ -378,6 +442,20 @@ export function App() {
     accounts.find((account) => account.id === selectedAccountId) ?? accounts[0] ?? null;
   const selectedAccountRsn = selectedAccount?.rsn ?? null;
 
+  function handleSelectAccount(accountId: number | null) {
+    setSelectedAccountId(accountId);
+
+    if (accountId === null) {
+      setSelectedSnapshot(null);
+      return;
+    }
+
+    const account = accounts.find((item) => item.id === accountId);
+    if (account) {
+      void handleInspectAccount(account);
+    }
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -390,12 +468,33 @@ export function App() {
           </p>
         </div>
 
+        <div className="sidebar-status">
+          <div className={`status-pill is-${backendStatus}`}>
+            <span className="status-dot" />
+            Backend {backendStatus}
+          </div>
+          <select
+            className="select-input"
+            value={selectedAccountId ?? ""}
+            onChange={(event) =>
+              handleSelectAccount(event.target.value ? Number(event.target.value) : null)
+            }
+          >
+            {accounts.length === 0 ? <option value="">No account selected</option> : null}
+            {accounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.rsn}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <nav className="nav-grid">
           {NAV_ITEMS.map((item) => (
             <button
               key={item.key}
               className={`nav-item${activeView === item.key ? " is-active" : ""}`}
-              onClick={() => setActiveView(item.key)}
+              onClick={() => navigateToView(item.key)}
               type="button"
             >
               <span>{item.label}</span>
@@ -756,9 +855,16 @@ export function App() {
                       </div>
                       <div className="detail-card">
                         <h3>Recommendation Snapshot</h3>
-                        <pre className="code-block">
-                          {JSON.stringify(selectedGoalPlan.recommendations, null, 2)}
-                        </pre>
+                        <div className="recommendation-grid">
+                          {Object.entries(selectedGoalPlan.recommendations).map(([key, value]) => (
+                            <div className="detail-row compact-detail" key={key}>
+                              <strong>{key.replaceAll("_", " ")}</strong>
+                              <pre className="code-block compact-code">
+                                {JSON.stringify(value, null, 2)}
+                              </pre>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -810,17 +916,17 @@ export function App() {
                   Tell Cerebro what style and budget you care about, then filter out owned gear so the upgrades stay relevant.
                 </div>
                 {gearRecommendations ? (
-                  <div className="stack-list">
+                  <div className="recommendation-grid">
                     <p className="muted-copy">
                       Showing upgrades for {selectedAccountRsn ?? "no selected account"}.
                     </p>
                     {gearRecommendations.recommendations.map((item) => (
                       <div className="detail-row" key={item.item_name}>
                         <strong>
-                          {item.item_name} · {item.slot}
+                          {item.item_name} | {item.slot}
                         </strong>
                         <span>
-                          {item.priority} priority · {item.estimated_cost}
+                          {item.priority} priority | {item.estimated_cost}
                         </span>
                         <p>{item.upgrade_reason}</p>
                         <small className="muted-copy">
@@ -892,7 +998,7 @@ export function App() {
                     {teleportRoute.alternatives.length > 0 ? (
                       <div className="detail-card">
                         <h3>Alternatives</h3>
-                        <div className="stack-list">
+                        <div className="recommendation-grid">
                           {teleportRoute.alternatives.map((option) => (
                             <div className="detail-row" key={option.method}>
                               <strong>{option.method}</strong>
@@ -1083,7 +1189,7 @@ function DashboardView(props: {
             {selectedSnapshot ? (
               <>
                 <strong>
-                  Combat {selectedSnapshot.summary.combat_level ?? "n/a"} · Overall{" "}
+                  Combat {selectedSnapshot.summary.combat_level ?? "n/a"} | Overall{" "}
                   {selectedSnapshot.summary.overall_level}
                 </strong>
                 <p className="muted-copy">
@@ -1193,7 +1299,7 @@ function DashboardView(props: {
               >
                 <div>
                   <strong>
-                    {index === 0 ? "Priority" : "Queued"} · {action.title}
+                    {index === 0 ? "Priority" : "Queued"} | {action.title}
                   </strong>
                   <p>{action.summary}</p>
                   {action.blockers.length > 0 ? (

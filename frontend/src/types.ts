@@ -6,6 +6,10 @@ export type Account = {
   updated_at: string;
 };
 
+export type HealthCheck = {
+  status: string;
+};
+
 export type AccountSnapshot = {
   id: number;
   account_id: number;

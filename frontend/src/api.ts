@@ -6,6 +6,7 @@ import type {
   GearRecommendationResponse,
   Goal,
   GoalPlanResponse,
+  HealthCheck,
   NextActionResponse,
   Profile,
   ProfileUpdate,
@@ -20,7 +21,13 @@ const API_BASE_URL =
   (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://127.0.0.1:8000/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const target = path.startsWith("http")
+    ? path
+    : path.startsWith("/health")
+      ? `${API_BASE_URL.replace(/\/api$/, "")}${path}`
+      : `${API_BASE_URL}${path}`;
+
+  const response = await fetch(target, {
     headers: {
       "Content-Type": "application/json",
       ...(init?.headers ?? {}),
@@ -37,6 +44,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  getHealth: () => request<HealthCheck>("/health"),
   getProfile: () => request<Profile>("/profile"),
   updateProfile: (payload: ProfileUpdate) =>
     request<Profile>("/profile", {
