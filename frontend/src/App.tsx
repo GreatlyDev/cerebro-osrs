@@ -56,8 +56,10 @@ export function App() {
   const [skills, setSkills] = useState<SkillCatalogItem[]>([]);
   const [skillRecommendations, setSkillRecommendations] =
     useState<SkillRecommendationResponse | null>(null);
+  const [skillSearch, setSkillSearch] = useState("");
   const [quests, setQuests] = useState<QuestSummary[]>([]);
   const [selectedQuest, setSelectedQuest] = useState<QuestDetail | null>(null);
+  const [questSearch, setQuestSearch] = useState("");
   const [gearRecommendations, setGearRecommendations] =
     useState<GearRecommendationResponse | null>(null);
   const [teleportRoute, setTeleportRoute] = useState<TeleportRouteResponse | null>(null);
@@ -364,6 +366,16 @@ export function App() {
     }
   }
 
+  const filteredSkills = skills.filter((skill) =>
+    `${skill.label} ${skill.category}`.toLowerCase().includes(skillSearch.trim().toLowerCase()),
+  );
+
+  const filteredQuests = quests.filter((quest) =>
+    `${quest.name} ${quest.category} ${quest.difficulty} ${quest.recommendation_reason}`
+      .toLowerCase()
+      .includes(questSearch.trim().toLowerCase()),
+  );
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -514,9 +526,17 @@ export function App() {
               <SectionCard
                 title="Skills"
                 subtitle="Live catalog and recommendation fetches from the backend."
+                action={
+                  <input
+                    className="text-input"
+                    value={skillSearch}
+                    onChange={(event) => setSkillSearch(event.target.value)}
+                    placeholder="Search skills"
+                  />
+                }
               >
                 <div className="tile-grid">
-                  {skills.map((skill) => (
+                  {filteredSkills.map((skill) => (
                     <button
                       key={skill.key}
                       className="tile-button"
@@ -528,6 +548,9 @@ export function App() {
                     </button>
                   ))}
                 </div>
+                {filteredSkills.length === 0 ? (
+                  <p className="muted-copy">No skills matched that search.</p>
+                ) : null}
                 {skillRecommendations ? (
                   <div className="detail-card">
                     <h3>{skillRecommendations.skill} recommendations</h3>
@@ -551,9 +574,17 @@ export function App() {
               <SectionCard
                 title="Quests"
                 subtitle="Structured quest catalog from the backend service layer."
+                action={
+                  <input
+                    className="text-input"
+                    value={questSearch}
+                    onChange={(event) => setQuestSearch(event.target.value)}
+                    placeholder="Search quests"
+                  />
+                }
               >
                 <div className="stack-list">
-                  {quests.map((quest) => (
+                  {filteredQuests.map((quest) => (
                     <div className="list-row" key={quest.id}>
                       <div>
                         <strong>{quest.name}</strong>
@@ -572,6 +603,9 @@ export function App() {
                     </div>
                   ))}
                 </div>
+                {filteredQuests.length === 0 ? (
+                  <p className="muted-copy">No quests matched that search.</p>
+                ) : null}
                 {selectedQuest ? (
                   <div className="plan-panel">
                     <div className="plan-header">
@@ -1006,6 +1040,34 @@ function DashboardView(props: {
               <p className="muted-copy">Sync an account to see live progression signal.</p>
             )}
           </div>
+        </div>
+        <div className="quick-link-row">
+          <button
+            className="tile-button compact-tile"
+            onClick={() => onGeneratePlan(goals[0])}
+            type="button"
+            disabled={goals.length === 0}
+          >
+            <span>Refresh first goal</span>
+            <small>Regenerate the lead plan quickly</small>
+          </button>
+          <button
+            className="tile-button compact-tile"
+            onClick={() => onInspectAccount(accounts[0])}
+            type="button"
+            disabled={accounts.length === 0}
+          >
+            <span>Open first account</span>
+            <small>Jump to the latest synced snapshot</small>
+          </button>
+          <button
+            className="tile-button compact-tile"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            type="button"
+          >
+            <span>Reset view</span>
+            <small>Quick jump to the top of the page</small>
+          </button>
         </div>
       </SectionCard>
 

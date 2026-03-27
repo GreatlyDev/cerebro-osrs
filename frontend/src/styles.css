@@ -175,6 +175,13 @@ input {
   gap: 12px;
 }
 
+.quick-link-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .section-card {
   padding: 22px;
 }
@@ -371,6 +378,10 @@ input {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(210, 168, 93, 0.08));
 }
 
+.compact-tile {
+  min-height: 100%;
+}
+
 .tile-button span {
   display: block;
   font-weight: 700;
@@ -429,6 +440,10 @@ input {
   }
 
   .pulse-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-link-row {
     grid-template-columns: 1fr;
   }
 
