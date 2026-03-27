@@ -51,7 +51,22 @@ def mock_hiscores_client(monkeypatch: pytest.MonkeyPatch) -> None:
                     "rank": 123,
                     "level": 2277,
                     "experience": 4_600_000_000,
-                }
+                },
+                "magic": {
+                    "rank": 2500,
+                    "level": 82,
+                    "experience": 2_250_000,
+                },
+                "woodcutting": {
+                    "rank": 4100,
+                    "level": 78,
+                    "experience": 1_650_000,
+                },
+                "attack": {
+                    "rank": 3200,
+                    "level": 76,
+                    "experience": 1_340_000,
+                },
             },
         }
 
