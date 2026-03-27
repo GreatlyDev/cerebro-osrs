@@ -36,5 +36,5 @@ uv run alembic upgrade head
 
 - Alembic is scaffolded and ready for initial revisions
 - Docker Compose can start PostgreSQL, Redis, and the backend service together
-- The `accounts` module supports create, list, detail, sync, and latest snapshot flows
+- The API includes `accounts` and `profile` modules with persisted backend state
 - Domain modules and business logic can now be added incrementally
