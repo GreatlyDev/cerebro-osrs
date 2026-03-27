@@ -100,6 +100,28 @@ function buildWorkspaceChecklist(profile: Profile | null, accounts: Account[], g
   ];
 }
 
+function getSuggestedGoalType(profile: Profile | null): string {
+  const focus = profile?.goals_focus?.toLowerCase();
+  if (focus === "quest cape") {
+    return "quest cape";
+  }
+  if (focus === "bossing") {
+    return "fire cape";
+  }
+  return "quest cape";
+}
+
+function getSuggestedGoalTitle(goalType: string, accountRsn: string | null): string {
+  const prefix = accountRsn ? `${accountRsn} ` : "";
+  if (goalType === "fire cape") {
+    return `${prefix}Fire Cape Push`.trim();
+  }
+  if (goalType === "barrows gloves") {
+    return `${prefix}Barrows Gloves Plan`.trim();
+  }
+  return `${prefix}Quest Cape Plan`.trim();
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -446,6 +468,30 @@ export function App() {
     }
   }
 
+  async function handleQuickstartGoal() {
+    const goalType = getSuggestedGoalType(profile);
+    const targetRsn = selectedAccountRsn ?? profile?.primary_account_rsn ?? null;
+    const title = getSuggestedGoalTitle(goalType, targetRsn);
+
+    setBusyAction("quickstart-goal");
+    setError(null);
+    try {
+      const goal = await api.createGoal({
+        title,
+        goal_type: goalType,
+        target_account_rsn: targetRsn,
+      });
+      const plan = await api.generateGoalPlan(goal.id);
+      setSelectedGoalPlan(plan);
+      await loadDashboard();
+      navigateToView("goals");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to create the first goal.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   async function handleRunChatPrompt(promptOverride?: string) {
     const prompt = (promptOverride ?? chatPrompt).trim();
     if (!prompt) {
@@ -745,6 +791,7 @@ export function App() {
                 onCreateAccount={handleCreateAccount}
                 onInspectAccount={handleInspectAccount}
                 onQuickstartAccount={handleQuickstartAccount}
+                onQuickstartGoal={handleQuickstartGoal}
                 onGeneratePlan={handleGeneratePlan}
                 onSetPrimaryAccount={handleSetPrimaryAccount}
                 onSyncAccount={handleSyncAccount}
@@ -1398,6 +1445,7 @@ function DashboardView(props: {
   onCreateAccount: () => void;
   onInspectAccount: (account: Account) => void;
   onQuickstartAccount: () => void;
+  onQuickstartGoal: () => void;
   onGeneratePlan: (goal: Goal) => void;
   onSetPrimaryAccount: (account: Account) => void;
   onSyncAccount: (account: Account) => void;
@@ -1420,6 +1468,7 @@ function DashboardView(props: {
     onCreateAccount,
     onInspectAccount,
     onQuickstartAccount,
+    onQuickstartGoal,
     onGeneratePlan,
     onSetPrimaryAccount,
     onSyncAccount,
@@ -1470,6 +1519,10 @@ function DashboardView(props: {
           <button className="tile-button compact-tile" onClick={onGoToGoals} type="button">
             <span>Open goals</span>
             <small>Turn this workspace into a real progression plan</small>
+          </button>
+          <button className="tile-button compact-tile" onClick={onQuickstartGoal} type="button">
+            <span>Create first goal</span>
+            <small>Use your current account and profile focus automatically</small>
           </button>
           <button
             className="tile-button compact-tile"
@@ -1669,8 +1722,8 @@ function DashboardView(props: {
               body="Create an account or goal to give the recommendation engine more context."
               action={
                 <div className="empty-action-row">
-                  <button className="ghost-button" onClick={onGoToGoals} type="button">
-                    Create a goal
+                  <button className="ghost-button" onClick={onQuickstartGoal} type="button">
+                    Create a suggested goal
                   </button>
                 </div>
               }
@@ -1752,8 +1805,11 @@ function DashboardView(props: {
               body="Create a goal to start generating plans and connect the dashboard to a real target."
               action={
                 <div className="empty-action-row">
+                  <button className="ghost-button" onClick={onQuickstartGoal} type="button">
+                    Create a suggested goal
+                  </button>
                   <button className="ghost-button" onClick={onGoToGoals} type="button">
-                    Open goals
+                    Open goal builder
                   </button>
                 </div>
               }
