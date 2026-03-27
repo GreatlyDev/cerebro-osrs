@@ -82,6 +82,14 @@ function getAccountDetailIdFromPath(pathname: string): number | null {
   return Number(match[1]);
 }
 
+function getGoalDetailIdFromPath(pathname: string): number | null {
+  const match = pathname.match(/^\/goals\/(\d+)\/?$/);
+  if (!match) {
+    return null;
+  }
+  return Number(match[1]);
+}
+
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString([], {
     month: "short",
@@ -204,6 +212,7 @@ export function App() {
   const navigate = useNavigate();
   const activeView = getViewFromPath(location.pathname);
   const accountDetailId = getAccountDetailIdFromPath(location.pathname);
+  const goalDetailId = getGoalDetailIdFromPath(location.pathname);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -274,7 +283,8 @@ export function App() {
     if (
       location.pathname !== "/" &&
       !(Object.values(VIEW_PATHS) as string[]).includes(location.pathname) &&
-      getAccountDetailIdFromPath(location.pathname) === null
+      getAccountDetailIdFromPath(location.pathname) === null &&
+      getGoalDetailIdFromPath(location.pathname) === null
     ) {
       navigate(VIEW_PATHS.dashboard, { replace: true });
     }
@@ -553,6 +563,7 @@ export function App() {
     try {
       const plan = await api.generateGoalPlan(goal.id);
       setSelectedGoalPlan(plan);
+      navigate(`/goals/${goal.id}`);
       await loadDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to generate goal plan.");
@@ -802,6 +813,10 @@ export function App() {
   const selectedAccount =
     accounts.find((account) => account.id === selectedAccountId) ?? accounts[0] ?? null;
   const selectedAccountRsn = selectedAccount?.rsn ?? null;
+  const selectedGoal =
+    goals.find((goal) => goal.id === goalDetailId) ??
+    (selectedGoalPlan ? goals.find((goal) => goal.id === selectedGoalPlan.goal_id) : null) ??
+    null;
   const snapshotDelta = buildSnapshotDelta(
     selectedSnapshotHistory[0] ?? selectedSnapshot,
     selectedSnapshotHistory[1] ?? null,
@@ -1018,7 +1033,19 @@ export function App() {
               />
             ) : null}
 
-            {activeView === "ask-cerebro" && accountDetailId === null ? (
+            {goalDetailId !== null ? (
+              <GoalDetailView
+                busyAction={busyAction}
+                nextActions={nextActions}
+                onGeneratePlan={handleGeneratePlan}
+                onGoToGoals={() => navigateToView("goals")}
+                profile={profile}
+                selectedGoal={selectedGoal}
+                selectedGoalPlan={selectedGoalPlan}
+              />
+            ) : null}
+
+            {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null ? (
               <SectionCard
                 title="Ask Cerebro"
                 subtitle="Chat is still deterministic, but it already uses the real planning stack."
@@ -1098,7 +1125,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "skills" && accountDetailId === null ? (
+            {activeView === "skills" && accountDetailId === null && goalDetailId === null ? (
               <SectionCard
                 title="Skills"
                 subtitle="Live catalog and recommendation fetches from the backend."
@@ -1158,7 +1185,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "quests" && accountDetailId === null ? (
+            {activeView === "quests" && accountDetailId === null && goalDetailId === null ? (
               <SectionCard
                 title="Quests"
                 subtitle="Structured quest catalog from the backend service layer."
@@ -1247,7 +1274,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "goals" && accountDetailId === null ? (
+            {activeView === "goals" && accountDetailId === null && goalDetailId === null ? (
               <SectionCard
                 title="Goals"
                 subtitle="Active goals with one-click plan generation."
@@ -1301,13 +1328,22 @@ export function App() {
                         <strong>{goal.title}</strong>
                         <p>{goal.goal_type}</p>
                       </div>
-                      <button
-                        className="ghost-button"
-                        onClick={() => handleGeneratePlan(goal)}
-                        type="button"
-                      >
-                        {busyAction === `plan-${goal.id}` ? "Generating..." : "Generate plan"}
-                      </button>
+                      <div className="inline-actions">
+                        <button
+                          className="ghost-button"
+                          onClick={() => navigate(`/goals/${goal.id}`)}
+                          type="button"
+                        >
+                          Open
+                        </button>
+                        <button
+                          className="ghost-button"
+                          onClick={() => handleGeneratePlan(goal)}
+                          type="button"
+                        >
+                          {busyAction === `plan-${goal.id}` ? "Generating..." : "Generate plan"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1353,7 +1389,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "gear" && accountDetailId === null ? (
+            {activeView === "gear" && accountDetailId === null && goalDetailId === null ? (
               <SectionCard
                 title="Gear"
                 subtitle="Generate live gear upgrade recommendations from the backend."
@@ -1420,7 +1456,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "teleports" && accountDetailId === null ? (
+            {activeView === "teleports" && accountDetailId === null && goalDetailId === null ? (
               <SectionCard
                 title="Teleports"
                 subtitle="Get a live route recommendation for a destination."
@@ -1494,7 +1530,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "profile" && accountDetailId === null ? (
+            {activeView === "profile" && accountDetailId === null && goalDetailId === null ? (
               <SectionCard
                 title="Profile"
                 subtitle="Edit the frontend defaults that shape backend recommendations."
@@ -2653,6 +2689,163 @@ function AccountDetailView(props: {
             </div>
           ) : null}
         </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function GoalDetailView(props: {
+  busyAction: string | null;
+  nextActions: NextActionResponse | null;
+  onGeneratePlan: (goal: Goal) => void;
+  onGoToGoals: () => void;
+  profile: Profile | null;
+  selectedGoal: Goal | null;
+  selectedGoalPlan: GoalPlanResponse | null;
+}) {
+  const {
+    busyAction,
+    nextActions,
+    onGeneratePlan,
+    onGoToGoals,
+    profile,
+    selectedGoal,
+    selectedGoalPlan,
+  } = props;
+
+  if (!selectedGoal) {
+    return (
+      <SectionCard
+        title="Goal Detail"
+        subtitle="Pick a goal to open its full planning view."
+      >
+        <EmptyState
+          title="No goal loaded"
+          body="Open a goal from the goals page or generate a plan for one of your goals to inspect it here."
+        />
+      </SectionCard>
+    );
+  }
+
+  const matchedActions = nextActions?.actions.filter((action) => {
+    const targetGoalId = action.target.goal_id;
+    return typeof targetGoalId === "number" && targetGoalId === selectedGoal.id;
+  }) ?? [];
+
+  return (
+    <div className="detail-page-grid">
+      <SectionCard
+        title="Goal Detail"
+        subtitle={`Full planning view for ${selectedGoal.title}.`}
+        action={
+          <div className="inline-actions">
+            <button className="ghost-button" onClick={onGoToGoals} type="button">
+              All goals
+            </button>
+            <button
+              className="primary-button"
+              onClick={() => onGeneratePlan(selectedGoal)}
+              type="button"
+            >
+              {busyAction === `plan-${selectedGoal.id}` ? "Generating..." : "Refresh plan"}
+            </button>
+          </div>
+        }
+      >
+        <div className="detail-page-hero">
+          <div className="detail-card">
+            <h3>Goal status</h3>
+            <strong>{selectedGoal.title}</strong>
+            <p className="muted-copy">
+              {selectedGoal.goal_type} | {selectedGoal.status}
+              {selectedGoal.target_account_rsn ? ` | target ${selectedGoal.target_account_rsn}` : ""}
+            </p>
+            <div className="chip-row">
+              <span className="chip">{profile?.goals_focus ?? "progression"}</span>
+              <span className="chip">
+                {selectedGoal.generated_plan ? "plan ready" : "plan not generated"}
+              </span>
+            </div>
+          </div>
+          <div className="detail-card">
+            <h3>Planning notes</h3>
+            <strong>{selectedGoal.notes ?? "No notes yet"}</strong>
+            <p className="muted-copy">
+              This page is where richer guided content, videos, and walkthroughs can live later without crowding the rest of the app.
+            </p>
+          </div>
+        </div>
+      </SectionCard>
+
+      {selectedGoalPlan && selectedGoalPlan.goal_id === selectedGoal.id ? (
+        <SectionCard
+          title="Generated Plan"
+          subtitle={selectedGoalPlan.summary}
+        >
+          <div className="plan-columns">
+            <div className="detail-card">
+              <h3>Steps</h3>
+              <ol className="plan-list">
+                {selectedGoalPlan.steps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ol>
+            </div>
+            <div className="detail-card">
+              <h3>Recommendation Snapshot</h3>
+              <div className="recommendation-grid">
+                {Object.entries(selectedGoalPlan.recommendations).map(([key, value]) => (
+                  <div className="detail-row compact-detail" key={key}>
+                    <strong>{key.replaceAll("_", " ")}</strong>
+                    <pre className="code-block compact-code">
+                      {JSON.stringify(value, null, 2)}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="detail-card wide-card">
+              <h3>Plan context</h3>
+              <pre className="code-block compact-code">
+                {JSON.stringify(selectedGoalPlan.context, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </SectionCard>
+      ) : (
+        <SectionCard
+          title="Generated Plan"
+          subtitle="No generated plan is loaded for this goal yet."
+        >
+          <EmptyState
+            title="No plan loaded"
+            body="Generate or refresh the goal plan to inspect the steps, recommendation payload, and supporting context."
+          />
+        </SectionCard>
+      )}
+
+      <SectionCard
+        title="Goal-Aware Actions"
+        subtitle="The ranked actions currently most relevant to this goal."
+      >
+        {matchedActions.length > 0 ? (
+          <div className="stack-list">
+            {matchedActions.map((action) => (
+              <div className="list-row action-row" key={`${action.action_type}-${action.title}`}>
+                <div>
+                  <strong>{action.title}</strong>
+                  <p>{action.summary}</p>
+                </div>
+                <div className="score-pill">{action.score}</div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No goal-specific actions yet"
+            body="Generate a plan for this goal and Cerebro will start surfacing more targeted next actions here."
+          />
+        )}
       </SectionCard>
     </div>
   );
