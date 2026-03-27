@@ -1,0 +1,206 @@
+from sqlalchemy import desc, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.account import Account
+from app.models.goal import Goal
+from app.models.profile import Profile
+from app.schemas.gear import GearRecommendationRequest
+from app.schemas.recommendation import (
+    NextActionRecommendation,
+    NextActionRequest,
+    NextActionResponse,
+)
+from app.schemas.teleport import TeleportRouteRequest
+from app.services.account_context import account_context_service
+from app.services.gear import gear_service
+from app.services.planner import planner_service
+from app.services.quests import quest_service
+from app.services.skills import skill_service
+from app.services.teleports import teleport_service
+
+
+class RecommendationService:
+    async def get_next_actions(
+        self,
+        db_session: AsyncSession,
+        payload: NextActionRequest,
+    ) -> NextActionResponse:
+        profile = await db_session.get(Profile, 1)
+        goal = await self._resolve_goal(db_session=db_session, goal_id=payload.goal_id)
+        account_rsn = await self._resolve_account_rsn(
+            db_session=db_session,
+            requested_account_rsn=payload.account_rsn,
+            goal=goal,
+            profile=profile,
+        )
+        snapshot = await account_context_service.get_latest_snapshot(
+            db_session=db_session,
+            account_rsn=account_rsn,
+        )
+        progress = await account_context_service.get_progress(
+            db_session=db_session,
+            account_rsn=account_rsn,
+        )
+
+        goal_like = goal or self._build_default_goal(account_rsn=account_rsn, profile=profile)
+        recommendations = await planner_service.build_goal_recommendations(
+            db_session=db_session,
+            goal=goal_like,
+            profile=profile,
+            snapshot=snapshot,
+            target_rsn=account_rsn,
+        )
+        actions = self._build_actions(
+            goal=goal,
+            account_rsn=account_rsn,
+            recommendations=recommendations,
+        )
+        ordered = sorted(actions, key=lambda action: action.score, reverse=True)
+        trimmed = ordered[: payload.limit]
+
+        return NextActionResponse(
+            account_rsn=account_rsn,
+            goal_id=goal.id if goal else None,
+            goal_title=goal.title if goal else None,
+            top_action=trimmed[0] if trimmed else None,
+            actions=trimmed,
+            context={
+                "profile_play_style": profile.play_style if profile else None,
+                "profile_goals_focus": profile.goals_focus if profile else None,
+                "snapshot_available": snapshot is not None,
+                "progress_available": progress is not None,
+                "goal_influenced": goal is not None,
+                "returned_action_count": len(trimmed),
+            },
+        )
+
+    async def _resolve_goal(
+        self,
+        db_session: AsyncSession,
+        goal_id: int | None,
+    ) -> Goal | None:
+        if goal_id is not None:
+            return await db_session.get(Goal, goal_id)
+        return await db_session.scalar(select(Goal).order_by(desc(Goal.id)))
+
+    async def _resolve_account_rsn(
+        self,
+        db_session: AsyncSession,
+        requested_account_rsn: str | None,
+        goal: Goal | None,
+        profile: Profile | None,
+    ) -> str | None:
+        if requested_account_rsn:
+            return requested_account_rsn
+        if goal and goal.target_account_rsn:
+            return goal.target_account_rsn
+        if profile and profile.primary_account_rsn:
+            return profile.primary_account_rsn
+
+        latest_account = await db_session.scalar(select(Account).order_by(desc(Account.id)))
+        return latest_account.rsn if latest_account else None
+
+    def _build_default_goal(
+        self,
+        account_rsn: str | None,
+        profile: Profile | None,
+    ) -> Goal:
+        goal_type = "quest cape" if profile and profile.goals_focus == "progression" else "barrows gloves"
+        title = "Account Progression"
+        return Goal(
+            id=0,
+            title=title,
+            goal_type=goal_type,
+            target_account_rsn=account_rsn,
+            status="active",
+            notes=None,
+            generated_plan=None,
+        )
+
+    def _build_actions(
+        self,
+        goal: Goal | None,
+        account_rsn: str | None,
+        recommendations: dict[str, object],
+    ) -> list[NextActionRecommendation]:
+        skill = recommendations["recommended_skill"]
+        quest = recommendations["recommended_quest"]
+        gear = recommendations["recommended_gear"]
+        teleport = recommendations["recommended_teleport"]
+        readiness = quest["readiness"]
+
+        skill_blockers = []
+        current_level = skill.get("current_level")
+        if current_level is None:
+            skill_blockers.append("No synced skill snapshot yet")
+
+        quest_blockers = [
+            *[
+                f"{item['skill']} {item['current_level']}->{item['required_level']}"
+                for item in readiness.get("missing_skills", [])
+            ],
+            *readiness.get("missing_quests", []),
+            *readiness.get("missing_other_requirements", []),
+        ]
+        teleport_blockers = [
+            requirement
+            for requirement in teleport.get("requirements", [])
+            if requirement
+        ]
+
+        actions = [
+            NextActionRecommendation(
+                action_type="quest",
+                title=f"Push toward {quest['name']}",
+                summary=quest["why_it_matters"],
+                score=max(40, 92 - (len(quest_blockers) * 8)),
+                priority="high" if len(quest_blockers) <= 2 else "medium",
+                target={"quest_id": quest["id"], "goal_title": goal.title if goal else None},
+                blockers=quest_blockers,
+                supporting_data={
+                    "readiness": readiness,
+                    "goal_type": goal.goal_type if goal else None,
+                },
+            ),
+            NextActionRecommendation(
+                action_type="skill",
+                title=f"Train {skill['skill']}",
+                summary=f"Use {skill['method']} as the next efficient training method.",
+                score=86 if current_level is not None else 74,
+                priority="high" if current_level is not None else "medium",
+                target={"skill": skill["skill"], "account_rsn": account_rsn},
+                blockers=skill_blockers,
+                supporting_data={
+                    "current_level": current_level,
+                    "reason": skill["reason"],
+                    "recommended_method": skill["method"],
+                },
+            ),
+            NextActionRecommendation(
+                action_type="gear",
+                title=f"Upgrade into {gear['item_name']}",
+                summary=gear["upgrade_reason"],
+                score=72,
+                priority="medium",
+                target={"item_name": gear["item_name"], "slot": gear["slot"]},
+                blockers=[],
+                supporting_data={"account_rsn": account_rsn},
+            ),
+            NextActionRecommendation(
+                action_type="travel",
+                title=f"Set up {teleport['method']}",
+                summary=f"Travel plan for {teleport['destination']}: {teleport['travel_notes']}",
+                score=68 if "fallback" not in teleport.get("route_type", "") else 58,
+                priority="medium",
+                target={
+                    "destination": teleport["destination"],
+                    "method": teleport["method"],
+                },
+                blockers=teleport_blockers,
+                supporting_data={"account_rsn": account_rsn},
+            ),
+        ]
+        return actions
+
+
+recommendation_service = RecommendationService()

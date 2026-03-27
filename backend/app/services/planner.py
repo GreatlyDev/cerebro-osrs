@@ -82,6 +82,8 @@ class PlannerService:
             "recommended_teleport": {
                 "destination": teleport_route.destination,
                 "method": teleport_route.recommended_route.method,
+                "route_type": teleport_route.recommended_route.route_type,
+                "requirements": teleport_route.recommended_route.requirements,
                 "travel_notes": teleport_route.recommended_route.travel_notes,
             },
             "profile_play_style": profile.play_style if profile else None,

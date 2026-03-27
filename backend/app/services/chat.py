@@ -17,9 +17,11 @@ from app.schemas.chat import (
 from app.services.gear import gear_service
 from app.services.planner import planner_service
 from app.services.quests import quest_service
+from app.services.recommendations import recommendation_service
 from app.services.skills import skill_service
 from app.services.teleports import teleport_service
 from app.schemas.gear import GearRecommendationRequest
+from app.schemas.recommendation import NextActionRequest
 from app.schemas.teleport import TeleportRouteRequest
 
 
@@ -147,6 +149,22 @@ class ChatService:
                 f"{quest.name} is worth prioritizing because {quest.why_it_matters} "
                 f"Next, I'd {quest.next_steps[0].lower()}"
             )
+
+        if "best action" in normalized or "next best" in normalized:
+            next_actions = await recommendation_service.get_next_actions(
+                db_session=db_session,
+                payload=NextActionRequest(
+                    account_rsn=latest_account.rsn if latest_account else None,
+                    goal_id=latest_goal.id if latest_goal else None,
+                    limit=3,
+                ),
+            )
+            top_action = next_actions.top_action
+            if top_action is not None:
+                return (
+                    f"Your next best action is to {top_action.title.lower()}. "
+                    f"{top_action.summary}"
+                )
 
         if "goal" in normalized and latest_goal is not None:
             recommendations = await planner_service.build_goal_recommendations(

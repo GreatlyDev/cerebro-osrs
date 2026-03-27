@@ -69,3 +69,23 @@ async def test_chat_can_suggest_next_action_from_latest_goal(client: AsyncClient
     assert "quest cape" in response.json()["assistant_message"]["content"].lower()
     assert "bone voyage" in response.json()["assistant_message"]["content"].lower()
     assert "already in a good spot" in response.json()["assistant_message"]["content"].lower()
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_next_best_action_prompt(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "NextBest"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "NextBest"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Best Action"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What's my next best action?"},
+    )
+
+    assert response.status_code == 201
+    assert "next best action" in response.json()["assistant_message"]["content"].lower()
