@@ -151,6 +151,15 @@ function appendListDraft(currentValue: string, entry: string): string {
   return trimmed ? `${trimmed}\n${entry}` : entry;
 }
 
+function emptyProgressDraft() {
+  return {
+    completed_quests: "",
+    unlocked_transports: "",
+    owned_gear: "",
+    active_unlocks: "",
+  };
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -192,12 +201,7 @@ export function App() {
   const [gearCurrentItems, setGearCurrentItems] = useState("");
   const [teleportDestination, setTeleportDestination] = useState("fossil island");
   const [teleportPreference, setTeleportPreference] = useState("balanced");
-  const [progressDraft, setProgressDraft] = useState({
-    completed_quests: "",
-    unlocked_transports: "",
-    owned_gear: "",
-    active_unlocks: "",
-  });
+  const [progressDraft, setProgressDraft] = useState(emptyProgressDraft);
   const [profileDraft, setProfileDraft] = useState({
     display_name: "",
     primary_account_rsn: "",
@@ -285,7 +289,7 @@ export function App() {
       try {
         const user = await api.getSession();
         setCurrentUser(user);
-        await loadDashboard();
+        await loadDashboard({ skipHealthCheck: true });
       } catch {
         setCurrentUser(null);
       }
@@ -298,20 +302,23 @@ export function App() {
     }
   }
 
-  async function loadDashboard() {
+  async function loadDashboard(options?: { skipHealthCheck?: boolean }) {
     setLoading(true);
     setError(null);
-    setBackendStatus("checking");
     try {
-      const [healthResponse, profileResponse, accountsResponse, goalsResponse, nextActionsResponse] =
+      if (!options?.skipHealthCheck) {
+        setBackendStatus("checking");
+        const healthResponse = await api.getHealth();
+        setBackendStatus(healthResponse.status === "ok" ? "online" : "offline");
+      }
+
+      const [profileResponse, accountsResponse, goalsResponse, nextActionsResponse] =
         await Promise.all([
-          api.getHealth(),
           api.getProfile(),
           api.listAccounts(),
           api.listGoals(),
           api.getNextActions({ limit: 4 }),
         ]);
-      setBackendStatus(healthResponse.status === "ok" ? "online" : "offline");
       setProfile(profileResponse);
       setProfileDraft({
         display_name: profileResponse.display_name,
@@ -346,16 +353,13 @@ export function App() {
         setSelectedSnapshot(null);
         setSelectedProgress(null);
         setSelectedAccountId(null);
-        setProgressDraft({
-          completed_quests: "",
-          unlocked_transports: "",
-          owned_gear: "",
-          active_unlocks: "",
-        });
+        setProgressDraft(emptyProgressDraft());
       }
     } catch (err) {
-      setBackendStatus("offline");
-      setError(err instanceof Error ? err.message : "Unable to load Cerebro.");
+      if (!options?.skipHealthCheck) {
+        setBackendStatus("offline");
+      }
+      setError(err instanceof Error ? err.message : "Unable to load your workspace.");
     } finally {
       setLoading(false);
     }
@@ -374,7 +378,7 @@ export function App() {
       });
       storeSessionToken(session.session_token);
       setCurrentUser(session.user);
-      await loadDashboard();
+      await loadDashboard({ skipHealthCheck: true });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sign in.");
     } finally {
@@ -396,12 +400,7 @@ export function App() {
     setChatSessions([]);
     setChatHistory([]);
     setChatReply("");
-    setProgressDraft({
-      completed_quests: "",
-      unlocked_transports: "",
-      owned_gear: "",
-      active_unlocks: "",
-    });
+    setProgressDraft(emptyProgressDraft());
     setError(null);
   }
 
@@ -761,12 +760,7 @@ export function App() {
     if (accountId === null) {
       setSelectedSnapshot(null);
       setSelectedProgress(null);
-      setProgressDraft({
-        completed_quests: "",
-        unlocked_transports: "",
-        owned_gear: "",
-        active_unlocks: "",
-      });
+      setProgressDraft(emptyProgressDraft());
       return;
     }
 
@@ -873,7 +867,9 @@ export function App() {
             <h2>
               {profile
                 ? `Welcome back, ${profile.display_name}.`
-                : "Cerebro frontend is coming online."}
+                : currentUser
+                  ? `Welcome back, ${currentUser.display_name}.`
+                  : "Cerebro frontend is coming online."}
             </h2>
             <p className="hero-copy">
               This workspace now runs on your own accounts, goals, chat sessions, and

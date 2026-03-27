@@ -22,6 +22,28 @@ async def test_create_account_rejects_duplicate_rsn(client: AsyncClient) -> None
 
 
 @pytest.mark.asyncio
+async def test_create_account_allows_same_rsn_for_different_user(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    first_response = await client.post("/api/accounts", json={"rsn": "Lynx Titan"})
+    second_login = await unauthenticated_client.post(
+        "/api/auth/dev-login",
+        json={"email": "second@example.com", "display_name": "Second Planner"},
+    )
+    second_headers = {"Authorization": f"Bearer {second_login.json()['session_token']}"}
+    second_response = await unauthenticated_client.post(
+        "/api/accounts",
+        json={"rsn": "Lynx Titan"},
+        headers=second_headers,
+    )
+
+    assert first_response.status_code == 201
+    assert second_response.status_code == 201
+    assert second_response.json()["rsn"] == "Lynx Titan"
+
+
+@pytest.mark.asyncio
 async def test_create_account_normalizes_whitespace(client: AsyncClient) -> None:
     response = await client.post("/api/accounts", json={"rsn": "  Settled   "})
 
