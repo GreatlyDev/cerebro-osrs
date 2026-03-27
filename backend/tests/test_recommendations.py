@@ -1,5 +1,9 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.models.account import Account
+from app.models.account_snapshot import AccountSnapshot
 
 
 @pytest.mark.asyncio
@@ -76,3 +80,61 @@ async def test_next_actions_downrank_owned_gear_and_boost_active_unlocks(client:
     assert quest_action["supporting_data"]["active_unlock_match"] is True
     assert data["context"]["owned_gear_count"] == 1
     assert data["context"]["active_unlock_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_next_actions_report_snapshot_momentum(client: AsyncClient, db_session: AsyncSession) -> None:
+    account = Account(rsn="Momentum")
+    db_session.add(account)
+    await db_session.commit()
+    await db_session.refresh(account)
+
+    db_session.add(
+        AccountSnapshot(
+            account_id=account.id,
+            source="manual",
+            sync_status="completed",
+            summary={
+                "overall_level": 100,
+                "skills": {
+                    "overall": {"level": 100},
+                    "magic": {"level": 60},
+                    "woodcutting": {"level": 50},
+                },
+            },
+        )
+    )
+    db_session.add(
+        AccountSnapshot(
+            account_id=account.id,
+            source="manual",
+            sync_status="completed",
+            summary={
+                "overall_level": 103,
+                "skills": {
+                    "overall": {"level": 103},
+                    "magic": {"level": 63},
+                    "woodcutting": {"level": 50},
+                },
+            },
+        )
+    )
+    await db_session.commit()
+
+    goal_response = await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Momentum"},
+    )
+    response = await client.get(
+        f"/api/recommendations/next-actions?goal_id={goal_response.json()['id']}&limit=4"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    skill_action = next(action for action in data["actions"] if action["action_type"] == "skill")
+    quest_action = next(action for action in data["actions"] if action["action_type"] == "quest")
+    assert data["context"]["snapshot_delta_available"] is True
+    assert data["context"]["overall_level_delta"] == 3
+    assert "magic" in data["context"]["recently_progressed_skills"]
+    assert skill_action["supporting_data"]["recent_momentum_detected"] is True
+    assert quest_action["supporting_data"]["recent_momentum_detected"] is True

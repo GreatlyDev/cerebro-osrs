@@ -37,9 +37,17 @@ class RecommendationService:
             db_session=db_session,
             account_rsn=account_rsn,
         )
+        previous_snapshot = await account_context_service.get_previous_snapshot(
+            db_session=db_session,
+            account_rsn=account_rsn,
+        )
         progress = await account_context_service.get_progress(
             db_session=db_session,
             account_rsn=account_rsn,
+        )
+        snapshot_delta = self._build_snapshot_delta(
+            latest_snapshot=snapshot,
+            previous_snapshot=previous_snapshot,
         )
 
         goal_like = goal or self._build_default_goal(account_rsn=account_rsn, profile=profile)
@@ -55,6 +63,7 @@ class RecommendationService:
             account_rsn=account_rsn,
             recommendations=recommendations,
             progress=progress,
+            snapshot_delta=snapshot_delta,
         )
         ordered = sorted(actions, key=lambda action: action.score, reverse=True)
         trimmed = ordered[: payload.limit]
@@ -69,6 +78,9 @@ class RecommendationService:
                 "profile_play_style": profile.play_style if profile else None,
                 "profile_goals_focus": profile.goals_focus if profile else None,
                 "snapshot_available": snapshot is not None,
+                "snapshot_delta_available": snapshot_delta is not None,
+                "overall_level_delta": snapshot_delta["overall_level_delta"] if snapshot_delta else 0,
+                "recently_progressed_skills": snapshot_delta["improved_skills"] if snapshot_delta else [],
                 "progress_available": progress is not None,
                 "owned_gear_count": len(progress.owned_gear) if progress else 0,
                 "active_unlock_count": len(progress.active_unlocks) if progress else 0,
@@ -126,6 +138,7 @@ class RecommendationService:
         account_rsn: str | None,
         recommendations: dict[str, object],
         progress,
+        snapshot_delta: dict[str, object] | None,
     ) -> list[NextActionRecommendation]:
         skill = recommendations["recommended_skill"]
         quest = recommendations["recommended_quest"]
@@ -156,13 +169,24 @@ class RecommendationService:
         gear_owned = gear["item_name"].strip().lower() in owned_gear
         quest_matches_active_unlock = quest["name"].strip().lower() in active_unlocks
         travel_matches_active_unlock = teleport["destination"].strip().lower() in active_unlocks
+        improving_skills = set(snapshot_delta["improved_skills"]) if snapshot_delta else set()
+        overall_level_delta = int(snapshot_delta["overall_level_delta"]) if snapshot_delta else 0
+        skill_has_momentum = skill["skill"] in improving_skills
+        skill_stalled = snapshot_delta is not None and not skill_has_momentum and overall_level_delta == 0
+        quest_momentum_bonus = 6 if skill_has_momentum or overall_level_delta > 0 else 0
+        skill_score = 78 if skill_has_momentum else 86 if current_level is not None else 74
+        if skill_stalled:
+            skill_score += 6
 
         actions = [
             NextActionRecommendation(
                 action_type="quest",
                 title=f"Push toward {quest['name']}",
                 summary=quest["why_it_matters"],
-                score=max(40, 92 - (len(quest_blockers) * 8) + (8 if quest_matches_active_unlock else 0)),
+                score=max(
+                    40,
+                    92 - (len(quest_blockers) * 8) + (8 if quest_matches_active_unlock else 0) + quest_momentum_bonus,
+                ),
                 priority="high" if len(quest_blockers) <= 2 else "medium",
                 target={"quest_id": quest["id"], "goal_title": goal.title if goal else None},
                 blockers=quest_blockers,
@@ -170,13 +194,14 @@ class RecommendationService:
                     "readiness": readiness,
                     "goal_type": goal.goal_type if goal else None,
                     "active_unlock_match": quest_matches_active_unlock,
+                    "recent_momentum_detected": skill_has_momentum or overall_level_delta > 0,
                 },
             ),
             NextActionRecommendation(
                 action_type="skill",
                 title=f"Train {skill['skill']}",
                 summary=f"Use {skill['method']} as the next efficient training method.",
-                score=86 if current_level is not None else 74,
+                score=skill_score,
                 priority="high" if current_level is not None else "medium",
                 target={"skill": skill["skill"], "account_rsn": account_rsn},
                 blockers=skill_blockers,
@@ -184,6 +209,8 @@ class RecommendationService:
                     "current_level": current_level,
                     "reason": skill["reason"],
                     "recommended_method": skill["method"],
+                    "recent_momentum_detected": skill_has_momentum,
+                    "skill_stalled": skill_stalled,
                 },
             ),
             NextActionRecommendation(
@@ -218,6 +245,35 @@ class RecommendationService:
             ),
         ]
         return actions
+
+    def _build_snapshot_delta(
+        self,
+        latest_snapshot,
+        previous_snapshot,
+    ) -> dict[str, object] | None:
+        if latest_snapshot is None or previous_snapshot is None:
+            return None
+
+        latest_overall = int(latest_snapshot.summary.get("overall_level", 0) or 0)
+        previous_overall = int(previous_snapshot.summary.get("overall_level", 0) or 0)
+        latest_skills = latest_snapshot.summary.get("skills", {})
+        previous_skills = previous_snapshot.summary.get("skills", {})
+        improved_skills: list[str] = []
+
+        if isinstance(latest_skills, dict) and isinstance(previous_skills, dict):
+            for skill_name, latest_data in latest_skills.items():
+                if skill_name == "overall" or not isinstance(latest_data, dict):
+                    continue
+                previous_data = previous_skills.get(skill_name, {})
+                latest_level = int(latest_data.get("level", 0) or 0)
+                previous_level = int(previous_data.get("level", 0) or 0) if isinstance(previous_data, dict) else 0
+                if latest_level > previous_level:
+                    improved_skills.append(skill_name)
+
+        return {
+            "overall_level_delta": latest_overall - previous_overall,
+            "improved_skills": sorted(improved_skills),
+        }
 
 
 recommendation_service = RecommendationService()

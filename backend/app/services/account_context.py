@@ -21,14 +21,46 @@ class AccountContextService:
         db_session: AsyncSession,
         account_rsn: str | None,
     ) -> AccountSnapshot | None:
+        snapshots = await self.get_recent_snapshots(
+            db_session=db_session,
+            account_rsn=account_rsn,
+            limit=1,
+        )
+        return snapshots[0] if snapshots else None
+
+    async def get_recent_snapshots(
+        self,
+        db_session: AsyncSession,
+        account_rsn: str | None,
+        limit: int = 2,
+    ) -> list[AccountSnapshot]:
         account = await self.get_account_by_rsn(db_session=db_session, account_rsn=account_rsn)
         if account is None:
-            return None
-        return await db_session.scalar(
-            select(AccountSnapshot)
-            .where(AccountSnapshot.account_id == account.id)
-            .order_by(desc(AccountSnapshot.created_at), desc(AccountSnapshot.id))
+            return []
+        return list(
+            (
+                await db_session.scalars(
+                    select(AccountSnapshot)
+                    .where(AccountSnapshot.account_id == account.id)
+                    .order_by(desc(AccountSnapshot.created_at), desc(AccountSnapshot.id))
+                    .limit(limit)
+                )
+            ).all()
         )
+
+    async def get_previous_snapshot(
+        self,
+        db_session: AsyncSession,
+        account_rsn: str | None,
+    ) -> AccountSnapshot | None:
+        snapshots = await self.get_recent_snapshots(
+            db_session=db_session,
+            account_rsn=account_rsn,
+            limit=2,
+        )
+        if len(snapshots) < 2:
+            return None
+        return snapshots[1]
 
     async def get_progress(
         self,
@@ -38,9 +70,7 @@ class AccountContextService:
         account = await self.get_account_by_rsn(db_session=db_session, account_rsn=account_rsn)
         if account is None:
             return None
-        return await db_session.scalar(
-            select(AccountProgress).where(AccountProgress.account_id == account.id)
-        )
+        return await db_session.scalar(select(AccountProgress).where(AccountProgress.account_id == account.id))
 
 
 account_context_service = AccountContextService()
