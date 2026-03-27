@@ -475,10 +475,8 @@ export function App() {
                 <div className="chat-preview">
                   <div>
                     <p className="section-label">Sessions</p>
-                    <div className="chip-row">
-                      {chatSessions.length === 0 ? (
-                        <span className="muted-copy">No sessions yet.</span>
-                      ) : null}
+                  <div className="chip-row">
+                      {chatSessions.length === 0 ? <span className="muted-copy">No sessions yet.</span> : null}
                       {chatSessions.map((session) => (
                         <span className="chip" key={session.id}>
                           {session.title}
@@ -519,7 +517,12 @@ export function App() {
                         ))}
                       </div>
                     </div>
-                  ) : null}
+                  ) : (
+                    <EmptyState
+                      title="No chat history yet"
+                      body="Send a prompt or use a quick prompt to start building a session."
+                    />
+                  )}
                 </div>
               </SectionCard>
             ) : null}
@@ -551,7 +554,10 @@ export function App() {
                   ))}
                 </div>
                 {filteredSkills.length === 0 ? (
-                  <p className="muted-copy">No skills matched that search.</p>
+                  <EmptyState
+                    title="No skills matched"
+                    body="Try a different search term or clear the filter to browse the full catalog."
+                  />
                 ) : null}
                 {skillRecommendations ? (
                   <div className="detail-card">
@@ -569,7 +575,12 @@ export function App() {
                       </div>
                     ))}
                   </div>
-                ) : null}
+                ) : (
+                  <EmptyState
+                    title="No skill loaded"
+                    body="Choose a skill card to fetch live recommendations from the backend."
+                  />
+                )}
               </SectionCard>
             ) : null}
 
@@ -607,7 +618,10 @@ export function App() {
                   ))}
                 </div>
                 {filteredQuests.length === 0 ? (
-                  <p className="muted-copy">No quests matched that search.</p>
+                  <EmptyState
+                    title="No quests matched"
+                    body="Try a different search term or clear the filter to browse the quest catalog."
+                  />
                 ) : null}
                 {selectedQuest ? (
                   <div className="plan-panel">
@@ -647,7 +661,12 @@ export function App() {
                       </ol>
                     </div>
                   </div>
-                ) : null}
+                ) : (
+                  <EmptyState
+                    title="No quest selected"
+                    body="Open a quest from the list to inspect requirements, rewards, and next steps."
+                  />
+                )}
               </SectionCard>
             ) : null}
 
@@ -731,7 +750,12 @@ export function App() {
                       </div>
                     </div>
                   </div>
-                ) : null}
+                ) : (
+                  <EmptyState
+                    title="No plan selected"
+                    body="Generate a goal plan to inspect steps and recommendation payloads here."
+                  />
+                )}
               </SectionCard>
             ) : null}
 
@@ -791,9 +815,10 @@ export function App() {
                     ))}
                   </div>
                 ) : (
-                  <p className="muted-copy">
-                    Use the controls above to fetch upgrade recommendations.
-                  </p>
+                  <EmptyState
+                    title="No gear recommendations yet"
+                    body="Pick a combat style and budget tier, then fetch upgrade recommendations."
+                  />
                 )}
               </SectionCard>
             ) : null}
@@ -861,9 +886,10 @@ export function App() {
                     ) : null}
                   </div>
                 ) : (
-                  <p className="muted-copy">
-                    Use the controls above to get a teleport route recommendation.
-                  </p>
+                  <EmptyState
+                    title="No route calculated yet"
+                    body="Pick a destination and run the route finder to see recommended travel options."
+                  />
                 )}
               </SectionCard>
             ) : null}
@@ -1098,9 +1124,10 @@ function DashboardView(props: {
       >
         <div className="stack-list">
           {accounts.length === 0 ? (
-            <p className="muted-copy">
-              No accounts yet. Add one to bring the dashboard to life.
-            </p>
+            <EmptyState
+              title="No accounts yet"
+              body="Add your first RSN to bring the dashboard to life and unlock sync, snapshots, and planning."
+            />
           ) : null}
           {accounts.map((account) => (
             <div className="list-row" key={account.id}>
@@ -1158,7 +1185,10 @@ function DashboardView(props: {
               </div>
             ))
           ) : (
-            <p className="muted-copy">No ranked actions available yet.</p>
+            <EmptyState
+              title="No ranked actions yet"
+              body="Create an account or goal to give the recommendation engine more context."
+            />
           )}
         </div>
       </SectionCard>
@@ -1201,9 +1231,10 @@ function DashboardView(props: {
             </div>
           </div>
         ) : (
-          <p className="muted-copy">
-            Sync an account to see the enriched snapshot surface.
-          </p>
+          <EmptyState
+            title="No snapshot loaded"
+            body="Pick an account and run a sync to see combat level, top skills, and activity signals."
+          />
         )}
       </SectionCard>
 
@@ -1212,7 +1243,12 @@ function DashboardView(props: {
         subtitle={`Play style: ${profile?.play_style ?? "unknown"}`}
       >
         <div className="stack-list">
-          {goals.length === 0 ? <p className="muted-copy">No goals created yet.</p> : null}
+          {goals.length === 0 ? (
+            <EmptyState
+              title="No goals yet"
+              body="Create a goal to start generating plans and connect the dashboard to a real target."
+            />
+          ) : null}
           {goals.slice(0, 4).map((goal) => (
             <div className="list-row" key={goal.id}>
               <div>
@@ -1254,6 +1290,15 @@ function SectionCard(props: {
       </div>
       {props.children}
     </section>
+  );
+}
+
+function EmptyState(props: { title: string; body: string }) {
+  return (
+    <div className="empty-state">
+      <strong>{props.title}</strong>
+      <p>{props.body}</p>
+    </div>
   );
 }
 
