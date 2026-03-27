@@ -962,6 +962,54 @@ function DashboardView(props: {
   return (
     <div className="dashboard-grid">
       <SectionCard
+        title="Cerebro Pulse"
+        subtitle="A quick read on where the account stands right now."
+      >
+        <div className="pulse-grid">
+          <div className="detail-card">
+            <h3>Top recommendation</h3>
+            {nextActions?.top_action ? (
+              <>
+                <strong>{nextActions.top_action.title}</strong>
+                <p className="muted-copy">{nextActions.top_action.summary}</p>
+                <div className="chip-row">
+                  <span className="chip">{nextActions.top_action.priority}</span>
+                  <span className="chip">score {nextActions.top_action.score}</span>
+                </div>
+              </>
+            ) : (
+              <p className="muted-copy">No top action available yet.</p>
+            )}
+          </div>
+          <div className="detail-card">
+            <h3>Primary account</h3>
+            <strong>{profile?.primary_account_rsn ?? accounts[0]?.rsn ?? "Not set"}</strong>
+            <p className="muted-copy">
+              Play style: {profile?.play_style ?? "unknown"} | Goal focus:{" "}
+              {profile?.goals_focus ?? "unknown"}
+            </p>
+          </div>
+          <div className="detail-card">
+            <h3>Snapshot signal</h3>
+            {selectedSnapshot ? (
+              <>
+                <strong>
+                  Combat {selectedSnapshot.summary.combat_level ?? "n/a"} · Overall{" "}
+                  {selectedSnapshot.summary.overall_level}
+                </strong>
+                <p className="muted-copy">
+                  Highest skill:{" "}
+                  {selectedSnapshot.summary.progression_profile?.highest_skill ?? "unknown"}
+                </p>
+              </>
+            ) : (
+              <p className="muted-copy">Sync an account to see live progression signal.</p>
+            )}
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
         title="Account Bay"
         subtitle="Create and sync live OSRS accounts against the backend."
         action={
@@ -1018,15 +1066,17 @@ function DashboardView(props: {
         title="Next Actions"
         subtitle="Ranked directly from the recommendation engine."
       >
-        <div className="stack-list">
+        <div className="action-stack">
           {nextActions ? (
-            nextActions.actions.map((action) => (
+            nextActions.actions.map((action, index) => (
               <div
-                className="list-row action-row"
+                className={`list-row action-row${index === 0 ? " spotlight-row" : ""}`}
                 key={`${action.action_type}-${action.title}`}
               >
                 <div>
-                  <strong>{action.title}</strong>
+                  <strong>
+                    {index === 0 ? "Priority" : "Queued"} · {action.title}
+                  </strong>
                   <p>{action.summary}</p>
                   {action.blockers.length > 0 ? (
                     <small className="muted-copy">
@@ -1060,12 +1110,22 @@ function DashboardView(props: {
               value={selectedSnapshot.summary.activity_overview?.tracked_activity_count ?? "n/a"}
             />
             <div className="detail-card wide-card">
-              <h3>Top skills</h3>
-              <div className="chip-row">
+              <div className="snapshot-header">
+                <div>
+                  <h3>Top skills</h3>
+                  <p className="muted-copy">
+                    Lowest tracked skill:{" "}
+                    {selectedSnapshot.summary.progression_profile?.lowest_tracked_skill ?? "unknown"}
+                  </p>
+                </div>
+                <span className="pill">{selectedSnapshot.summary.rsn}</span>
+              </div>
+              <div className="skill-pill-grid">
                 {selectedSnapshot.summary.top_skills?.map((skill) => (
-                  <span className="chip" key={skill.skill}>
-                    {skill.skill} {skill.level}
-                  </span>
+                  <div className="skill-pill" key={skill.skill}>
+                    <strong>{skill.skill}</strong>
+                    <span>Lvl {skill.level}</span>
+                  </div>
                 ))}
               </div>
             </div>
@@ -1087,7 +1147,10 @@ function DashboardView(props: {
             <div className="list-row" key={goal.id}>
               <div>
                 <strong>{goal.title}</strong>
-                <p>{goal.goal_type}</p>
+                <p>
+                  {goal.goal_type}
+                  {goal.generated_plan ? " | plan ready" : " | plan not generated yet"}
+                </p>
               </div>
               <button
                 className="ghost-button"

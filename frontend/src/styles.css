@@ -169,6 +169,12 @@ input {
   gap: 18px;
 }
 
+.pulse-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .section-card {
   padding: 22px;
 }
@@ -230,6 +236,11 @@ input {
   gap: 12px;
 }
 
+.action-stack {
+  display: grid;
+  gap: 12px;
+}
+
 .list-row,
 .detail-row,
 .chat-bubble,
@@ -251,6 +262,10 @@ input {
   align-items: start;
 }
 
+.spotlight-row {
+  background: linear-gradient(135deg, rgba(210, 168, 93, 0.16), rgba(255, 255, 255, 0.03));
+}
+
 .score-pill,
 .pill,
 .chip {
@@ -265,6 +280,29 @@ input {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.snapshot-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 14px;
+}
+
+.skill-pill-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.skill-pill {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px;
+  display: grid;
+  gap: 4px;
 }
 
 .detail-card {
@@ -387,6 +425,10 @@ input {
   }
 
   .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pulse-grid {
     grid-template-columns: 1fr;
   }
 
