@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.db.base import Base
 from app.db.session import get_db_session
 from app.main import app
+from app.services.accounts import account_service
 
 
 @pytest_asyncio.fixture
@@ -35,3 +36,27 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
         yield test_client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def mock_hiscores_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_fetch_account_summary(rsn: str) -> dict[str, object]:
+        return {
+            "rsn": rsn,
+            "overall_rank": 123,
+            "overall_level": 2277,
+            "overall_experience": 4_600_000_000,
+            "skills": {
+                "overall": {
+                    "rank": 123,
+                    "level": 2277,
+                    "experience": 4_600_000_000,
+                }
+            },
+        }
+
+    monkeypatch.setattr(
+        account_service.hiscores_client,
+        "fetch_account_summary",
+        fake_fetch_account_summary,
+    )
