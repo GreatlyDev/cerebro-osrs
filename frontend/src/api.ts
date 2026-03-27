@@ -4,6 +4,7 @@ import type {
   ChatReply,
   ChatSession,
   Goal,
+  GoalPlanResponse,
   NextActionResponse,
   Profile,
   QuestSummary,
@@ -60,14 +61,7 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   generateGoalPlan: (goalId: number) =>
-    request<{
-      goal_id: number;
-      status: string;
-      summary: string;
-      steps: string[];
-      recommendations: Record<string, unknown>;
-      context: Record<string, unknown>;
-    }>(`/goals/${goalId}/plan`, {
+    request<GoalPlanResponse>(`/goals/${goalId}/plan`, {
       method: "POST",
     }),
   getNextActions: (params?: { goalId?: number; limit?: number }) => {

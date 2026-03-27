@@ -182,19 +182,26 @@ input {
 }
 
 .inline-form,
-.chip-row {
+.chip-row,
+.inline-actions,
+.goal-form {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
 }
 
-.text-input {
+.text-input,
+.select-input {
   min-width: 180px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.04);
   color: var(--text);
   padding: 10px 12px;
+}
+
+.select-input {
+  appearance: none;
 }
 
 .primary-button,
@@ -262,6 +269,42 @@ input {
 
 .detail-card {
   padding: 16px;
+}
+
+.plan-panel {
+  margin-top: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.plan-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.plan-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.plan-list {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  display: grid;
+  gap: 10px;
+}
+
+.code-block {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.85rem;
+  color: #dce7c6;
 }
 
 .wide-card {
@@ -338,7 +381,8 @@ input {
     flex-direction: column;
   }
 
-  .inline-form {
+  .inline-form,
+  .goal-form {
     width: 100%;
     flex-direction: column;
   }
@@ -346,5 +390,13 @@ input {
   .text-input {
     min-width: 0;
     width: 100%;
+  }
+
+  .select-input {
+    width: 100%;
+  }
+
+  .plan-columns {
+    grid-template-columns: 1fr;
   }
 }

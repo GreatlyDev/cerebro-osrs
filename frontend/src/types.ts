@@ -48,6 +48,15 @@ export type Goal = {
   updated_at: string;
 };
 
+export type GoalPlanResponse = {
+  goal_id: number;
+  status: string;
+  summary: string;
+  steps: string[];
+  recommendations: Record<string, unknown>;
+  context: Record<string, unknown>;
+};
+
 export type Profile = {
   id: number;
   display_name: string;

@@ -7,6 +7,7 @@ import type {
   AccountSnapshot,
   ChatSession,
   Goal,
+  GoalPlanResponse,
   NextActionResponse,
   Profile,
   QuestSummary,
@@ -40,8 +41,10 @@ export function App() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [selectedGoalPlan, setSelectedGoalPlan] = useState<GoalPlanResponse | null>(null);
   const [nextActions, setNextActions] = useState<NextActionResponse | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<AccountSnapshot | null>(null);
+  const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [chatReply, setChatReply] = useState("");
   const [skills, setSkills] = useState<SkillCatalogItem[]>([]);
@@ -49,6 +52,9 @@ export function App() {
     useState<SkillRecommendationResponse | null>(null);
   const [quests, setQuests] = useState<QuestSummary[]>([]);
   const [newAccountRsn, setNewAccountRsn] = useState("");
+  const [newGoalTitle, setNewGoalTitle] = useState("");
+  const [newGoalType, setNewGoalType] = useState("quest cape");
+  const [newGoalTargetRsn, setNewGoalTargetRsn] = useState("");
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -103,11 +109,14 @@ export function App() {
       setNextActions(nextActionsResponse);
 
       if (accountsResponse.items.length > 0) {
-        const latestAccount = accountsResponse.items[accountsResponse.items.length - 1];
+        const latestAccount =
+          accountsResponse.items.find((account) => account.id === selectedAccountId) ??
+          accountsResponse.items[accountsResponse.items.length - 1];
         const latestSnapshot = await api
           .getAccountSnapshot(latestAccount.id)
           .catch(() => null);
         setSelectedSnapshot(latestSnapshot);
+        setSelectedAccountId(latestAccount.id);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load Cerebro.");
@@ -140,6 +149,7 @@ export function App() {
       await api.syncAccount(account.id);
       const snapshot = await api.getAccountSnapshot(account.id);
       setSelectedSnapshot(snapshot);
+      setSelectedAccountId(account.id);
       await loadDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sync account.");
@@ -152,10 +162,36 @@ export function App() {
     setBusyAction(`plan-${goal.id}`);
     setError(null);
     try {
-      await api.generateGoalPlan(goal.id);
+      const plan = await api.generateGoalPlan(goal.id);
+      setSelectedGoalPlan(plan);
       await loadDashboard();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to generate goal plan.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleCreateGoal() {
+    if (!newGoalTitle.trim()) {
+      return;
+    }
+    setBusyAction("create-goal");
+    setError(null);
+    try {
+      const goal = await api.createGoal({
+        title: newGoalTitle.trim(),
+        goal_type: newGoalType,
+        target_account_rsn: newGoalTargetRsn.trim() || null,
+      });
+      setNewGoalTitle("");
+      setNewGoalTargetRsn("");
+      const plan = await api.generateGoalPlan(goal.id);
+      setSelectedGoalPlan(plan);
+      await loadDashboard();
+      setActiveView("goals");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to create goal.");
     } finally {
       setBusyAction(null);
     }
@@ -190,6 +226,21 @@ export function App() {
       setError(
         err instanceof Error ? err.message : "Unable to load skill recommendations.",
       );
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleInspectAccount(account: Account) {
+    setBusyAction(`inspect-${account.id}`);
+    setError(null);
+    try {
+      const snapshot = await api.getAccountSnapshot(account.id);
+      setSelectedSnapshot(snapshot);
+      setSelectedAccountId(account.id);
+      setActiveView("dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No snapshot found for that account yet.");
     } finally {
       setBusyAction(null);
     }
@@ -256,11 +307,13 @@ export function App() {
                 goals={goals}
                 nextActions={nextActions}
                 onCreateAccount={handleCreateAccount}
+                onInspectAccount={handleInspectAccount}
                 onGeneratePlan={handleGeneratePlan}
                 onSyncAccount={handleSyncAccount}
                 profile={profile}
                 selectedSnapshot={selectedSnapshot}
                 newAccountRsn={newAccountRsn}
+                selectedAccountId={selectedAccountId}
                 setNewAccountRsn={setNewAccountRsn}
               />
             ) : null}
@@ -361,6 +414,38 @@ export function App() {
               <SectionCard
                 title="Goals"
                 subtitle="Active goals with one-click plan generation."
+                action={
+                  <div className="goal-form">
+                    <input
+                      className="text-input"
+                      value={newGoalTitle}
+                      onChange={(event) => setNewGoalTitle(event.target.value)}
+                      placeholder="Goal title"
+                    />
+                    <select
+                      className="select-input"
+                      value={newGoalType}
+                      onChange={(event) => setNewGoalType(event.target.value)}
+                    >
+                      <option value="quest cape">Quest Cape</option>
+                      <option value="barrows gloves">Barrows Gloves</option>
+                      <option value="fire cape">Fire Cape</option>
+                    </select>
+                    <input
+                      className="text-input"
+                      value={newGoalTargetRsn}
+                      onChange={(event) => setNewGoalTargetRsn(event.target.value)}
+                      placeholder="Target RSN (optional)"
+                    />
+                    <button
+                      className="primary-button"
+                      onClick={handleCreateGoal}
+                      type="button"
+                    >
+                      {busyAction === "create-goal" ? "Creating..." : "Create goal"}
+                    </button>
+                  </div>
+                }
               >
                 <div className="stack-list">
                   {goals.map((goal) => (
@@ -379,6 +464,33 @@ export function App() {
                     </div>
                   ))}
                 </div>
+                {selectedGoalPlan ? (
+                  <div className="plan-panel">
+                    <div className="plan-header">
+                      <div>
+                        <p className="section-label">Generated Plan</p>
+                        <h3>{selectedGoalPlan.summary}</h3>
+                      </div>
+                      <span className="pill">{selectedGoalPlan.status}</span>
+                    </div>
+                    <div className="plan-columns">
+                      <div className="detail-card">
+                        <h3>Steps</h3>
+                        <ol className="plan-list">
+                          {selectedGoalPlan.steps.map((step) => (
+                            <li key={step}>{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                      <div className="detail-card">
+                        <h3>Recommendation Snapshot</h3>
+                        <pre className="code-block">
+                          {JSON.stringify(selectedGoalPlan.recommendations, null, 2)}
+                        </pre>
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </SectionCard>
             ) : null}
 
@@ -408,11 +520,13 @@ function DashboardView(props: {
   goals: Goal[];
   nextActions: NextActionResponse | null;
   onCreateAccount: () => void;
+  onInspectAccount: (account: Account) => void;
   onGeneratePlan: (goal: Goal) => void;
   onSyncAccount: (account: Account) => void;
   profile: Profile | null;
   selectedSnapshot: AccountSnapshot | null;
   newAccountRsn: string;
+  selectedAccountId: number | null;
   setNewAccountRsn: (value: string) => void;
 }) {
   const {
@@ -421,11 +535,13 @@ function DashboardView(props: {
     goals,
     nextActions,
     onCreateAccount,
+    onInspectAccount,
     onGeneratePlan,
     onSyncAccount,
     profile,
     selectedSnapshot,
     newAccountRsn,
+    selectedAccountId,
     setNewAccountRsn,
   } = props;
 
@@ -458,15 +574,27 @@ function DashboardView(props: {
             <div className="list-row" key={account.id}>
               <div>
                 <strong>{account.rsn}</strong>
-                <p>{account.is_active ? "Active account" : "Inactive account"}</p>
+                <p>
+                  {account.is_active ? "Active account" : "Inactive account"}
+                  {selectedAccountId === account.id ? " | viewing snapshot" : ""}
+                </p>
               </div>
-              <button
-                className="ghost-button"
-                onClick={() => onSyncAccount(account)}
-                type="button"
-              >
-                {busyAction === `sync-${account.id}` ? "Syncing..." : "Sync"}
-              </button>
+              <div className="inline-actions">
+                <button
+                  className="ghost-button"
+                  onClick={() => onInspectAccount(account)}
+                  type="button"
+                >
+                  {busyAction === `inspect-${account.id}` ? "Opening..." : "View"}
+                </button>
+                <button
+                  className="ghost-button"
+                  onClick={() => onSyncAccount(account)}
+                  type="button"
+                >
+                  {busyAction === `sync-${account.id}` ? "Syncing..." : "Sync"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
