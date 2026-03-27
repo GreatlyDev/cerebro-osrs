@@ -36,5 +36,5 @@ uv run alembic upgrade head
 
 - Alembic is scaffolded and ready for initial revisions
 - Docker Compose can start PostgreSQL, Redis, and the backend service together
-- The API includes `accounts`, `profile`, `goals`, `skills`, `quests`, `gear`, and `teleports` modules for a usable gameplay-planning backend
+- The API includes `accounts`, `profile`, `goals`, `skills`, `quests`, `gear`, `teleports`, and `chat` modules for a usable gameplay-planning backend
 - Domain modules and business logic can now be added incrementally
