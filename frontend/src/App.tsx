@@ -473,6 +473,9 @@ export function App() {
                 }
               >
                 <div className="chat-preview">
+                  <div className="page-tip">
+                    Best for quick guidance questions like progression, quest choices, or what to do next on the selected account.
+                  </div>
                   <div>
                     <p className="section-label">Sessions</p>
                   <div className="chip-row">
@@ -540,6 +543,9 @@ export function App() {
                   />
                 }
               >
+                <div className="page-tip">
+                  Pick a skill to get methods tailored to the selected account and current profile preferences.
+                </div>
                 <div className="tile-grid">
                   {filteredSkills.map((skill) => (
                     <button
@@ -597,6 +603,9 @@ export function App() {
                   />
                 }
               >
+                <div className="page-tip">
+                  Browse for unlocks, then open details to see what the quest gives back and what it enables next.
+                </div>
                 <div className="stack-list">
                   {filteredQuests.map((quest) => (
                     <div className="list-row" key={quest.id}>
@@ -707,6 +716,9 @@ export function App() {
                   </div>
                 }
               >
+                <div className="page-tip">
+                  Goals are where the planner becomes more opinionated. Create one, then generate a plan to anchor the rest of the app.
+                </div>
                 <div className="stack-list">
                   {goals.map((goal) => (
                     <div className="list-row" key={goal.id}>
@@ -794,6 +806,9 @@ export function App() {
                   </div>
                 }
               >
+                <div className="page-tip">
+                  Tell Cerebro what style and budget you care about, then filter out owned gear so the upgrades stay relevant.
+                </div>
                 {gearRecommendations ? (
                   <div className="stack-list">
                     <p className="muted-copy">
@@ -858,6 +873,9 @@ export function App() {
                   </div>
                 }
               >
+                <div className="page-tip">
+                  Use this when movement friction is the blocker. The backend can already account for tracked unlocks and fallback routes.
+                </div>
                 {teleportRoute ? (
                   <div className="plan-panel">
                     <div className="detail-card">
@@ -908,6 +926,9 @@ export function App() {
                   </button>
                 }
               >
+                <div className="page-tip">
+                  These preferences influence recommendation tone and routing across the rest of the app, so this page acts like your planning baseline.
+                </div>
                 <div className="profile-grid">
                   <input
                     className="text-input"

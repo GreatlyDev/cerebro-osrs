@@ -323,6 +323,16 @@ input {
   padding: 18px;
 }
 
+.page-tip {
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(210, 168, 93, 0.12), rgba(255, 255, 255, 0.02));
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .empty-state strong {
   display: block;
   margin-bottom: 6px;
