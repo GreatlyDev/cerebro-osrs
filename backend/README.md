@@ -10,6 +10,7 @@ FastAPI backend scaffold for the `cerebro-osrs` monorepo.
 - `app/db/`: database base classes and session management
 - `app/models/`: SQLAlchemy models
 - `app/schemas/`: request and response schemas
+- `app/services/`: domain services and orchestration logic
 
 ## Environment
 
@@ -35,4 +36,5 @@ uv run alembic upgrade head
 
 - Alembic is scaffolded and ready for initial revisions
 - Docker Compose can start PostgreSQL, Redis, and the backend service together
+- The first domain module (`accounts`) is scaffolded with REST endpoints and placeholder service methods
 - Domain modules and business logic can now be added incrementally

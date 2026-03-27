@@ -1,0 +1,37 @@
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class AccountCreateRequest(BaseModel):
+    rsn: str = Field(min_length=1, max_length=12, description="Old School RuneScape username")
+
+    @field_validator("rsn")
+    @classmethod
+    def normalize_rsn(cls, value: str) -> str:
+        normalized = " ".join(value.strip().split())
+        if not normalized:
+            raise ValueError("RSN must not be blank.")
+        return normalized
+
+
+class AccountResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    rsn: str
+    is_active: bool
+    created_at: datetime
+    updated_at: datetime
+
+
+class AccountSyncResponse(BaseModel):
+    account_id: int
+    status: str
+    detail: str
+
+
+class AccountSnapshotResponse(BaseModel):
+    account_id: int
+    status: str
+    detail: str
