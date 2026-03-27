@@ -8,6 +8,7 @@ from app.schemas.account import (
     AccountCreateRequest,
     AccountListResponse,
     AccountResponse,
+    AccountSnapshotListResponse,
     AccountSnapshotResponse,
     AccountSyncResponse,
 )
@@ -128,4 +129,23 @@ async def get_account_snapshot(
         db_session=db_session,
         user=current_user,
         account_id=account_id,
+    )
+
+
+@router.get(
+    "/{account_id}/snapshots",
+    response_model=AccountSnapshotListResponse,
+    summary="List recent account snapshots",
+)
+async def list_account_snapshots(
+    account_id: int,
+    limit: int = 5,
+    db_session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> AccountSnapshotListResponse:
+    return await account_service.list_account_snapshots(
+        db_session=db_session,
+        user=current_user,
+        account_id=account_id,
+        limit=limit,
     )

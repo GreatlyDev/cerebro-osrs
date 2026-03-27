@@ -160,6 +160,37 @@ function emptyProgressDraft() {
   };
 }
 
+function buildSnapshotDelta(current: AccountSnapshot | null, previous: AccountSnapshot | null) {
+  if (!current || !previous) {
+    return null;
+  }
+
+  const overallLevelDelta = current.summary.overall_level - previous.summary.overall_level;
+  const combatLevelDelta =
+    (current.summary.combat_level ?? 0) - (previous.summary.combat_level ?? 0);
+  const currentSkills = new Map(
+    (current.summary.top_skills ?? []).map((skill) => [skill.skill, skill.level]),
+  );
+  const improvedSkills = (previous.summary.top_skills ?? [])
+    .map((skill) => ({
+      skill: skill.skill,
+      previousLevel: skill.level,
+      currentLevel: currentSkills.get(skill.skill),
+    }))
+    .filter((skill) => skill.currentLevel !== undefined && skill.currentLevel > skill.previousLevel);
+
+  return {
+    overallLevelDelta,
+    combatLevelDelta,
+    improvedSkills,
+    currentSyncAt: current.created_at,
+    previousSyncAt: previous.created_at,
+    newNinetyPlusCount:
+      (current.summary.progression_profile?.total_skills_at_90_plus ?? 0) -
+      (previous.summary.progression_profile?.total_skills_at_90_plus ?? 0),
+  };
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -170,6 +201,7 @@ export function App() {
   const [selectedGoalPlan, setSelectedGoalPlan] = useState<GoalPlanResponse | null>(null);
   const [nextActions, setNextActions] = useState<NextActionResponse | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<AccountSnapshot | null>(null);
+  const [selectedSnapshotHistory, setSelectedSnapshotHistory] = useState<AccountSnapshot[]>([]);
   const [selectedProgress, setSelectedProgress] = useState<AccountProgress | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(() => {
     if (typeof window === "undefined") {
@@ -336,11 +368,13 @@ export function App() {
         const latestAccount =
           accountsResponse.items.find((account) => account.id === selectedAccountId) ??
           accountsResponse.items[accountsResponse.items.length - 1];
-        const [latestSnapshot, latestProgress] = await Promise.all([
+        const [latestSnapshot, latestProgress, latestHistory] = await Promise.all([
           api.getAccountSnapshot(latestAccount.id).catch(() => null),
           api.getAccountProgress(latestAccount.id).catch(() => null),
+          api.listAccountSnapshots(latestAccount.id, 2).then((response) => response.items).catch(() => []),
         ]);
         setSelectedSnapshot(latestSnapshot);
+        setSelectedSnapshotHistory(latestHistory);
         setSelectedProgress(latestProgress);
         setProgressDraft({
           completed_quests: formatListDraft(latestProgress?.completed_quests ?? []),
@@ -351,6 +385,7 @@ export function App() {
         setSelectedAccountId(latestAccount.id);
       } else {
         setSelectedSnapshot(null);
+        setSelectedSnapshotHistory([]);
         setSelectedProgress(null);
         setSelectedAccountId(null);
         setProgressDraft(emptyProgressDraft());
@@ -395,6 +430,7 @@ export function App() {
     setNextActions(null);
     setSelectedGoalPlan(null);
     setSelectedSnapshot(null);
+    setSelectedSnapshotHistory([]);
     setSelectedProgress(null);
     setSelectedAccountId(null);
     setChatSessions([]);
@@ -475,11 +511,13 @@ export function App() {
     setError(null);
     try {
       await api.syncAccount(account.id);
-      const [snapshot, progress] = await Promise.all([
+      const [snapshot, progress, history] = await Promise.all([
         api.getAccountSnapshot(account.id),
         api.getAccountProgress(account.id).catch(() => null),
+        api.listAccountSnapshots(account.id, 2).then((response) => response.items).catch(() => []),
       ]);
       setSelectedSnapshot(snapshot);
+      setSelectedSnapshotHistory(history);
       setSelectedProgress(progress);
       setProgressDraft({
         completed_quests: formatListDraft(progress?.completed_quests ?? []),
@@ -608,11 +646,13 @@ export function App() {
     setBusyAction(`inspect-${account.id}`);
     setError(null);
     try {
-      const [snapshot, progress] = await Promise.all([
+      const [snapshot, progress, history] = await Promise.all([
         api.getAccountSnapshot(account.id),
         api.getAccountProgress(account.id).catch(() => null),
+        api.listAccountSnapshots(account.id, 2).then((response) => response.items).catch(() => []),
       ]);
       setSelectedSnapshot(snapshot);
+      setSelectedSnapshotHistory(history);
       setSelectedProgress(progress);
       setProgressDraft({
         completed_quests: formatListDraft(progress?.completed_quests ?? []),
@@ -745,6 +785,10 @@ export function App() {
   const selectedAccount =
     accounts.find((account) => account.id === selectedAccountId) ?? accounts[0] ?? null;
   const selectedAccountRsn = selectedAccount?.rsn ?? null;
+  const snapshotDelta = buildSnapshotDelta(
+    selectedSnapshotHistory[0] ?? selectedSnapshot,
+    selectedSnapshotHistory[1] ?? null,
+  );
   const workspaceChecklist = buildWorkspaceChecklist(profile, accounts, goals);
   const workspaceProgress = workspaceChecklist.filter((item) => item.done).length;
 
@@ -759,6 +803,7 @@ export function App() {
 
     if (accountId === null) {
       setSelectedSnapshot(null);
+      setSelectedSnapshotHistory([]);
       setSelectedProgress(null);
       setProgressDraft(emptyProgressDraft());
       return;
@@ -910,6 +955,8 @@ export function App() {
                 progressDraft={progressDraft}
                 selectedAccount={selectedAccount}
                 selectedProgress={selectedProgress}
+                selectedSnapshotDelta={snapshotDelta}
+                selectedSnapshotHistory={selectedSnapshotHistory}
                 selectedSnapshot={selectedSnapshot}
                 newAccountRsn={newAccountRsn}
                 selectedAccountId={selectedAccountId}
@@ -1574,6 +1621,15 @@ function DashboardView(props: {
   };
   selectedAccount: Account | null;
   selectedProgress: AccountProgress | null;
+  selectedSnapshotDelta: {
+    overallLevelDelta: number;
+    combatLevelDelta: number;
+    improvedSkills: Array<{ skill: string; previousLevel: number; currentLevel: number | undefined }>;
+    currentSyncAt: string;
+    previousSyncAt: string;
+    newNinetyPlusCount: number;
+  } | null;
+  selectedSnapshotHistory: AccountSnapshot[];
   selectedSnapshot: AccountSnapshot | null;
   newAccountRsn: string;
   selectedAccountId: number | null;
@@ -1609,6 +1665,8 @@ function DashboardView(props: {
     progressDraft,
     selectedAccount,
     selectedProgress,
+    selectedSnapshotDelta,
+    selectedSnapshotHistory,
     selectedSnapshot,
     newAccountRsn,
     selectedAccountId,
@@ -1927,6 +1985,97 @@ function DashboardView(props: {
           <EmptyState
             title="No snapshot loaded"
             body="Pick an account and run a sync to see combat level, top skills, and activity signals."
+          />
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Since Last Sync"
+        subtitle="A quick read on what changed between the two most recent snapshots."
+      >
+        {selectedSnapshotDelta ? (
+          <div className="snapshot-change-grid">
+            <Metric
+              label="Overall Delta"
+              value={selectedSnapshotDelta.overallLevelDelta >= 0
+                ? `+${selectedSnapshotDelta.overallLevelDelta}`
+                : selectedSnapshotDelta.overallLevelDelta}
+            />
+            <Metric
+              label="Combat Delta"
+              value={selectedSnapshotDelta.combatLevelDelta >= 0
+                ? `+${selectedSnapshotDelta.combatLevelDelta}`
+                : selectedSnapshotDelta.combatLevelDelta}
+            />
+            <Metric
+              label="Skills Improved"
+              value={selectedSnapshotDelta.improvedSkills.length}
+            />
+            <Metric
+              label="New 90+ Skills"
+              value={selectedSnapshotDelta.newNinetyPlusCount >= 0
+                ? `+${selectedSnapshotDelta.newNinetyPlusCount}`
+                : selectedSnapshotDelta.newNinetyPlusCount}
+            />
+            <div className="detail-card">
+              <h3>Sync window</h3>
+              <strong>{formatTimestamp(selectedSnapshotDelta.currentSyncAt)}</strong>
+              <p className="muted-copy">
+                Compared against {formatTimestamp(selectedSnapshotDelta.previousSyncAt)}
+              </p>
+            </div>
+            <div className="detail-card">
+              <h3>Momentum read</h3>
+              <strong>
+                {selectedSnapshotDelta.improvedSkills.length > 0 || selectedSnapshotDelta.overallLevelDelta > 0
+                  ? "Progress detected"
+                  : "Little visible movement"}
+              </strong>
+              <p className="muted-copy">
+                {selectedSnapshotDelta.improvedSkills.length > 0
+                  ? "The account is moving forward between syncs instead of sitting on the same profile."
+                  : "Try syncing again after a play session to give Cerebro real momentum to work with."}
+              </p>
+            </div>
+            <div className="detail-card wide-card">
+              <h3>Improved tracked skills</h3>
+              {selectedSnapshotDelta.improvedSkills.length > 0 ? (
+                <div className="chip-row">
+                  {selectedSnapshotDelta.improvedSkills.map((skill) => (
+                    <span className="chip" key={skill.skill}>
+                      {skill.skill} {skill.previousLevel}{"->"}{skill.currentLevel}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="muted-copy">
+                  No top-skill movement was visible between the most recent two snapshots.
+                </p>
+              )}
+            </div>
+            {selectedSnapshotHistory.length > 0 ? (
+              <div className="detail-card wide-card">
+                <h3>Recent sync timeline</h3>
+                <div className="stack-list">
+                  {selectedSnapshotHistory.map((snapshot, index) => (
+                    <div className="list-row" key={snapshot.id}>
+                      <div>
+                        <strong>{index === 0 ? "Latest" : "Previous"} | {formatTimestamp(snapshot.created_at)}</strong>
+                        <p>
+                          Overall {snapshot.summary.overall_level} | Combat {snapshot.summary.combat_level ?? "n/a"}
+                        </p>
+                      </div>
+                      <span className="pill">{snapshot.sync_status}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <EmptyState
+            title="Not enough sync history yet"
+            body="Run at least two syncs on the selected account and Cerebro will show what changed between them."
           />
         )}
       </SectionCard>

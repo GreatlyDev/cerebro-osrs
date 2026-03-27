@@ -103,3 +103,19 @@ async def test_get_latest_account_snapshot(client: AsyncClient) -> None:
     assert response.json()["summary"]["combat_level"] == 126
     assert response.json()["summary"]["top_skills"][0]["skill"] == "magic"
     assert response.json()["summary"]["activity_overview"]["tracked_activity_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_list_recent_account_snapshots_returns_latest_first(client: AsyncClient) -> None:
+    create_response = await client.post("/api/accounts", json={"rsn": "Historycape"})
+    account_id = create_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(f"/api/accounts/{account_id}/sync")
+
+    response = await client.get(f"/api/accounts/{account_id}/snapshots?limit=2")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["total"] == 2
+    assert len(payload["items"]) == 2
+    assert payload["items"][0]["id"] > payload["items"][1]["id"]

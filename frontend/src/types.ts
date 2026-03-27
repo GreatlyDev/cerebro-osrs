@@ -53,6 +53,11 @@ export type AccountSnapshot = {
   };
 };
 
+export type AccountSnapshotListResponse = {
+  items: AccountSnapshot[];
+  total: number;
+};
+
 export type AccountProgress = {
   id: number;
   account_id: number;

@@ -3,6 +3,7 @@ import type {
   AccountProgress,
   AccountProgressUpdate,
   AccountSnapshot,
+  AccountSnapshotListResponse,
   AuthSession,
   AuthUser,
   ChatReply,
@@ -100,6 +101,8 @@ export const api = {
     ),
   getAccountSnapshot: (accountId: number) =>
     request<AccountSnapshot>(`/accounts/${accountId}/snapshot`),
+  listAccountSnapshots: (accountId: number, limit = 5) =>
+    request<AccountSnapshotListResponse>(`/accounts/${accountId}/snapshots?limit=${limit}`),
   getAccountProgress: (accountId: number) =>
     request<AccountProgress>(`/accounts/${accountId}/progress`),
   updateAccountProgress: (accountId: number, payload: AccountProgressUpdate) =>

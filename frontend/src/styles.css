@@ -385,6 +385,12 @@ textarea {
   gap: 12px;
 }
 
+.snapshot-change-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .account-workspace-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -650,6 +656,7 @@ textarea {
 
   .hero-stats,
   .snapshot-grid,
+  .snapshot-change-grid,
   .account-workspace-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -682,6 +689,10 @@ textarea {
   }
 
   .account-workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .snapshot-change-grid {
     grid-template-columns: 1fr;
   }
 }

@@ -47,3 +47,8 @@ class AccountSnapshotResponse(BaseModel):
     sync_status: str
     summary: dict[str, Any]
     created_at: datetime
+
+
+class AccountSnapshotListResponse(BaseModel):
+    items: list[AccountSnapshotResponse]
+    total: int

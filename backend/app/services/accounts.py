@@ -17,6 +17,7 @@ from app.schemas.account import (
     AccountCreateRequest,
     AccountListResponse,
     AccountResponse,
+    AccountSnapshotListResponse,
     AccountSnapshotResponse,
     AccountSyncResponse,
 )
@@ -201,6 +202,31 @@ class AccountService:
             )
 
         return AccountSnapshotResponse.model_validate(snapshot)
+
+    async def list_account_snapshots(
+        self,
+        db_session: AsyncSession,
+        user: User,
+        account_id: int,
+        limit: int = 5,
+    ) -> AccountSnapshotListResponse:
+        await self._get_account_or_404(db_session=db_session, user=user, account_id=account_id)
+
+        snapshots = list(
+            (
+                await db_session.scalars(
+                    select(AccountSnapshot)
+                    .where(AccountSnapshot.account_id == account_id)
+                    .order_by(desc(AccountSnapshot.created_at), desc(AccountSnapshot.id))
+                    .limit(limit)
+                )
+            ).all()
+        )
+
+        return AccountSnapshotListResponse(
+            items=[AccountSnapshotResponse.model_validate(snapshot) for snapshot in snapshots],
+            total=len(snapshots),
+        )
 
 
 account_service = AccountService()
