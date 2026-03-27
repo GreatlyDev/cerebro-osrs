@@ -53,6 +53,24 @@ export type AccountSnapshot = {
   };
 };
 
+export type AccountProgress = {
+  id: number;
+  account_id: number;
+  completed_quests: string[];
+  unlocked_transports: string[];
+  owned_gear: string[];
+  active_unlocks: string[];
+  created_at: string;
+  updated_at: string;
+};
+
+export type AccountProgressUpdate = {
+  completed_quests: string[];
+  unlocked_transports: string[];
+  owned_gear: string[];
+  active_unlocks: string[];
+};
+
 export type Goal = {
   id: number;
   title: string;

@@ -1,5 +1,7 @@
 import type {
   Account,
+  AccountProgress,
+  AccountProgressUpdate,
   AccountSnapshot,
   AuthSession,
   AuthUser,
@@ -98,6 +100,13 @@ export const api = {
     ),
   getAccountSnapshot: (accountId: number) =>
     request<AccountSnapshot>(`/accounts/${accountId}/snapshot`),
+  getAccountProgress: (accountId: number) =>
+    request<AccountProgress>(`/accounts/${accountId}/progress`),
+  updateAccountProgress: (accountId: number, payload: AccountProgressUpdate) =>
+    request<AccountProgress>(`/accounts/${accountId}/progress`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   listGoals: () => request<{ items: Goal[]; total: number }>("/goals"),
   createGoal: (payload: {
     title: string;

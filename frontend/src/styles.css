@@ -28,7 +28,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -280,7 +281,8 @@ input {
 }
 
 .text-input,
-.select-input {
+.select-input,
+.text-area {
   min-width: 180px;
   border-radius: 12px;
   border: 1px solid var(--border);
@@ -291,6 +293,13 @@ input {
 
 .select-input {
   appearance: none;
+}
+
+.text-area {
+  width: 100%;
+  min-height: 136px;
+  resize: vertical;
+  line-height: 1.5;
 }
 
 .primary-button,
@@ -371,6 +380,12 @@ input {
 }
 
 .snapshot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.account-workspace-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
@@ -630,7 +645,8 @@ input {
   }
 
   .hero-stats,
-  .snapshot-grid {
+  .snapshot-grid,
+  .account-workspace-grid {
     grid-template-columns: 1fr 1fr;
   }
 
@@ -658,6 +674,10 @@ input {
   }
 
   .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .account-workspace-grid {
     grid-template-columns: 1fr;
   }
 }

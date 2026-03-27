@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -6,6 +6,7 @@ import { api } from "./api";
 import { storeSessionToken } from "./api";
 import type {
   Account,
+  AccountProgress,
   AccountSnapshot,
   AuthUser,
   ChatExchange,
@@ -122,6 +123,17 @@ function getSuggestedGoalTitle(goalType: string, accountRsn: string | null): str
   return `${prefix}Quest Cape Plan`.trim();
 }
 
+function formatListDraft(value: string[]): string {
+  return value.join("\n");
+}
+
+function parseListDraft(value: string): string[] {
+  return value
+    .split(/\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -132,6 +144,7 @@ export function App() {
   const [selectedGoalPlan, setSelectedGoalPlan] = useState<GoalPlanResponse | null>(null);
   const [nextActions, setNextActions] = useState<NextActionResponse | null>(null);
   const [selectedSnapshot, setSelectedSnapshot] = useState<AccountSnapshot | null>(null);
+  const [selectedProgress, setSelectedProgress] = useState<AccountProgress | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -162,6 +175,12 @@ export function App() {
   const [gearCurrentItems, setGearCurrentItems] = useState("");
   const [teleportDestination, setTeleportDestination] = useState("fossil island");
   const [teleportPreference, setTeleportPreference] = useState("balanced");
+  const [progressDraft, setProgressDraft] = useState({
+    completed_quests: "",
+    unlocked_transports: "",
+    owned_gear: "",
+    active_unlocks: "",
+  });
   const [profileDraft, setProfileDraft] = useState({
     display_name: "",
     primary_account_rsn: "",
@@ -293,14 +312,29 @@ export function App() {
         const latestAccount =
           accountsResponse.items.find((account) => account.id === selectedAccountId) ??
           accountsResponse.items[accountsResponse.items.length - 1];
-        const latestSnapshot = await api
-          .getAccountSnapshot(latestAccount.id)
-          .catch(() => null);
+        const [latestSnapshot, latestProgress] = await Promise.all([
+          api.getAccountSnapshot(latestAccount.id).catch(() => null),
+          api.getAccountProgress(latestAccount.id).catch(() => null),
+        ]);
         setSelectedSnapshot(latestSnapshot);
+        setSelectedProgress(latestProgress);
+        setProgressDraft({
+          completed_quests: formatListDraft(latestProgress?.completed_quests ?? []),
+          unlocked_transports: formatListDraft(latestProgress?.unlocked_transports ?? []),
+          owned_gear: formatListDraft(latestProgress?.owned_gear ?? []),
+          active_unlocks: formatListDraft(latestProgress?.active_unlocks ?? []),
+        });
         setSelectedAccountId(latestAccount.id);
       } else {
         setSelectedSnapshot(null);
+        setSelectedProgress(null);
         setSelectedAccountId(null);
+        setProgressDraft({
+          completed_quests: "",
+          unlocked_transports: "",
+          owned_gear: "",
+          active_unlocks: "",
+        });
       }
     } catch (err) {
       setBackendStatus("offline");
@@ -340,10 +374,17 @@ export function App() {
     setNextActions(null);
     setSelectedGoalPlan(null);
     setSelectedSnapshot(null);
+    setSelectedProgress(null);
     setSelectedAccountId(null);
     setChatSessions([]);
     setChatHistory([]);
     setChatReply("");
+    setProgressDraft({
+      completed_quests: "",
+      unlocked_transports: "",
+      owned_gear: "",
+      active_unlocks: "",
+    });
     setError(null);
   }
 
@@ -418,8 +459,18 @@ export function App() {
     setError(null);
     try {
       await api.syncAccount(account.id);
-      const snapshot = await api.getAccountSnapshot(account.id);
+      const [snapshot, progress] = await Promise.all([
+        api.getAccountSnapshot(account.id),
+        api.getAccountProgress(account.id).catch(() => null),
+      ]);
       setSelectedSnapshot(snapshot);
+      setSelectedProgress(progress);
+      setProgressDraft({
+        completed_quests: formatListDraft(progress?.completed_quests ?? []),
+        unlocked_transports: formatListDraft(progress?.unlocked_transports ?? []),
+        owned_gear: formatListDraft(progress?.owned_gear ?? []),
+        active_unlocks: formatListDraft(progress?.active_unlocks ?? []),
+      });
       setSelectedAccountId(account.id);
       await loadDashboard();
     } catch (err) {
@@ -541,8 +592,18 @@ export function App() {
     setBusyAction(`inspect-${account.id}`);
     setError(null);
     try {
-      const snapshot = await api.getAccountSnapshot(account.id);
+      const [snapshot, progress] = await Promise.all([
+        api.getAccountSnapshot(account.id),
+        api.getAccountProgress(account.id).catch(() => null),
+      ]);
       setSelectedSnapshot(snapshot);
+      setSelectedProgress(progress);
+      setProgressDraft({
+        completed_quests: formatListDraft(progress?.completed_quests ?? []),
+        unlocked_transports: formatListDraft(progress?.unlocked_transports ?? []),
+        owned_gear: formatListDraft(progress?.owned_gear ?? []),
+        active_unlocks: formatListDraft(progress?.active_unlocks ?? []),
+      });
       setSelectedAccountId(account.id);
       navigateToView("dashboard");
     } catch (err) {
@@ -627,6 +688,35 @@ export function App() {
     }
   }
 
+  async function handleSaveAccountProgress() {
+    if (!selectedAccount) {
+      return;
+    }
+
+    setBusyAction("account-progress");
+    setError(null);
+    try {
+      const updated = await api.updateAccountProgress(selectedAccount.id, {
+        completed_quests: parseListDraft(progressDraft.completed_quests),
+        unlocked_transports: parseListDraft(progressDraft.unlocked_transports),
+        owned_gear: parseListDraft(progressDraft.owned_gear),
+        active_unlocks: parseListDraft(progressDraft.active_unlocks),
+      });
+      setSelectedProgress(updated);
+      setProgressDraft({
+        completed_quests: formatListDraft(updated.completed_quests),
+        unlocked_transports: formatListDraft(updated.unlocked_transports),
+        owned_gear: formatListDraft(updated.owned_gear),
+        active_unlocks: formatListDraft(updated.active_unlocks),
+      });
+      await loadDashboard();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to save account progress.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
   const filteredSkills = skills.filter((skill) =>
     `${skill.label} ${skill.category}`.toLowerCase().includes(skillSearch.trim().toLowerCase()),
   );
@@ -653,6 +743,13 @@ export function App() {
 
     if (accountId === null) {
       setSelectedSnapshot(null);
+      setSelectedProgress(null);
+      setProgressDraft({
+        completed_quests: "",
+        unlocked_transports: "",
+        owned_gear: "",
+        active_unlocks: "",
+      });
       return;
     }
 
@@ -793,12 +890,17 @@ export function App() {
                 onQuickstartAccount={handleQuickstartAccount}
                 onQuickstartGoal={handleQuickstartGoal}
                 onGeneratePlan={handleGeneratePlan}
+                onSaveAccountProgress={handleSaveAccountProgress}
                 onSetPrimaryAccount={handleSetPrimaryAccount}
                 onSyncAccount={handleSyncAccount}
                 profile={profile}
+                progressDraft={progressDraft}
+                selectedAccount={selectedAccount}
+                selectedProgress={selectedProgress}
                 selectedSnapshot={selectedSnapshot}
                 newAccountRsn={newAccountRsn}
                 selectedAccountId={selectedAccountId}
+                setProgressDraft={setProgressDraft}
                 setNewAccountRsn={setNewAccountRsn}
                 workspaceChecklist={workspaceChecklist}
                 workspaceProgress={workspaceProgress}
@@ -1447,12 +1549,29 @@ function DashboardView(props: {
   onQuickstartAccount: () => void;
   onQuickstartGoal: () => void;
   onGeneratePlan: (goal: Goal) => void;
+  onSaveAccountProgress: () => void;
   onSetPrimaryAccount: (account: Account) => void;
   onSyncAccount: (account: Account) => void;
   profile: Profile | null;
+  progressDraft: {
+    completed_quests: string;
+    unlocked_transports: string;
+    owned_gear: string;
+    active_unlocks: string;
+  };
+  selectedAccount: Account | null;
+  selectedProgress: AccountProgress | null;
   selectedSnapshot: AccountSnapshot | null;
   newAccountRsn: string;
   selectedAccountId: number | null;
+  setProgressDraft: Dispatch<
+    SetStateAction<{
+      completed_quests: string;
+      unlocked_transports: string;
+      owned_gear: string;
+      active_unlocks: string;
+    }>
+  >;
   setNewAccountRsn: (value: string) => void;
   workspaceChecklist: Array<{ title: string; done: boolean; detail: string }>;
   workspaceProgress: number;
@@ -1470,12 +1589,17 @@ function DashboardView(props: {
     onQuickstartAccount,
     onQuickstartGoal,
     onGeneratePlan,
+    onSaveAccountProgress,
     onSetPrimaryAccount,
     onSyncAccount,
     profile,
+    progressDraft,
+    selectedAccount,
+    selectedProgress,
     selectedSnapshot,
     newAccountRsn,
     selectedAccountId,
+    setProgressDraft,
     setNewAccountRsn,
     workspaceChecklist,
     workspaceProgress,
@@ -1790,6 +1914,134 @@ function DashboardView(props: {
           <EmptyState
             title="No snapshot loaded"
             body="Pick an account and run a sync to see combat level, top skills, and activity signals."
+          />
+        )}
+      </SectionCard>
+
+      <SectionCard
+        title="Account Workspace"
+        subtitle={
+          selectedAccount
+            ? `Track quest progress, travel unlocks, and owned gear for ${selectedAccount.rsn}.`
+            : "Pick an account to track the manual context hiscores cannot tell us."
+        }
+      >
+        {selectedAccount ? (
+          <div className="account-workspace-grid">
+            <div className="detail-card">
+              <h3>Workspace status</h3>
+              <strong>{selectedAccount.rsn}</strong>
+              <p className="muted-copy">
+                {profile?.primary_account_rsn === selectedAccount.rsn ? "Primary account" : "Linked account"}
+                {" | "}
+                {selectedSnapshot ? `Last sync ${formatTimestamp(selectedSnapshot.created_at)}` : "No sync yet"}
+              </p>
+              <div className="chip-row">
+                <span className="chip">
+                  {selectedProgress?.completed_quests.length ?? 0} quests tracked
+                </span>
+                <span className="chip">
+                  {selectedProgress?.unlocked_transports.length ?? 0} transports
+                </span>
+                <span className="chip">
+                  {selectedProgress?.owned_gear.length ?? 0} gear notes
+                </span>
+                <span className="chip">
+                  {selectedProgress?.active_unlocks.length ?? 0} unlock chains
+                </span>
+              </div>
+            </div>
+
+            <div className="detail-card">
+              <h3>Completed quests</h3>
+              <p className="muted-copy">
+                One per line. Use this to stop the planner from treating finished quest unlocks as missing.
+              </p>
+              <textarea
+                className="text-area"
+                value={progressDraft.completed_quests}
+                onChange={(event) =>
+                  setProgressDraft((current) => ({
+                    ...current,
+                    completed_quests: event.target.value,
+                  }))
+                }
+                placeholder={"bone voyage\nwaterfall quest"}
+              />
+            </div>
+
+            <div className="detail-card">
+              <h3>Unlocked transports</h3>
+              <p className="muted-copy">
+                Travel systems like digsite pendant, fairy rings, or museum kudos-based routes belong here.
+              </p>
+              <textarea
+                className="text-area"
+                value={progressDraft.unlocked_transports}
+                onChange={(event) =>
+                  setProgressDraft((current) => ({
+                    ...current,
+                    unlocked_transports: event.target.value,
+                  }))
+                }
+                placeholder={"digsite pendant\n100 museum kudos"}
+              />
+            </div>
+
+            <div className="detail-card">
+              <h3>Owned gear</h3>
+              <p className="muted-copy">
+                Keep upgrade suggestions honest by listing the pieces this account already owns.
+              </p>
+              <textarea
+                className="text-area"
+                value={progressDraft.owned_gear}
+                onChange={(event) =>
+                  setProgressDraft((current) => ({
+                    ...current,
+                    owned_gear: event.target.value,
+                  }))
+                }
+                placeholder={"ahrim's robes\ntoxic trident"}
+              />
+            </div>
+
+            <div className="detail-card">
+              <h3>Active unlock chains</h3>
+              <p className="muted-copy">
+                Capture the account's current push so recommendations can respect momentum instead of starting cold.
+              </p>
+              <textarea
+                className="text-area"
+                value={progressDraft.active_unlocks}
+                onChange={(event) =>
+                  setProgressDraft((current) => ({
+                    ...current,
+                    active_unlocks: event.target.value,
+                  }))
+                }
+                placeholder={"quest cape\nbarrows gloves"}
+              />
+            </div>
+
+            <div className="detail-card wide-card">
+              <div className="section-split">
+                <div>
+                  <h3>Save planning context</h3>
+                  <p className="muted-copy">
+                    This is the human layer on top of hiscores: the unlocks, completions, and gear state Cerebro should remember.
+                  </p>
+                </div>
+                <button className="primary-button" onClick={onSaveAccountProgress} type="button">
+                  {busyAction === "account-progress" ? "Saving..." : "Save account workspace"}
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <EmptyState
+            title="No account selected"
+            body="Choose one of your linked RSNs from the sidebar or account bay, then use this workspace to track quests, transports, gear, and progression chains."
           />
         )}
       </SectionCard>
