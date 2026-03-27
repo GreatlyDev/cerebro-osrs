@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     postgres_db: str = "cerebro"
     postgres_host: str = "localhost"
     postgres_port: int = 5432
+    osrs_hiscores_base_url: str = (
+        "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws"
+    )
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

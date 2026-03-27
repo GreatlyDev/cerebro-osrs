@@ -1,13 +1,19 @@
 from datetime import UTC, datetime
 
+import httpx
 from fastapi import HTTPException, status
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.integrations.osrs_hiscores import (
+    OSRSHiscoresNotFoundError,
+    osrs_hiscores_client,
+)
 from app.models.account import Account
 from app.models.account_snapshot import AccountSnapshot
 from app.schemas.account import (
     AccountCreateRequest,
+    AccountListResponse,
     AccountResponse,
     AccountSnapshotResponse,
     AccountSyncResponse,
@@ -15,6 +21,9 @@ from app.schemas.account import (
 
 
 class AccountService:
+    def __init__(self) -> None:
+        self.hiscores_client = osrs_hiscores_client
+
     async def _get_account_or_404(
         self,
         db_session: AsyncSession,
@@ -27,6 +36,24 @@ class AccountService:
                 detail="Account not found.",
             )
         return account
+
+    async def list_accounts(
+        self,
+        db_session: AsyncSession,
+    ) -> AccountListResponse:
+        accounts = list((await db_session.scalars(select(Account).order_by(Account.id))).all())
+        return AccountListResponse(
+            items=[AccountResponse.model_validate(account) for account in accounts],
+            total=len(accounts),
+        )
+
+    async def get_account(
+        self,
+        db_session: AsyncSession,
+        account_id: int,
+    ) -> AccountResponse:
+        account = await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        return AccountResponse.model_validate(account)
 
     async def create_account(
         self,
@@ -56,15 +83,24 @@ class AccountService:
     ) -> AccountSyncResponse:
         account = await self._get_account_or_404(db_session=db_session, account_id=account_id)
 
+        try:
+            summary = await self.hiscores_client.fetch_account_summary(account.rsn)
+        except OSRSHiscoresNotFoundError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"OSRS hiscores entry not found for '{account.rsn}'.",
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Unable to reach OSRS hiscores right now.",
+            ) from exc
+
         snapshot = AccountSnapshot(
             account_id=account.id,
-            source="manual",
+            source="osrs_hiscores",
             sync_status="completed",
-            summary={
-                "synced_at": datetime.now(UTC).isoformat(),
-                "rsn": account.rsn,
-                "message": "Initial account sync completed.",
-            },
+            summary={**summary, "synced_at": datetime.now(UTC).isoformat()},
         )
         db_session.add(snapshot)
         await db_session.commit()
@@ -73,7 +109,7 @@ class AccountService:
         return AccountSyncResponse(
             account_id=account.id,
             status="accepted",
-            detail="Account sync completed and snapshot stored.",
+            detail="Account sync completed from OSRS hiscores and snapshot stored.",
             snapshot_id=snapshot.id,
         )
 

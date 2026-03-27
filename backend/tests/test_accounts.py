@@ -1,6 +1,32 @@
 import pytest
 from httpx import AsyncClient
 
+from app.services.accounts import account_service
+
+
+@pytest.fixture(autouse=True)
+def reset_hiscores_client(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_fetch_account_summary(rsn: str) -> dict[str, object]:
+        return {
+            "rsn": rsn,
+            "overall_rank": 123,
+            "overall_level": 2277,
+            "overall_experience": 4_600_000_000,
+            "skills": {
+                "overall": {
+                    "rank": 123,
+                    "level": 2277,
+                    "experience": 4_600_000_000,
+                }
+            },
+        }
+
+    monkeypatch.setattr(
+        account_service.hiscores_client,
+        "fetch_account_summary",
+        fake_fetch_account_summary,
+    )
+
 
 @pytest.mark.asyncio
 async def test_create_account_persists_record(client: AsyncClient) -> None:
@@ -30,6 +56,30 @@ async def test_create_account_normalizes_whitespace(client: AsyncClient) -> None
 
 
 @pytest.mark.asyncio
+async def test_list_accounts_returns_created_accounts(client: AsyncClient) -> None:
+    await client.post("/api/accounts", json={"rsn": "Zezima"})
+    await client.post("/api/accounts", json={"rsn": "B0aty"})
+
+    response = await client.get("/api/accounts")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 2
+    assert [item["rsn"] for item in response.json()["items"]] == ["Zezima", "B0aty"]
+
+
+@pytest.mark.asyncio
+async def test_get_account_returns_single_account(client: AsyncClient) -> None:
+    create_response = await client.post("/api/accounts", json={"rsn": "Settled"})
+    account_id = create_response.json()["id"]
+
+    response = await client.get(f"/api/accounts/{account_id}")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == account_id
+    assert response.json()["rsn"] == "Settled"
+
+
+@pytest.mark.asyncio
 async def test_sync_account_creates_snapshot(client: AsyncClient) -> None:
     create_response = await client.post("/api/accounts", json={"rsn": "Mudkip"})
     account_id = create_response.json()["id"]
@@ -39,6 +89,7 @@ async def test_sync_account_creates_snapshot(client: AsyncClient) -> None:
     assert response.status_code == 202
     assert response.json()["account_id"] == account_id
     assert response.json()["snapshot_id"] > 0
+    assert response.json()["detail"] == "Account sync completed from OSRS hiscores and snapshot stored."
 
 
 @pytest.mark.asyncio
@@ -52,3 +103,4 @@ async def test_get_latest_account_snapshot(client: AsyncClient) -> None:
     assert response.status_code == 200
     assert response.json()["account_id"] == account_id
     assert response.json()["summary"]["rsn"] == "Boaty"
+    assert response.json()["source"] == "osrs_hiscores"

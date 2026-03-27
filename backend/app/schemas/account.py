@@ -26,6 +26,11 @@ class AccountResponse(BaseModel):
     updated_at: datetime
 
 
+class AccountListResponse(BaseModel):
+    items: list[AccountResponse]
+    total: int
+
+
 class AccountSyncResponse(BaseModel):
     account_id: int
     status: str

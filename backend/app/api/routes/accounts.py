@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db_session
 from app.schemas.account import (
     AccountCreateRequest,
+    AccountListResponse,
     AccountResponse,
     AccountSnapshotResponse,
     AccountSyncResponse,
@@ -11,6 +12,13 @@ from app.schemas.account import (
 from app.services.accounts import account_service
 
 router = APIRouter()
+
+
+@router.get("", response_model=AccountListResponse, summary="List OSRS accounts")
+async def list_accounts(
+    db_session: AsyncSession = Depends(get_db_session),
+) -> AccountListResponse:
+    return await account_service.list_accounts(db_session=db_session)
 
 
 @router.post(
@@ -24,6 +32,18 @@ async def create_account(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> AccountResponse:
     return await account_service.create_account(db_session=db_session, payload=payload)
+
+
+@router.get(
+    "/{account_id}",
+    response_model=AccountResponse,
+    summary="Get an OSRS account",
+)
+async def get_account(
+    account_id: int,
+    db_session: AsyncSession = Depends(get_db_session),
+) -> AccountResponse:
+    return await account_service.get_account(db_session=db_session, account_id=account_id)
 
 
 @router.post(
