@@ -69,6 +69,15 @@ export type Profile = {
   updated_at: string;
 };
 
+export type ProfileUpdate = {
+  display_name?: string | null;
+  primary_account_rsn?: string | null;
+  play_style?: string | null;
+  goals_focus?: string | null;
+  prefers_afk_methods?: boolean | null;
+  prefers_profitable_methods?: boolean | null;
+};
+
 export type NextAction = {
   action_type: string;
   title: string;
@@ -112,6 +121,12 @@ export type ChatReply = {
   };
 };
 
+export type ChatExchange = {
+  prompt: string;
+  reply: string;
+  sessionId: number;
+};
+
 export type SkillCatalogItem = {
   key: string;
   label: string;
@@ -142,4 +157,53 @@ export type QuestSummary = {
   difficulty: string;
   category: string;
   recommendation_reason: string;
+};
+
+export type QuestDetail = {
+  id: string;
+  name: string;
+  difficulty: string;
+  category: string;
+  short_description: string;
+  requirements: string[];
+  rewards: string[];
+  why_it_matters: string;
+  next_steps: string[];
+};
+
+export type GearRecommendationResponse = {
+  combat_style: string;
+  budget_tier: string;
+  account_rsn: string | null;
+  recommendations: Array<{
+    item_name: string;
+    slot: string;
+    budget_tier: string;
+    upgrade_reason: string;
+    requirements: string[];
+    estimated_cost: string;
+    priority: string;
+  }>;
+  context: Record<string, unknown>;
+};
+
+export type TeleportRouteResponse = {
+  destination: string;
+  account_rsn: string | null;
+  preference: string;
+  recommended_route: {
+    method: string;
+    route_type: string;
+    requirements: string[];
+    travel_notes: string;
+    convenience: string;
+  };
+  alternatives: Array<{
+    method: string;
+    route_type: string;
+    requirements: string[];
+    travel_notes: string;
+    convenience: string;
+  }>;
+  context: Record<string, unknown>;
 };

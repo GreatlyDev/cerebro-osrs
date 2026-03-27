@@ -298,6 +298,10 @@ input {
   gap: 10px;
 }
 
+.unordered-list {
+  list-style: disc;
+}
+
 .code-block {
   margin: 0;
   white-space: pre-wrap;
@@ -314,6 +318,12 @@ input {
 .tile-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -345,6 +355,25 @@ input {
 .chat-bubble {
   padding: 18px;
   line-height: 1.55;
+}
+
+.inline-actions {
+  align-items: center;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 12px 14px;
+  color: var(--text);
+}
+
+.toggle-row input {
+  accent-color: var(--accent);
 }
 
 @media (max-width: 1080px) {
@@ -397,6 +426,10 @@ input {
   }
 
   .plan-columns {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-grid {
     grid-template-columns: 1fr;
   }
 }

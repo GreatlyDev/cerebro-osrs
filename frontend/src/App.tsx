@@ -5,14 +5,18 @@ import { api } from "./api";
 import type {
   Account,
   AccountSnapshot,
+  ChatExchange,
   ChatSession,
+  GearRecommendationResponse,
   Goal,
   GoalPlanResponse,
   NextActionResponse,
   Profile,
+  QuestDetail,
   QuestSummary,
   SkillCatalogItem,
   SkillRecommendationResponse,
+  TeleportRouteResponse,
 } from "./types";
 
 type ViewKey =
@@ -46,15 +50,34 @@ export function App() {
   const [selectedSnapshot, setSelectedSnapshot] = useState<AccountSnapshot | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(null);
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [chatHistory, setChatHistory] = useState<ChatExchange[]>([]);
   const [chatReply, setChatReply] = useState("");
+  const [chatPrompt, setChatPrompt] = useState("What's my next best action?");
   const [skills, setSkills] = useState<SkillCatalogItem[]>([]);
   const [skillRecommendations, setSkillRecommendations] =
     useState<SkillRecommendationResponse | null>(null);
   const [quests, setQuests] = useState<QuestSummary[]>([]);
+  const [selectedQuest, setSelectedQuest] = useState<QuestDetail | null>(null);
+  const [gearRecommendations, setGearRecommendations] =
+    useState<GearRecommendationResponse | null>(null);
+  const [teleportRoute, setTeleportRoute] = useState<TeleportRouteResponse | null>(null);
   const [newAccountRsn, setNewAccountRsn] = useState("");
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalType, setNewGoalType] = useState("quest cape");
   const [newGoalTargetRsn, setNewGoalTargetRsn] = useState("");
+  const [gearCombatStyle, setGearCombatStyle] = useState("magic");
+  const [gearBudgetTier, setGearBudgetTier] = useState("midgame");
+  const [gearCurrentItems, setGearCurrentItems] = useState("");
+  const [teleportDestination, setTeleportDestination] = useState("fossil island");
+  const [teleportPreference, setTeleportPreference] = useState("balanced");
+  const [profileDraft, setProfileDraft] = useState({
+    display_name: "",
+    primary_account_rsn: "",
+    play_style: "balanced",
+    goals_focus: "progression",
+    prefers_afk_methods: false,
+    prefers_profitable_methods: false,
+  });
   const [loading, setLoading] = useState(true);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -104,6 +127,14 @@ export function App() {
           api.getNextActions({ limit: 4 }),
         ]);
       setProfile(profileResponse);
+      setProfileDraft({
+        display_name: profileResponse.display_name,
+        primary_account_rsn: profileResponse.primary_account_rsn ?? "",
+        play_style: profileResponse.play_style,
+        goals_focus: profileResponse.goals_focus,
+        prefers_afk_methods: profileResponse.prefers_afk_methods,
+        prefers_profitable_methods: profileResponse.prefers_profitable_methods,
+      });
       setAccounts(accountsResponse.items);
       setGoals(goalsResponse.items);
       setNextActions(nextActionsResponse);
@@ -197,7 +228,11 @@ export function App() {
     }
   }
 
-  async function handleRunChatPrompt() {
+  async function handleRunChatPrompt(promptOverride?: string) {
+    const prompt = (promptOverride ?? chatPrompt).trim();
+    if (!prompt) {
+      return;
+    }
     setBusyAction("chat");
     setError(null);
     try {
@@ -206,8 +241,16 @@ export function App() {
         session = await api.createChatSession("Frontend Prompt");
         setChatSessions((current) => [session, ...current]);
       }
-      const reply = await api.sendChatMessage(session.id, "What's my next best action?");
+      const reply = await api.sendChatMessage(session.id, prompt);
       setChatReply(reply.assistant_message.content);
+      setChatHistory((current) => [
+        {
+          prompt,
+          reply: reply.assistant_message.content,
+          sessionId: session.id,
+        },
+        ...current,
+      ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send chat prompt.");
     } finally {
@@ -241,6 +284,81 @@ export function App() {
       setActiveView("dashboard");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No snapshot found for that account yet.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleLoadQuest(questId: string) {
+    setBusyAction(`quest-${questId}`);
+    setError(null);
+    try {
+      const quest = await api.getQuest(questId);
+      setSelectedQuest(quest);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load quest.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleLoadGear() {
+    setBusyAction("gear");
+    setError(null);
+    try {
+      const response = await api.getGearRecommendations({
+        combat_style: gearCombatStyle,
+        budget_tier: gearBudgetTier,
+        current_gear: gearCurrentItems
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean),
+        account_rsn: profile?.primary_account_rsn ?? accounts[0]?.rsn ?? null,
+      });
+      setGearRecommendations(response);
+      setActiveView("gear");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load gear suggestions.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleLoadTeleport() {
+    setBusyAction("teleport");
+    setError(null);
+    try {
+      const response = await api.getTeleportRoute({
+        destination: teleportDestination,
+        preference: teleportPreference === "balanced" ? null : teleportPreference,
+        account_rsn: profile?.primary_account_rsn ?? accounts[0]?.rsn ?? null,
+      });
+      setTeleportRoute(response);
+      setActiveView("teleports");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load teleport route.");
+    } finally {
+      setBusyAction(null);
+    }
+  }
+
+  async function handleSaveProfile() {
+    setBusyAction("profile");
+    setError(null);
+    try {
+      const updated = await api.updateProfile({
+        display_name: profileDraft.display_name,
+        primary_account_rsn: profileDraft.primary_account_rsn || null,
+        play_style: profileDraft.play_style,
+        goals_focus: profileDraft.goals_focus,
+        prefers_afk_methods: profileDraft.prefers_afk_methods,
+        prefers_profitable_methods: profileDraft.prefers_profitable_methods,
+      });
+      setProfile(updated);
+      await loadDashboard();
+      setActiveView("profile");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to update profile.");
     } finally {
       setBusyAction(null);
     }
@@ -323,13 +441,21 @@ export function App() {
                 title="Ask Cerebro"
                 subtitle="Chat is still deterministic, but it already uses the real planning stack."
                 action={
-                  <button
-                    className="primary-button"
-                    onClick={handleRunChatPrompt}
-                    type="button"
-                  >
-                    {busyAction === "chat" ? "Thinking..." : "Ask for next best action"}
-                  </button>
+                  <div className="goal-form">
+                    <input
+                      className="text-input"
+                      value={chatPrompt}
+                      onChange={(event) => setChatPrompt(event.target.value)}
+                      placeholder="Ask Cerebro anything about your account"
+                    />
+                    <button
+                      className="primary-button"
+                      onClick={() => handleRunChatPrompt()}
+                      type="button"
+                    >
+                      {busyAction === "chat" ? "Thinking..." : "Send prompt"}
+                    </button>
+                  </div>
                 }
               >
                 <div className="chat-preview">
@@ -350,6 +476,36 @@ export function App() {
                     {chatReply ||
                       "Use the button above to hit the backend chat flow from the frontend."}
                   </div>
+                  <div className="stack-list">
+                    {[
+                      "What's my next best action?",
+                      "Which quest should I do for barrows gloves?",
+                      "What skill should I train next?",
+                    ].map((prompt) => (
+                      <button
+                        key={prompt}
+                        className="tile-button"
+                        onClick={() => handleRunChatPrompt(prompt)}
+                        type="button"
+                      >
+                        <span>{prompt}</span>
+                        <small>Quick prompt</small>
+                      </button>
+                    ))}
+                  </div>
+                  {chatHistory.length > 0 ? (
+                    <div className="detail-card">
+                      <h3>Recent exchanges</h3>
+                      <div className="stack-list">
+                        {chatHistory.slice(0, 3).map((exchange) => (
+                          <div className="detail-row" key={`${exchange.sessionId}-${exchange.prompt}`}>
+                            <strong>{exchange.prompt}</strong>
+                            <p>{exchange.reply}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </SectionCard>
             ) : null}
@@ -403,10 +559,58 @@ export function App() {
                         <strong>{quest.name}</strong>
                         <p>{quest.recommendation_reason}</p>
                       </div>
-                      <span className="pill">{quest.difficulty}</span>
+                      <div className="inline-actions">
+                        <span className="pill">{quest.difficulty}</span>
+                        <button
+                          className="ghost-button"
+                          onClick={() => handleLoadQuest(quest.id)}
+                          type="button"
+                        >
+                          {busyAction === `quest-${quest.id}` ? "Opening..." : "Details"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
+                {selectedQuest ? (
+                  <div className="plan-panel">
+                    <div className="plan-header">
+                      <div>
+                        <p className="section-label">Quest Detail</p>
+                        <h3>{selectedQuest.name}</h3>
+                      </div>
+                      <span className="pill">{selectedQuest.category}</span>
+                    </div>
+                    <div className="plan-columns">
+                      <div className="detail-card">
+                        <h3>Requirements</h3>
+                        <ul className="plan-list unordered-list">
+                          {selectedQuest.requirements.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div className="detail-card">
+                        <h3>Rewards</h3>
+                        <ul className="plan-list unordered-list">
+                          {selectedQuest.rewards.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                    <div className="detail-card">
+                      <h3>Why it matters</h3>
+                      <p className="muted-copy">{selectedQuest.why_it_matters}</p>
+                      <h3>Next steps</h3>
+                      <ol className="plan-list">
+                        {selectedQuest.next_steps.map((step) => (
+                          <li key={step}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  </div>
+                ) : null}
               </SectionCard>
             ) : null}
 
@@ -494,19 +698,229 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "gear" ||
-            activeView === "teleports" ||
-            activeView === "profile" ? (
+            {activeView === "gear" ? (
               <SectionCard
-                title={NAV_ITEMS.find((item) => item.key === activeView)?.label ?? "Coming soon"}
-                subtitle="This page shell is ready for deeper wiring next."
+                title="Gear"
+                subtitle="Generate live gear upgrade recommendations from the backend."
+                action={
+                  <div className="goal-form">
+                    <select
+                      className="select-input"
+                      value={gearCombatStyle}
+                      onChange={(event) => setGearCombatStyle(event.target.value)}
+                    >
+                      <option value="melee">Melee</option>
+                      <option value="magic">Magic</option>
+                      <option value="ranged">Ranged</option>
+                    </select>
+                    <select
+                      className="select-input"
+                      value={gearBudgetTier}
+                      onChange={(event) => setGearBudgetTier(event.target.value)}
+                    >
+                      <option value="budget">Budget</option>
+                      <option value="midgame">Midgame</option>
+                    </select>
+                    <input
+                      className="text-input"
+                      value={gearCurrentItems}
+                      onChange={(event) => setGearCurrentItems(event.target.value)}
+                      placeholder="Owned gear, comma-separated"
+                    />
+                    <button className="primary-button" onClick={handleLoadGear} type="button">
+                      {busyAction === "gear" ? "Loading..." : "Get upgrades"}
+                    </button>
+                  </div>
+                }
               >
-                <p className="muted-copy">
-                  The backend surface already exists. The first frontend pass is
-                  prioritizing the dashboard, goals, chat, and account sync path.
-                </p>
+                {gearRecommendations ? (
+                  <div className="stack-list">
+                    {gearRecommendations.recommendations.map((item) => (
+                      <div className="detail-row" key={item.item_name}>
+                        <strong>
+                          {item.item_name} · {item.slot}
+                        </strong>
+                        <span>
+                          {item.priority} priority · {item.estimated_cost}
+                        </span>
+                        <p>{item.upgrade_reason}</p>
+                        <small className="muted-copy">
+                          Requirements: {item.requirements.join(", ")}
+                        </small>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted-copy">
+                    Use the controls above to fetch upgrade recommendations.
+                  </p>
+                )}
               </SectionCard>
             ) : null}
+
+            {activeView === "teleports" ? (
+              <SectionCard
+                title="Teleports"
+                subtitle="Get a live route recommendation for a destination."
+                action={
+                  <div className="goal-form">
+                    <select
+                      className="select-input"
+                      value={teleportDestination}
+                      onChange={(event) => setTeleportDestination(event.target.value)}
+                    >
+                      <option value="fossil island">Fossil Island</option>
+                      <option value="barrows">Barrows</option>
+                      <option value="wintertodt">Wintertodt</option>
+                      <option value="fairy ring network">Fairy Ring Network</option>
+                    </select>
+                    <select
+                      className="select-input"
+                      value={teleportPreference}
+                      onChange={(event) => setTeleportPreference(event.target.value)}
+                    >
+                      <option value="balanced">Balanced</option>
+                      <option value="convenience">Convenience</option>
+                      <option value="low-cost">Low Cost</option>
+                    </select>
+                    <button
+                      className="primary-button"
+                      onClick={handleLoadTeleport}
+                      type="button"
+                    >
+                      {busyAction === "teleport" ? "Routing..." : "Find route"}
+                    </button>
+                  </div>
+                }
+              >
+                {teleportRoute ? (
+                  <div className="plan-panel">
+                    <div className="detail-card">
+                      <h3>{teleportRoute.recommended_route.method}</h3>
+                      <p className="muted-copy">
+                        {teleportRoute.recommended_route.travel_notes}
+                      </p>
+                      <small className="muted-copy">
+                        Requirements: {teleportRoute.recommended_route.requirements.join(", ")}
+                      </small>
+                    </div>
+                    {teleportRoute.alternatives.length > 0 ? (
+                      <div className="detail-card">
+                        <h3>Alternatives</h3>
+                        <div className="stack-list">
+                          {teleportRoute.alternatives.map((option) => (
+                            <div className="detail-row" key={option.method}>
+                              <strong>{option.method}</strong>
+                              <p>{option.travel_notes}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="muted-copy">
+                    Use the controls above to get a teleport route recommendation.
+                  </p>
+                )}
+              </SectionCard>
+            ) : null}
+
+            {activeView === "profile" ? (
+              <SectionCard
+                title="Profile"
+                subtitle="Edit the frontend defaults that shape backend recommendations."
+                action={
+                  <button
+                    className="primary-button"
+                    onClick={handleSaveProfile}
+                    type="button"
+                  >
+                    {busyAction === "profile" ? "Saving..." : "Save profile"}
+                  </button>
+                }
+              >
+                <div className="profile-grid">
+                  <input
+                    className="text-input"
+                    value={profileDraft.display_name}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        display_name: event.target.value,
+                      }))
+                    }
+                    placeholder="Display name"
+                  />
+                  <input
+                    className="text-input"
+                    value={profileDraft.primary_account_rsn}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        primary_account_rsn: event.target.value,
+                      }))
+                    }
+                    placeholder="Primary account RSN"
+                  />
+                  <select
+                    className="select-input"
+                    value={profileDraft.play_style}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        play_style: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="balanced">Balanced</option>
+                    <option value="afk">AFK</option>
+                    <option value="profitable">Profitable</option>
+                  </select>
+                  <select
+                    className="select-input"
+                    value={profileDraft.goals_focus}
+                    onChange={(event) =>
+                      setProfileDraft((current) => ({
+                        ...current,
+                        goals_focus: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="progression">Progression</option>
+                    <option value="quest cape">Quest Cape</option>
+                    <option value="bossing">Bossing</option>
+                  </select>
+                  <label className="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={profileDraft.prefers_afk_methods}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          prefers_afk_methods: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>Prefer AFK methods</span>
+                  </label>
+                  <label className="toggle-row">
+                    <input
+                      type="checkbox"
+                      checked={profileDraft.prefers_profitable_methods}
+                      onChange={(event) =>
+                        setProfileDraft((current) => ({
+                          ...current,
+                          prefers_profitable_methods: event.target.checked,
+                        }))
+                      }
+                    />
+                    <span>Prefer profitable methods</span>
+                  </label>
+                </div>
+              </SectionCard>
+            ) : null}
+
           </>
         ) : null}
       </main>

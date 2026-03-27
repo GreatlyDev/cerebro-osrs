@@ -3,13 +3,17 @@ import type {
   AccountSnapshot,
   ChatReply,
   ChatSession,
+  GearRecommendationResponse,
   Goal,
   GoalPlanResponse,
   NextActionResponse,
   Profile,
+  ProfileUpdate,
+  QuestDetail,
   QuestSummary,
   SkillCatalogItem,
   SkillRecommendationResponse,
+  TeleportRouteResponse,
 } from "./types";
 
 const API_BASE_URL =
@@ -34,6 +38,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const api = {
   getProfile: () => request<Profile>("/profile"),
+  updateProfile: (payload: ProfileUpdate) =>
+    request<Profile>("/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   listAccounts: () => request<{ items: Account[]; total: number }>("/accounts"),
   createAccount: (rsn: string) =>
     request<Account>("/accounts", {
@@ -100,4 +109,24 @@ export const api = {
     );
   },
   listQuests: () => request<{ items: QuestSummary[]; total: number }>("/quests"),
+  getQuest: (questId: string) => request<QuestDetail>(`/quests/${questId}`),
+  getGearRecommendations: (payload: {
+    combat_style: string;
+    budget_tier: string;
+    current_gear: string[];
+    account_rsn?: string | null;
+  }) =>
+    request<GearRecommendationResponse>("/gear/recommendations", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getTeleportRoute: (payload: {
+    destination: string;
+    account_rsn?: string | null;
+    preference?: string | null;
+  }) =>
+    request<TeleportRouteResponse>("/teleports/route", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
