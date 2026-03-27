@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     osrs_hiscores_base_url: str = (
         "https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws"
     )
+    backend_cors_origins: list[str] = [
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
+    ]
 
     model_config = SettingsConfigDict(
         env_file=(".env", "../.env"),

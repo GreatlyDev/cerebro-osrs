@@ -17,8 +17,7 @@ import type {
   TeleportRouteResponse,
 } from "./types";
 
-const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "http://127.0.0.1:8000/api";
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "/api";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const target = path.startsWith("http")
@@ -26,12 +25,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     : path.startsWith("/health")
       ? `${API_BASE_URL.replace(/\/api$/, "")}${path}`
       : `${API_BASE_URL}${path}`;
+  const headers = new Headers(init?.headers);
+
+  if (init?.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
 
   const response = await fetch(target, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers,
     ...init,
   });
 
