@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 
@@ -22,4 +22,8 @@ class Account(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+    snapshots: Mapped[list["AccountSnapshot"]] = relationship(
+        back_populates="account",
+        cascade="all, delete-orphan",
     )

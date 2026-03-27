@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -29,9 +30,15 @@ class AccountSyncResponse(BaseModel):
     account_id: int
     status: str
     detail: str
+    snapshot_id: int
 
 
 class AccountSnapshotResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
     account_id: int
-    status: str
-    detail: str
+    source: str
+    sync_status: str
+    summary: dict[str, Any]
+    created_at: datetime
