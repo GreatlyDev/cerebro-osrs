@@ -34,4 +34,35 @@ async def test_teleport_route_uses_snapshot_context(client: AsyncClient) -> None
 
     assert response.status_code == 200
     assert response.json()["context"]["snapshot_used"] is True
-    assert response.json()["recommended_route"]["method"] == "Digsite pendant"
+    assert response.json()["context"]["progress_used"] is False
+    assert response.json()["recommended_route"]["method"] == "Varrock teleport + Digsite barge"
+
+
+@pytest.mark.asyncio
+async def test_teleport_route_prefers_unlocked_progress_routes(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "RouteMain"})
+    account_id = account_response.json()["id"]
+
+    initial_response = await client.post(
+        "/api/teleports/route",
+        json={"destination": "fossil island", "account_rsn": "RouteMain"},
+    )
+
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["Bone Voyage"],
+            "unlocked_transports": ["Digsite pendant"],
+        },
+    )
+    unlocked_response = await client.post(
+        "/api/teleports/route",
+        json={"destination": "fossil island", "account_rsn": "RouteMain"},
+    )
+
+    assert initial_response.status_code == 200
+    assert initial_response.json()["recommended_route"]["method"] == "Varrock teleport + Digsite barge"
+    assert initial_response.json()["context"]["progress_used"] is False
+    assert unlocked_response.status_code == 200
+    assert unlocked_response.json()["recommended_route"]["method"] == "Digsite pendant"
+    assert unlocked_response.json()["context"]["progress_used"] is True

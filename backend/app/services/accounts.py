@@ -10,6 +10,7 @@ from app.integrations.osrs_hiscores import (
     osrs_hiscores_client,
 )
 from app.models.account import Account
+from app.models.account_progress import AccountProgress
 from app.models.account_snapshot import AccountSnapshot
 from app.schemas.account import (
     AccountCreateRequest,
@@ -18,6 +19,7 @@ from app.schemas.account import (
     AccountSnapshotResponse,
     AccountSyncResponse,
 )
+from app.schemas.account_progress import AccountProgressResponse, AccountProgressUpdateRequest
 
 
 class AccountService:
@@ -54,6 +56,46 @@ class AccountService:
     ) -> AccountResponse:
         account = await self._get_account_or_404(db_session=db_session, account_id=account_id)
         return AccountResponse.model_validate(account)
+
+    async def _get_or_create_progress(
+        self,
+        db_session: AsyncSession,
+        account_id: int,
+    ) -> AccountProgress:
+        progress = await db_session.scalar(
+            select(AccountProgress).where(AccountProgress.account_id == account_id)
+        )
+        if progress is not None:
+            return progress
+
+        progress = AccountProgress(account_id=account_id)
+        db_session.add(progress)
+        await db_session.commit()
+        await db_session.refresh(progress)
+        return progress
+
+    async def get_account_progress(
+        self,
+        db_session: AsyncSession,
+        account_id: int,
+    ) -> AccountProgressResponse:
+        await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        progress = await self._get_or_create_progress(db_session=db_session, account_id=account_id)
+        return AccountProgressResponse.model_validate(progress)
+
+    async def update_account_progress(
+        self,
+        db_session: AsyncSession,
+        account_id: int,
+        payload: AccountProgressUpdateRequest,
+    ) -> AccountProgressResponse:
+        await self._get_account_or_404(db_session=db_session, account_id=account_id)
+        progress = await self._get_or_create_progress(db_session=db_session, account_id=account_id)
+        progress.completed_quests = payload.completed_quests
+        progress.unlocked_transports = payload.unlocked_transports
+        await db_session.commit()
+        await db_session.refresh(progress)
+        return AccountProgressResponse.model_validate(progress)
 
     async def create_account(
         self,

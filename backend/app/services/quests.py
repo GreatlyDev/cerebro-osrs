@@ -164,10 +164,14 @@ class QuestService:
         self,
         quest_id: str,
         skills: dict[str, dict[str, int]] | None,
+        completed_quests: list[str] | None = None,
+        unlocked_transports: list[str] | None = None,
     ) -> dict[str, object]:
         requirement_profile = self.get_requirement_profile(quest_id)
         skill_requirements = requirement_profile["skill_requirements"]
         missing_skills: list[dict[str, int | str]] = []
+        completed_quests_set = set(completed_quests or [])
+        unlocked_transports_set = set(unlocked_transports or [])
 
         for skill_name, required_level in skill_requirements.items():
             current_level = 1
@@ -182,10 +186,23 @@ class QuestService:
                     }
                 )
 
+        missing_quests = [
+            quest_name
+            for quest_name in requirement_profile["quest_requirements"]
+            if quest_name.strip().lower() not in completed_quests_set
+        ]
+        missing_other = [
+            requirement
+            for requirement in requirement_profile["other_requirements"]
+            if requirement.strip().lower() not in unlocked_transports_set
+        ]
+
         return {
             "missing_skills": missing_skills,
             "quest_requirements": requirement_profile["quest_requirements"],
+            "missing_quests": missing_quests,
             "other_requirements": requirement_profile["other_requirements"],
+            "missing_other_requirements": missing_other,
         }
 
 

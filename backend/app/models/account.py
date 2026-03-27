@@ -27,3 +27,8 @@ class Account(Base):
         back_populates="account",
         cascade="all, delete-orphan",
     )
+    progress: Mapped["AccountProgress | None"] = relationship(
+        back_populates="account",
+        cascade="all, delete-orphan",
+        uselist=False,
+    )

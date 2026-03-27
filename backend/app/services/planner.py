@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.account_snapshot import AccountSnapshot
 from app.models.goal import Goal
 from app.models.profile import Profile
+from app.services.account_context import account_context_service
 from app.schemas.gear import GearRecommendationRequest
 from app.schemas.teleport import TeleportRouteRequest
 from app.services.gear import gear_service
@@ -20,6 +21,10 @@ class PlannerService:
         snapshot: AccountSnapshot | None,
         target_rsn: str | None,
     ) -> dict[str, object]:
+        progress = await account_context_service.get_progress(
+            db_session=db_session,
+            account_rsn=target_rsn,
+        )
         skill_name = self._goal_skill(goal.goal_type)
         combat_style = self._goal_combat_style(goal.goal_type)
         quest_id = self._goal_quest(goal.goal_type)
@@ -52,6 +57,8 @@ class PlannerService:
         readiness = quest_service.evaluate_readiness(
             quest_id=quest_id,
             skills=snapshot.summary.get("skills") if snapshot else None,
+            completed_quests=progress.completed_quests if progress else None,
+            unlocked_transports=progress.unlocked_transports if progress else None,
         )
 
         return {
@@ -79,6 +86,7 @@ class PlannerService:
             },
             "profile_play_style": profile.play_style if profile else None,
             "snapshot_available": snapshot is not None,
+            "progress_tracked": progress is not None,
         }
 
     def summarize_next_action(self, goal: Goal, recommendations: dict[str, object]) -> str:
@@ -87,7 +95,8 @@ class PlannerService:
         gear = recommendations["recommended_gear"]
         readiness = quest.get("readiness", {})
         missing_skills = readiness.get("missing_skills", [])
-        other_requirements = readiness.get("other_requirements", [])
+        missing_quests = readiness.get("missing_quests", [])
+        missing_other = readiness.get("missing_other_requirements", [])
 
         if missing_skills:
             top_gap = missing_skills[0]
@@ -95,9 +104,13 @@ class PlannerService:
                 f"You're still short on {top_gap['skill']} "
                 f"({top_gap['current_level']} -> {top_gap['required_level']}) for {quest['name']}."
             )
-        elif other_requirements:
+        elif missing_quests:
             readiness_text = (
-                f"The main blockers for {quest['name']} are {', '.join(other_requirements).lower()}."
+                f"You still need quest unlocks like {missing_quests[0]} before {quest['name']} is fully ready."
+            )
+        elif missing_other:
+            readiness_text = (
+                f"The main blockers for {quest['name']} are {', '.join(missing_other).lower()}."
             )
         else:
             readiness_text = f"Your current snapshot is already in a good spot for {quest['name']}."

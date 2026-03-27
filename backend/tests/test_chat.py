@@ -48,7 +48,12 @@ async def test_chat_can_reference_quest_guidance(client: AsyncClient) -> None:
 async def test_chat_can_suggest_next_action_from_latest_goal(client: AsyncClient) -> None:
     await client.patch("/api/profile", json={"play_style": "afk", "prefers_afk_methods": True})
     account_response = await client.post("/api/accounts", json={"rsn": "Zezima"})
-    await client.post(f"/api/accounts/{account_response.json()['id']}/sync")
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"unlocked_transports": ["100 museum kudos", "digsite progress"]},
+    )
     await client.post(
         "/api/goals",
         json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Zezima"},
@@ -63,4 +68,4 @@ async def test_chat_can_suggest_next_action_from_latest_goal(client: AsyncClient
     assert response.status_code == 201
     assert "quest cape" in response.json()["assistant_message"]["content"].lower()
     assert "bone voyage" in response.json()["assistant_message"]["content"].lower()
-    assert "museum kudos" in response.json()["assistant_message"]["content"].lower()
+    assert "already in a good spot" in response.json()["assistant_message"]["content"].lower()

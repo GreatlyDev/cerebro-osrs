@@ -40,6 +40,10 @@ async def test_generate_goal_plan_uses_snapshot_context(client: AsyncClient) -> 
     account_response = await client.post("/api/accounts", json={"rsn": "Zezima"})
     account_id = account_response.json()["id"]
     await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"unlocked_transports": ["100 museum kudos", "digsite progress"]},
+    )
     goal_response = await client.post(
         "/api/goals",
         json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Zezima"},
@@ -53,7 +57,4 @@ async def test_generate_goal_plan_uses_snapshot_context(client: AsyncClient) -> 
     assert any("AFK" in step or "AFK-friendly" in step for step in response.json()["steps"])
     assert response.json()["recommendations"]["recommended_skill"]["skill"] == "magic"
     assert response.json()["recommendations"]["recommended_quest"]["id"] == "bone-voyage"
-    assert response.json()["recommendations"]["recommended_quest"]["readiness"]["other_requirements"] == [
-        "100 museum kudos",
-        "Digsite progress",
-    ]
+    assert response.json()["recommendations"]["recommended_quest"]["readiness"]["missing_other_requirements"] == []

@@ -9,6 +9,7 @@ from app.schemas.account import (
     AccountSnapshotResponse,
     AccountSyncResponse,
 )
+from app.schemas.account_progress import AccountProgressResponse, AccountProgressUpdateRequest
 from app.services.accounts import account_service
 
 router = APIRouter()
@@ -44,6 +45,35 @@ async def get_account(
     db_session: AsyncSession = Depends(get_db_session),
 ) -> AccountResponse:
     return await account_service.get_account(db_session=db_session, account_id=account_id)
+
+
+@router.get(
+    "/{account_id}/progress",
+    response_model=AccountProgressResponse,
+    summary="Get account progression unlocks",
+)
+async def get_account_progress(
+    account_id: int,
+    db_session: AsyncSession = Depends(get_db_session),
+) -> AccountProgressResponse:
+    return await account_service.get_account_progress(db_session=db_session, account_id=account_id)
+
+
+@router.patch(
+    "/{account_id}/progress",
+    response_model=AccountProgressResponse,
+    summary="Update account progression unlocks",
+)
+async def update_account_progress(
+    account_id: int,
+    payload: AccountProgressUpdateRequest,
+    db_session: AsyncSession = Depends(get_db_session),
+) -> AccountProgressResponse:
+    return await account_service.update_account_progress(
+        db_session=db_session,
+        account_id=account_id,
+        payload=payload,
+    )
 
 
 @router.post(
