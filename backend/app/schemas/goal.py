@@ -45,4 +45,5 @@ class GoalPlanResponse(BaseModel):
     status: str
     summary: str
     steps: list[str]
+    recommendations: dict[str, Any]
     context: dict[str, Any]

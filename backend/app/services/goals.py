@@ -6,6 +6,7 @@ from app.models.account_snapshot import AccountSnapshot
 from app.models.goal import Goal
 from app.models.profile import Profile
 from app.schemas.goal import GoalCreateRequest, GoalListResponse, GoalPlanResponse, GoalResponse
+from app.services.planner import planner_service
 
 
 class GoalService:
@@ -68,6 +69,13 @@ class GoalService:
             )
 
         steps = self._build_steps(goal=goal, profile=profile, snapshot=snapshot)
+        recommendations = await planner_service.build_goal_recommendations(
+            db_session=db_session,
+            goal=goal,
+            profile=profile,
+            snapshot=snapshot,
+            target_rsn=target_rsn,
+        )
         context = {
             "goal_type": goal.goal_type,
             "target_account_rsn": target_rsn,
@@ -80,6 +88,7 @@ class GoalService:
         generated_plan = {
             "summary": f"Plan generated for {goal.title}.",
             "steps": steps,
+            "recommendations": recommendations,
             "context": context,
         }
         goal.generated_plan = generated_plan
@@ -91,6 +100,7 @@ class GoalService:
             status="generated",
             summary=generated_plan["summary"],
             steps=steps,
+            recommendations=recommendations,
             context=context,
         )
 

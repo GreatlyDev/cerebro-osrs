@@ -15,6 +15,7 @@ from app.schemas.chat import (
     ChatSessionResponse,
 )
 from app.services.gear import gear_service
+from app.services.planner import planner_service
 from app.services.quests import quest_service
 from app.services.skills import skill_service
 from app.services.teleports import teleport_service
@@ -148,10 +149,25 @@ class ChatService:
             )
 
         if "goal" in normalized and latest_goal is not None:
-            return (
-                f"Your latest goal is {latest_goal.title}. "
-                f"I'd keep pushing it with milestone-based planning and sync your account before each major check-in."
+            recommendations = await planner_service.build_goal_recommendations(
+                db_session=db_session,
+                goal=latest_goal,
+                profile=profile,
+                snapshot=latest_snapshot,
+                target_rsn=latest_goal.target_account_rsn or (latest_account.rsn if latest_account else None),
             )
+            return planner_service.summarize_next_action(latest_goal, recommendations)
+
+        if "next" in normalized or "should i do" in normalized:
+            if latest_goal is not None:
+                recommendations = await planner_service.build_goal_recommendations(
+                    db_session=db_session,
+                    goal=latest_goal,
+                    profile=profile,
+                    snapshot=latest_snapshot,
+                    target_rsn=latest_goal.target_account_rsn or (latest_account.rsn if latest_account else None),
+                )
+                return planner_service.summarize_next_action(latest_goal, recommendations)
 
         if latest_snapshot is not None and profile is not None:
             return (

@@ -42,3 +42,24 @@ async def test_chat_can_reference_quest_guidance(client: AsyncClient) -> None:
 
     assert response.status_code == 201
     assert "recipe for disaster" in response.json()["assistant_message"]["content"].lower()
+
+
+@pytest.mark.asyncio
+async def test_chat_can_suggest_next_action_from_latest_goal(client: AsyncClient) -> None:
+    await client.patch("/api/profile", json={"play_style": "afk", "prefers_afk_methods": True})
+    account_response = await client.post("/api/accounts", json={"rsn": "Zezima"})
+    await client.post(f"/api/accounts/{account_response.json()['id']}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Zezima"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "What Next"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What should I do next?"},
+    )
+
+    assert response.status_code == 201
+    assert "quest cape" in response.json()["assistant_message"]["content"].lower()
+    assert "bone voyage" in response.json()["assistant_message"]["content"].lower()
