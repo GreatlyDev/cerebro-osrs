@@ -5,9 +5,9 @@ from fastapi import HTTPException, status
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.integrations.osrs_ingestion import osrs_account_ingestion_service
 from app.integrations.osrs_hiscores import (
     OSRSHiscoresNotFoundError,
-    osrs_hiscores_client,
 )
 from app.models.account import Account
 from app.models.account_progress import AccountProgress
@@ -24,7 +24,7 @@ from app.schemas.account_progress import AccountProgressResponse, AccountProgres
 
 class AccountService:
     def __init__(self) -> None:
-        self.hiscores_client = osrs_hiscores_client
+        self.ingestion_service = osrs_account_ingestion_service
 
     async def _get_account_or_404(
         self,
@@ -128,7 +128,7 @@ class AccountService:
         account = await self._get_account_or_404(db_session=db_session, account_id=account_id)
 
         try:
-            summary = await self.hiscores_client.fetch_account_summary(account.rsn)
+            summary = await self.ingestion_service.fetch_enriched_account_summary(account.rsn)
         except OSRSHiscoresNotFoundError as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

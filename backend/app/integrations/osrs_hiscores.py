@@ -69,6 +69,20 @@ class OSRSHiscoresClient:
                 "experience": experience,
             }
 
+        activity_rows: list[dict[str, int]] = []
+        for index, line in enumerate(lines[len(SKILL_NAMES) :], start=1):
+            parts = line.split(",")
+            if len(parts) < 2:
+                continue
+            rank, score = (int(part) for part in parts[:2])
+            activity_rows.append(
+                {
+                    "position": index,
+                    "rank": rank,
+                    "score": score,
+                }
+            )
+
         overall = skills["overall"]
 
         return {
@@ -77,6 +91,8 @@ class OSRSHiscoresClient:
             "overall_level": overall["level"],
             "overall_experience": overall["experience"],
             "skills": skills,
+            "activity_metrics": activity_rows,
+            "activity_row_count": len(activity_rows),
         }
 
 

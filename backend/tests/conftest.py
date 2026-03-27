@@ -40,12 +40,13 @@ async def client(db_session: AsyncSession) -> AsyncIterator[AsyncClient]:
 
 @pytest.fixture(autouse=True)
 def mock_hiscores_client(monkeypatch: pytest.MonkeyPatch) -> None:
-    async def fake_fetch_account_summary(rsn: str) -> dict[str, object]:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
         return {
             "rsn": rsn,
             "overall_rank": 123,
             "overall_level": 2277,
             "overall_experience": 4_600_000_000,
+            "combat_level": 126,
             "skills": {
                 "overall": {
                     "rank": 123,
@@ -68,10 +69,29 @@ def mock_hiscores_client(monkeypatch: pytest.MonkeyPatch) -> None:
                     "experience": 1_340_000,
                 },
             },
+            "top_skills": [
+                {"skill": "magic", "level": 82, "experience": 2_250_000},
+                {"skill": "woodcutting", "level": 78, "experience": 1_650_000},
+            ],
+            "skill_categories": {
+                "combat": {"average_level": 79.0, "highest_level": 82, "lowest_level": 76},
+                "gathering": {"average_level": 78.0, "highest_level": 78, "lowest_level": 78},
+                "artisan": {"average_level": 1.0, "highest_level": 1, "lowest_level": 1},
+                "utility": {"average_level": 1.0, "highest_level": 1, "lowest_level": 1},
+            },
+            "progression_profile": {
+                "highest_skill": "magic",
+                "lowest_tracked_skill": "attack",
+                "total_skills_at_99": 0,
+                "total_skills_at_90_plus": 0,
+            },
+            "activity_metrics": [{"position": 1, "rank": 44, "score": 123}],
+            "activity_row_count": 1,
+            "activity_overview": {"tracked_activity_count": 1, "active_activity_count": 1},
         }
 
     monkeypatch.setattr(
-        account_service.hiscores_client,
-        "fetch_account_summary",
-        fake_fetch_account_summary,
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
     )

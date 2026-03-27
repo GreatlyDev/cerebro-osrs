@@ -78,3 +78,6 @@ async def test_get_latest_account_snapshot(client: AsyncClient) -> None:
     assert response.json()["account_id"] == account_id
     assert response.json()["summary"]["rsn"] == "Boaty"
     assert response.json()["source"] == "osrs_hiscores"
+    assert response.json()["summary"]["combat_level"] == 126
+    assert response.json()["summary"]["top_skills"][0]["skill"] == "magic"
+    assert response.json()["summary"]["activity_overview"]["tracked_activity_count"] == 1
