@@ -107,6 +107,14 @@ function getSkillDetailKeyFromPath(pathname: string): string | null {
   return match[1];
 }
 
+function isGearDetailPath(pathname: string): boolean {
+  return /^\/gear\/current\/?$/.test(pathname);
+}
+
+function isTeleportDetailPath(pathname: string): boolean {
+  return /^\/teleports\/current\/?$/.test(pathname);
+}
+
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString([], {
     month: "short",
@@ -287,6 +295,8 @@ export function App() {
   const goalDetailId = getGoalDetailIdFromPath(location.pathname);
   const questDetailId = getQuestDetailIdFromPath(location.pathname);
   const skillDetailKey = getSkillDetailKeyFromPath(location.pathname);
+  const gearDetailOpen = isGearDetailPath(location.pathname);
+  const teleportDetailOpen = isTeleportDetailPath(location.pathname);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -360,7 +370,9 @@ export function App() {
       getAccountDetailIdFromPath(location.pathname) === null &&
       getGoalDetailIdFromPath(location.pathname) === null &&
       getQuestDetailIdFromPath(location.pathname) === null &&
-      getSkillDetailKeyFromPath(location.pathname) === null
+      getSkillDetailKeyFromPath(location.pathname) === null &&
+      !isGearDetailPath(location.pathname) &&
+      !isTeleportDetailPath(location.pathname)
     ) {
       navigate(VIEW_PATHS.dashboard, { replace: true });
     }
@@ -845,7 +857,7 @@ export function App() {
         account_rsn: selectedAccountRsn,
       });
       setGearRecommendations(response);
-      navigateToView("gear");
+      navigate("/gear/current");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load gear suggestions.");
     } finally {
@@ -863,7 +875,7 @@ export function App() {
         account_rsn: selectedAccountRsn,
       });
       setTeleportRoute(response);
-      navigateToView("teleports");
+      navigate("/teleports/current");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load teleport route.");
     } finally {
@@ -1207,7 +1219,27 @@ export function App() {
               />
             ) : null}
 
-            {questDetailId !== null && skillDetailKey === null ? (
+            {gearDetailOpen ? (
+              <GearDetailPage
+                gearRecommendations={gearRecommendations}
+                onBackToDashboard={() => navigateToView("dashboard")}
+                onBackToGear={() => navigateToView("gear")}
+                onReloadGear={handleLoadGear}
+                selectedAccountRsn={selectedAccountRsn}
+              />
+            ) : null}
+
+            {teleportDetailOpen ? (
+              <TeleportDetailPage
+                onBackToDashboard={() => navigateToView("dashboard")}
+                onBackToTeleports={() => navigateToView("teleports")}
+                onReloadTeleport={handleLoadTeleport}
+                selectedAccountRsn={selectedAccountRsn}
+                teleportRoute={teleportRoute}
+              />
+            ) : null}
+
+            {questDetailId !== null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <QuestDetailPage
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToQuests={() => navigateToView("quests")}
@@ -1217,7 +1249,7 @@ export function App() {
               />
             ) : null}
 
-            {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
+            {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <SectionCard
                 title="Ask Cerebro"
                 subtitle="Chat is still deterministic, but it already uses the real planning stack."
@@ -1302,7 +1334,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "skills" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
+            {activeView === "skills" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <SectionCard
                 title="Skills"
                 subtitle="Live catalog and recommendation fetches from the backend."
@@ -1367,7 +1399,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "quests" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
+            {activeView === "quests" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <SectionCard
                 title="Quests"
                 subtitle="Structured quest catalog from the backend service layer."
@@ -1439,7 +1471,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "goals" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
+            {activeView === "goals" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <SectionCard
                 title="Goals"
                 subtitle="Active goals with one-click plan generation."
@@ -1559,7 +1591,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "gear" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
+            {activeView === "gear" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <SectionCard
                 title="Gear"
                 subtitle="Generate live gear upgrade recommendations from the backend."
@@ -1631,7 +1663,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "teleports" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
+            {activeView === "teleports" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <SectionCard
                 title="Teleports"
                 subtitle="Get a live route recommendation for a destination."
@@ -1710,7 +1742,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "profile" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
+            {activeView === "profile" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <SectionCard
                 title="Profile"
                 subtitle="Edit the frontend defaults that shape backend recommendations."
@@ -3537,6 +3569,230 @@ function SkillDetailPage(props: {
               ) : null}
             </div>
           ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function GearDetailPage(props: {
+  gearRecommendations: GearRecommendationResponse | null;
+  onBackToDashboard: () => void;
+  onBackToGear: () => void;
+  onReloadGear: () => void;
+  selectedAccountRsn: string | null;
+}) {
+  const {
+    gearRecommendations,
+    onBackToDashboard,
+    onBackToGear,
+    onReloadGear,
+    selectedAccountRsn,
+  } = props;
+
+  if (!gearRecommendations) {
+    return (
+      <SectionCard
+        title="Gear Detail"
+        subtitle="Open a gear loadout to inspect upgrade paths."
+      >
+        <EmptyState
+          title="No gear recommendation loaded"
+          body="Run a gear recommendation from the gear page and Cerebro will open the richer upgrade view here."
+        />
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div className="detail-page-grid">
+      <DetailBreadcrumbs
+        items={[
+          { label: "Dashboard", onClick: onBackToDashboard },
+          { label: "Gear", onClick: onBackToGear },
+          { label: gearRecommendations.combat_style },
+        ]}
+      />
+      <SectionCard
+        title="Gear Detail"
+        subtitle={`${gearRecommendations.combat_style} upgrades`}
+        action={
+          <div className="inline-actions">
+            <button className="ghost-button" onClick={onBackToGear} type="button">
+              All gear
+            </button>
+            <button className="primary-button" onClick={onReloadGear} type="button">
+              Refresh upgrades
+            </button>
+          </div>
+        }
+      >
+        <div className="detail-page-hero">
+          <div className="detail-card">
+            <h3>Upgrade context</h3>
+            <strong>{gearRecommendations.combat_style} | {gearRecommendations.budget_tier}</strong>
+            <p className="muted-copy">
+              Account: {selectedAccountRsn ?? "none selected"} | Recommendations: {gearRecommendations.recommendations.length}
+            </p>
+          </div>
+          <div className="detail-card">
+            <h3>Why this page exists</h3>
+            <strong>Upgrade planning needs more than a list.</strong>
+            <p className="muted-copy">
+              This detail view gives us room for slot-by-slot upgrade ladders, setup examples, and richer progression notes later.
+            </p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Upgrade Ladder"
+        subtitle="Live item suggestions from the backend recommendation layer."
+      >
+        <div className="stack-list">
+          {gearRecommendations.recommendations.map((item) => (
+            <div className="detail-card" key={`${item.slot}-${item.item_name}`}>
+              <div className="list-row">
+                <div>
+                  <strong>{item.item_name}</strong>
+                  <p>{item.upgrade_reason}</p>
+                </div>
+                <div className="inline-actions">
+                  <span className="pill">{item.slot}</span>
+                  <span className="pill">{item.priority}</span>
+                </div>
+              </div>
+              <div className="chip-row">
+                <span className="chip">{item.estimated_cost}</span>
+                <span className="chip">{item.budget_tier}</span>
+              </div>
+              {item.requirements.length > 0 ? (
+                <div className="detail-row compact-detail">
+                  <strong>Requirements</strong>
+                  <ul className="plan-list unordered-list">
+                    {item.requirements.map((requirement) => (
+                      <li key={requirement}>{requirement}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+  );
+}
+
+function TeleportDetailPage(props: {
+  onBackToDashboard: () => void;
+  onBackToTeleports: () => void;
+  onReloadTeleport: () => void;
+  selectedAccountRsn: string | null;
+  teleportRoute: TeleportRouteResponse | null;
+}) {
+  const {
+    onBackToDashboard,
+    onBackToTeleports,
+    onReloadTeleport,
+    selectedAccountRsn,
+    teleportRoute,
+  } = props;
+
+  if (!teleportRoute) {
+    return (
+      <SectionCard
+        title="Teleport Detail"
+        subtitle="Open a route plan to inspect travel options."
+      >
+        <EmptyState
+          title="No route loaded"
+          body="Run the route planner from the teleports page and Cerebro will open the fuller travel view here."
+        />
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div className="detail-page-grid">
+      <DetailBreadcrumbs
+        items={[
+          { label: "Dashboard", onClick: onBackToDashboard },
+          { label: "Teleports", onClick: onBackToTeleports },
+          { label: teleportRoute.destination },
+        ]}
+      />
+      <SectionCard
+        title="Teleport Detail"
+        subtitle={teleportRoute.destination}
+        action={
+          <div className="inline-actions">
+            <button className="ghost-button" onClick={onBackToTeleports} type="button">
+              All routes
+            </button>
+            <button className="primary-button" onClick={onReloadTeleport} type="button">
+              Refresh route
+            </button>
+          </div>
+        }
+      >
+        <div className="detail-page-hero">
+          <div className="detail-card">
+            <h3>Travel context</h3>
+            <strong>{teleportRoute.recommended_route.method}</strong>
+            <p className="muted-copy">
+              Destination: {teleportRoute.destination} | Account: {selectedAccountRsn ?? "none selected"}
+            </p>
+            <div className="chip-row">
+              <span className="chip">{teleportRoute.preference}</span>
+              <span className="chip">{teleportRoute.recommended_route.route_type}</span>
+            </div>
+          </div>
+          <div className="detail-card">
+            <h3>Travel read</h3>
+            <strong>{teleportRoute.recommended_route.convenience}</strong>
+            <p className="muted-copy">{teleportRoute.recommended_route.travel_notes}</p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Route Breakdown"
+        subtitle="Primary route and fallbacks for this destination."
+      >
+        <div className="stack-list">
+          <div className="detail-card">
+            <h3>Recommended route</h3>
+            <strong>{teleportRoute.recommended_route.method}</strong>
+            <p className="muted-copy">{teleportRoute.recommended_route.travel_notes}</p>
+            <div className="chip-row">
+              <span className="chip">{teleportRoute.recommended_route.route_type}</span>
+              <span className="chip">{teleportRoute.recommended_route.convenience}</span>
+            </div>
+            {teleportRoute.recommended_route.requirements.length > 0 ? (
+              <ul className="plan-list unordered-list">
+                {teleportRoute.recommended_route.requirements.map((requirement) => (
+                  <li key={requirement}>{requirement}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+          {teleportRoute.alternatives.length > 0 ? (
+            <div className="detail-card">
+              <h3>Alternatives</h3>
+              <div className="stack-list">
+                {teleportRoute.alternatives.map((option) => (
+                  <div className="detail-row" key={option.method}>
+                    <strong>{option.method}</strong>
+                    <p>{option.travel_notes}</p>
+                    <small className="muted-copy">
+                      {option.route_type} | {option.convenience}
+                    </small>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
       </SectionCard>
     </div>
