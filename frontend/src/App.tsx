@@ -27,6 +27,7 @@ import type {
 type ViewKey =
   | "dashboard"
   | "ask-cerebro"
+  | "recommendations"
   | "skills"
   | "quests"
   | "gear"
@@ -37,6 +38,7 @@ type ViewKey =
 const NAV_ITEMS: Array<{ key: ViewKey; label: string; blurb: string }> = [
   { key: "dashboard", label: "Dashboard", blurb: "Summary, actions, and sync flow" },
   { key: "ask-cerebro", label: "Ask Cerebro", blurb: "Structured chat over the backend" },
+  { key: "recommendations", label: "Recommendations", blurb: "Ranked actions and planner context" },
   { key: "skills", label: "Skills", blurb: "Training surfaces and recommendations" },
   { key: "quests", label: "Quests", blurb: "Catalog and progression targets" },
   { key: "gear", label: "Gear", blurb: "Upgrade intelligence coming next" },
@@ -48,6 +50,7 @@ const NAV_ITEMS: Array<{ key: ViewKey; label: string; blurb: string }> = [
 const VIEW_PATHS: Record<ViewKey, string> = {
   dashboard: "/",
   "ask-cerebro": "/chat",
+  recommendations: "/recommendations",
   skills: "/skills",
   quests: "/quests",
   gear: "/gear",
@@ -1140,6 +1143,7 @@ export function App() {
                 goals={goals}
                 nextActions={nextActions}
                 onGoToGear={() => navigateToView("gear")}
+                onGoToRecommendations={() => navigateToView("recommendations")}
                 onOpenNextAction={handleOpenNextAction}
                 onGoToGoals={() => navigateToView("goals")}
                 onGoToQuests={() => navigateToView("quests")}
@@ -1254,88 +1258,26 @@ export function App() {
             ) : null}
 
             {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <SectionCard
-                title="Ask Cerebro"
-                subtitle="Chat is still deterministic, but it already uses the real planning stack."
-                action={
-                  <div className="goal-form">
-                    <input
-                      className="text-input"
-                      value={chatPrompt}
-                      onChange={(event) => setChatPrompt(event.target.value)}
-                      placeholder="Ask Cerebro anything about your account"
-                    />
-                    <button
-                      className="primary-button"
-                      onClick={() => handleRunChatPrompt()}
-                      type="button"
-                    >
-                      {busyAction === "chat" ? "Thinking..." : "Send prompt"}
-                    </button>
-                  </div>
-                }
-              >
-                <div className="chat-preview">
-                  <SurfaceLead
-                    summary="Best for quick guidance questions tied to your own workspace, like progression, quest choices, or what to do next on the selected account."
-                    highlights={[
-                      "Uses your signed-in workspace",
-                      "Grounded in planner data",
-                      "Good for next-step coaching",
-                    ]}
-                  />
-                  <div>
-                    <p className="section-label">Sessions</p>
-                  <div className="chip-row">
-                      {chatSessions.length === 0 ? <span className="muted-copy">No sessions yet.</span> : null}
-                      {chatSessions.map((session) => (
-                        <span className="chip" key={session.id}>
-                          {session.title}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="chat-bubble">
-                    {chatReply ||
-                      "Use the button above to hit the backend chat flow from the frontend."}
-                  </div>
-                  <div className="stack-list">
-                    {[
-                      "What's my next best action?",
-                      "Which quest should I do for barrows gloves?",
-                      "What skill should I train next?",
-                    ].map((prompt) => (
-                      <button
-                        key={prompt}
-                        className="tile-button"
-                        onClick={() => handleRunChatPrompt(prompt)}
-                        type="button"
-                      >
-                        <span>{prompt}</span>
-                        <small>Quick prompt</small>
-                      </button>
-                    ))}
-                  </div>
-                  {chatHistory.length > 0 ? (
-                    <div className="detail-card">
-                      <h3>Recent exchanges</h3>
-                      <div className="stack-list">
-                        {chatHistory.slice(0, 3).map((exchange) => (
-                          <div className="detail-row" key={`${exchange.sessionId}-${exchange.prompt}`}>
-                            <strong>{exchange.prompt}</strong>
-                            <p>{exchange.reply}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <EmptyState
-                      title="No chat history yet"
-                      body="Send a prompt or use a quick prompt to start building a history for your account workspace."
-                    />
-                  )}
-                </div>
-              </SectionCard>
+              <ChatPage
+                busyAction={busyAction}
+                chatHistory={chatHistory}
+                chatPrompt={chatPrompt}
+                chatReply={chatReply}
+                chatSessions={chatSessions}
+                onRunChatPrompt={handleRunChatPrompt}
+                setChatPrompt={setChatPrompt}
+                selectedAccountRsn={selectedAccountRsn}
+              />
+            ) : null}
+
+            {activeView === "recommendations" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
+              <RecommendationsPage
+                nextActions={nextActions}
+                onOpenNextAction={handleOpenNextAction}
+                onGoToGoals={() => navigateToView("goals")}
+                onGoToDashboard={() => navigateToView("dashboard")}
+                selectedAccountRsn={selectedAccountRsn}
+              />
             ) : null}
 
             {activeView === "skills" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
@@ -1911,6 +1853,7 @@ function DashboardView(props: {
   goals: Goal[];
   nextActions: NextActionResponse | null;
   onGoToGear: () => void;
+  onGoToRecommendations: () => void;
   onOpenNextAction: (action: NextAction) => void;
   onGoToGoals: () => void;
   onGoToProfile: () => void;
@@ -1965,6 +1908,7 @@ function DashboardView(props: {
     goals,
     nextActions,
     onGoToGear,
+    onGoToRecommendations,
     onOpenNextAction,
     onGoToGoals,
     onGoToProfile,
@@ -2161,6 +2105,10 @@ function DashboardView(props: {
           <button className="tile-button compact-tile" onClick={onGoToTeleports} type="button">
             <span>Teleports</span>
             <small>Check travel routes and fallback options for destinations</small>
+          </button>
+          <button className="tile-button compact-tile" onClick={onGoToRecommendations} type="button">
+            <span>Recommendations</span>
+            <small>Open the full ranked action board for this workspace</small>
           </button>
         </div>
       </SectionCard>
@@ -3832,6 +3780,219 @@ function TeleportDetailPage(props: {
         </div>
       </SectionCard>
     </div>
+  );
+}
+
+function RecommendationsPage(props: {
+  nextActions: NextActionResponse | null;
+  onGoToDashboard: () => void;
+  onGoToGoals: () => void;
+  onOpenNextAction: (action: NextAction) => void;
+  selectedAccountRsn: string | null;
+}) {
+  const {
+    nextActions,
+    onGoToDashboard,
+    onGoToGoals,
+    onOpenNextAction,
+    selectedAccountRsn,
+  } = props;
+
+  return (
+    <div className="detail-page-grid">
+      <DetailBreadcrumbs
+        items={[
+          { label: "Dashboard", onClick: onGoToDashboard },
+          { label: "Recommendations" },
+        ]}
+      />
+      <SectionCard
+        title="Recommendations"
+        subtitle="A fuller ranked action board for your workspace."
+        action={
+          <button className="ghost-button" onClick={onGoToGoals} type="button">
+            Open goals
+          </button>
+        }
+      >
+        <SurfaceLead
+          summary="This is the planning board version of Cerebro's ranked output. Use it when you want to compare actions instead of just acting on the top one."
+          highlights={[
+            `Account ${selectedAccountRsn ?? "none selected"}`,
+            `Goal ${nextActions?.goal_title ?? "not anchored"}`,
+            `Actions ${nextActions?.actions.length ?? 0}`,
+          ]}
+        />
+        {nextActions ? (
+          <div className="stack-list">
+            {nextActions.actions.map((action, index) => (
+              <div
+                className={`detail-card recommendation-card${index === 0 ? " recommendation-card-top" : ""}`}
+                key={`${action.action_type}-${action.title}`}
+              >
+                <div className="list-row action-row">
+                  <div>
+                    <strong>
+                      {index === 0 ? "Top ranked" : `Rank ${index + 1}`} | {action.title}
+                    </strong>
+                    <p>{action.summary}</p>
+                  </div>
+                  <div className="inline-actions">
+                    <span className="score-pill">{action.score}</span>
+                    <button
+                      className="ghost-button"
+                      onClick={() => onOpenNextAction(action)}
+                      type="button"
+                    >
+                      Open
+                    </button>
+                  </div>
+                </div>
+                <div className="chip-row">
+                  <span className="chip">{action.action_type}</span>
+                  <span className="chip">{action.priority}</span>
+                  {action.blockers.length > 0 ? (
+                    <span className="chip">Blockers {action.blockers.length}</span>
+                  ) : (
+                    <span className="chip">No blockers</span>
+                  )}
+                </div>
+                {action.blockers.length > 0 ? (
+                  <div className="detail-row compact-detail">
+                    <strong>Current blockers</strong>
+                    <ul className="plan-list unordered-list">
+                      {action.blockers.map((blocker) => (
+                        <li key={blocker}>{blocker}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No ranked actions yet"
+            body="Link an account and goal, then Cerebro will turn the planner output into a full action board here."
+          />
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
+function ChatPage(props: {
+  busyAction: string | null;
+  chatHistory: ChatExchange[];
+  chatPrompt: string;
+  chatReply: string;
+  chatSessions: ChatSession[];
+  onRunChatPrompt: (promptOverride?: string) => void;
+  selectedAccountRsn: string | null;
+  setChatPrompt: Dispatch<SetStateAction<string>>;
+}) {
+  const {
+    busyAction,
+    chatHistory,
+    chatPrompt,
+    chatReply,
+    chatSessions,
+    onRunChatPrompt,
+    selectedAccountRsn,
+    setChatPrompt,
+  } = props;
+
+  return (
+    <SectionCard
+      title="Ask Cerebro"
+      subtitle="A fuller workspace for deterministic coaching over your planner data."
+      action={
+        <div className="goal-form">
+          <input
+            className="text-input"
+            value={chatPrompt}
+            onChange={(event) => setChatPrompt(event.target.value)}
+            placeholder="Ask Cerebro anything about your account"
+          />
+          <button
+            className="primary-button"
+            onClick={() => onRunChatPrompt()}
+            type="button"
+          >
+            {busyAction === "chat" ? "Thinking..." : "Send prompt"}
+          </button>
+        </div>
+      }
+    >
+      <div className="chat-preview">
+        <SurfaceLead
+          summary="Best for quick guidance questions tied to your workspace, especially when you want the planner turned into plain-language advice."
+          highlights={[
+            `Account ${selectedAccountRsn ?? "none selected"}`,
+            `Sessions ${chatSessions.length}`,
+            `Exchanges ${chatHistory.length}`,
+          ]}
+        />
+        <div className="chat-layout">
+          <div className="detail-card">
+            <h3>Quick prompts</h3>
+            <div className="stack-list">
+              {[
+                "What's my next best action?",
+                "Which quest should I do for barrows gloves?",
+                "What skill should I train next?",
+                "What changed since my last sync?",
+              ].map((prompt) => (
+                <button
+                  key={prompt}
+                  className="tile-button"
+                  onClick={() => onRunChatPrompt(prompt)}
+                  type="button"
+                >
+                  <span>{prompt}</span>
+                  <small>Quick prompt</small>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="detail-card">
+            <h3>Latest reply</h3>
+            <div className="chat-bubble chat-bubble-strong">
+              {chatReply || "Use the prompt box above to ask Cerebro for planning advice."}
+            </div>
+          </div>
+        </div>
+        <div className="detail-card">
+          <h3>Session list</h3>
+          <div className="chip-row">
+            {chatSessions.length === 0 ? <span className="muted-copy">No sessions yet.</span> : null}
+            {chatSessions.map((session) => (
+              <span className="chip" key={session.id}>
+                {session.title}
+              </span>
+            ))}
+          </div>
+        </div>
+        {chatHistory.length > 0 ? (
+          <div className="detail-card">
+            <h3>Recent exchanges</h3>
+            <div className="stack-list">
+              {chatHistory.map((exchange) => (
+                <div className="detail-row" key={`${exchange.sessionId}-${exchange.prompt}`}>
+                  <strong>{exchange.prompt}</strong>
+                  <p>{exchange.reply}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <EmptyState
+            title="No chat history yet"
+            body="Send a prompt or use a quick prompt to start building a history for your account workspace."
+          />
+        )}
+      </div>
+    </SectionCard>
   );
 }
 

@@ -8,6 +8,7 @@
   --muted: #a6b19b;
   --accent: #d2a85d;
   --accent-soft: rgba(210, 168, 93, 0.12);
+  --accent-cool: #84b5ff;
   --danger: #ff8e70;
   --shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
   font-family: "Trebuchet MS", "Segoe UI", sans-serif;
@@ -66,6 +67,9 @@ textarea {
   padding: 28px;
   border-right: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(17, 25, 28, 0.96), rgba(9, 13, 15, 0.95));
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
 }
 
 .brand-block h1,
@@ -182,6 +186,10 @@ textarea {
   gap: 24px;
   padding: 26px;
   margin-bottom: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(132, 181, 255, 0.14), transparent 24%),
+    radial-gradient(circle at bottom left, rgba(210, 168, 93, 0.14), transparent 30%),
+    var(--panel);
 }
 
 .hero-stats {
@@ -252,6 +260,7 @@ textarea {
 
 .section-card {
   padding: 22px;
+  backdrop-filter: blur(8px);
 }
 
 .section-header {
@@ -579,6 +588,13 @@ textarea {
   text-align: left;
   padding: 14px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(210, 168, 93, 0.08));
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+}
+
+.tile-button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(210, 168, 93, 0.38);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(210, 168, 93, 0.14));
 }
 
 .compact-tile {
@@ -604,9 +620,22 @@ textarea {
   gap: 14px;
 }
 
+.chat-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  gap: 14px;
+}
+
 .chat-bubble {
   padding: 18px;
   line-height: 1.55;
+}
+
+.chat-bubble-strong {
+  min-height: 180px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(132, 181, 255, 0.08));
 }
 
 .inline-actions {
@@ -748,6 +777,17 @@ textarea {
   background: linear-gradient(90deg, rgba(107, 163, 255, 0.7), rgba(158, 201, 255, 0.95));
 }
 
+.recommendation-card {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01));
+}
+
+.recommendation-card-top {
+  background:
+    radial-gradient(circle at top right, rgba(210, 168, 93, 0.12), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.012));
+}
+
 @media (max-width: 1080px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -783,6 +823,10 @@ textarea {
   }
 
   .trend-row {
+    grid-template-columns: 1fr;
+  }
+
+  .chat-layout {
     grid-template-columns: 1fr;
   }
 }
