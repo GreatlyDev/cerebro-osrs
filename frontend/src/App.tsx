@@ -1139,9 +1139,13 @@ export function App() {
                 currentUser={currentUser}
                 goals={goals}
                 nextActions={nextActions}
+                onGoToGear={() => navigateToView("gear")}
                 onOpenNextAction={handleOpenNextAction}
                 onGoToGoals={() => navigateToView("goals")}
+                onGoToQuests={() => navigateToView("quests")}
                 onGoToProfile={() => navigateToView("profile")}
+                onGoToSkills={() => navigateToView("skills")}
+                onGoToTeleports={() => navigateToView("teleports")}
                 onCreateAccount={handleCreateAccount}
                 onInspectAccount={handleInspectAccount}
                 onQuickstartAccount={handleQuickstartAccount}
@@ -1906,9 +1910,13 @@ function DashboardView(props: {
   currentUser: AuthUser;
   goals: Goal[];
   nextActions: NextActionResponse | null;
+  onGoToGear: () => void;
   onOpenNextAction: (action: NextAction) => void;
   onGoToGoals: () => void;
   onGoToProfile: () => void;
+  onGoToQuests: () => void;
+  onGoToSkills: () => void;
+  onGoToTeleports: () => void;
   onCreateAccount: () => void;
   onInspectAccount: (account: Account) => void;
   onQuickstartAccount: () => void;
@@ -1956,9 +1964,13 @@ function DashboardView(props: {
     currentUser,
     goals,
     nextActions,
+    onGoToGear,
     onOpenNextAction,
     onGoToGoals,
     onGoToProfile,
+    onGoToQuests,
+    onGoToSkills,
+    onGoToTeleports,
     onCreateAccount,
     onInspectAccount,
     onQuickstartAccount,
@@ -2125,6 +2137,30 @@ function DashboardView(props: {
           >
             <span>Reset view</span>
             <small>Quick jump to the top of the page</small>
+          </button>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Planner Surfaces"
+        subtitle="Jump directly into the part of the product that matches the problem you are solving."
+      >
+        <div className="quick-link-row">
+          <button className="tile-button compact-tile" onClick={onGoToSkills} type="button">
+            <span>Skills</span>
+            <small>Find the next training method for the selected account</small>
+          </button>
+          <button className="tile-button compact-tile" onClick={onGoToQuests} type="button">
+            <span>Quests</span>
+            <small>Browse unlocks and open fuller quest detail pages</small>
+          </button>
+          <button className="tile-button compact-tile" onClick={onGoToGear} type="button">
+            <span>Gear</span>
+            <small>Review upgrade ladders instead of a flat recommendation list</small>
+          </button>
+          <button className="tile-button compact-tile" onClick={onGoToTeleports} type="button">
+            <span>Teleports</span>
+            <small>Check travel routes and fallback options for destinations</small>
           </button>
         </div>
       </SectionCard>
