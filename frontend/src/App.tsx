@@ -1117,6 +1117,13 @@ export function App() {
                 nextActions={nextActions}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToGoals={() => navigateToView("goals")}
+                onOpenRecommendedQuest={(questId) => void handleLoadQuest(questId)}
+                onOpenTargetAccount={(rsn) => {
+                  const account = accounts.find((entry) => entry.rsn === rsn);
+                  if (account) {
+                    void handleInspectAccount(account);
+                  }
+                }}
                 profile={profile}
                 selectedGoal={selectedGoal}
                 selectedGoalPlan={selectedGoalPlan}
@@ -2877,6 +2884,8 @@ function GoalDetailView(props: {
   nextActions: NextActionResponse | null;
   onGeneratePlan: (goal: Goal) => void;
   onGoToGoals: () => void;
+  onOpenRecommendedQuest: (questId: string) => void;
+  onOpenTargetAccount: (rsn: string) => void;
   profile: Profile | null;
   selectedGoal: Goal | null;
   selectedGoalPlan: GoalPlanResponse | null;
@@ -2886,6 +2895,8 @@ function GoalDetailView(props: {
     nextActions,
     onGeneratePlan,
     onGoToGoals,
+    onOpenRecommendedQuest,
+    onOpenTargetAccount,
     profile,
     selectedGoal,
     selectedGoalPlan,
@@ -2909,6 +2920,32 @@ function GoalDetailView(props: {
     const targetGoalId = action.target.goal_id;
     return typeof targetGoalId === "number" && targetGoalId === selectedGoal.id;
   }) ?? [];
+  const planRecommendations =
+    selectedGoalPlan && selectedGoalPlan.goal_id === selectedGoal.id
+      ? selectedGoalPlan.recommendations
+      : null;
+  const recommendedSkill =
+    typeof planRecommendations?.["recommended_skill"] === "string"
+      ? (planRecommendations["recommended_skill"] as string)
+      : null;
+  const recommendedQuest =
+    typeof planRecommendations?.["recommended_quest"] === "string"
+      ? (planRecommendations["recommended_quest"] as string)
+      : null;
+  const recommendedGear =
+    typeof planRecommendations?.["recommended_gear"] === "string"
+      ? (planRecommendations["recommended_gear"] as string)
+      : null;
+  const recommendedTeleport =
+    typeof planRecommendations?.["recommended_teleport"] === "string"
+      ? (planRecommendations["recommended_teleport"] as string)
+      : null;
+  const extraRecommendationEntries = planRecommendations
+    ? Object.entries(planRecommendations).filter(
+        ([key]) =>
+          !["recommended_skill", "recommended_quest", "recommended_gear", "recommended_teleport"].includes(key),
+      )
+    : [];
 
   return (
     <div className="detail-page-grid">
@@ -2972,7 +3009,40 @@ function GoalDetailView(props: {
             <div className="detail-card">
               <h3>Recommendation Snapshot</h3>
               <div className="recommendation-grid">
-                {Object.entries(selectedGoalPlan.recommendations).map(([key, value]) => (
+                {recommendedSkill ? (
+                  <div className="detail-row compact-detail">
+                    <strong>Recommended skill</strong>
+                    <p className="muted-copy">{recommendedSkill}</p>
+                  </div>
+                ) : null}
+                {recommendedQuest ? (
+                  <div className="detail-row compact-detail">
+                    <strong>Recommended quest</strong>
+                    <p className="muted-copy">{recommendedQuest}</p>
+                    <div className="inline-actions">
+                      <button
+                        className="ghost-button"
+                        onClick={() => onOpenRecommendedQuest(recommendedQuest)}
+                        type="button"
+                      >
+                        Open quest page
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+                {recommendedGear ? (
+                  <div className="detail-row compact-detail">
+                    <strong>Recommended gear</strong>
+                    <p className="muted-copy">{recommendedGear}</p>
+                  </div>
+                ) : null}
+                {recommendedTeleport ? (
+                  <div className="detail-row compact-detail">
+                    <strong>Recommended route</strong>
+                    <p className="muted-copy">{recommendedTeleport}</p>
+                  </div>
+                ) : null}
+                {extraRecommendationEntries.map(([key, value]) => (
                   <div className="detail-row compact-detail" key={key}>
                     <strong>{key.replaceAll("_", " ")}</strong>
                     <pre className="code-block compact-code">
@@ -2984,9 +3054,24 @@ function GoalDetailView(props: {
             </div>
             <div className="detail-card wide-card">
               <h3>Plan context</h3>
-              <pre className="code-block compact-code">
-                {JSON.stringify(selectedGoalPlan.context, null, 2)}
-              </pre>
+              <div className="tile-grid">
+                {selectedGoal.target_account_rsn ? (
+                  <button
+                    className="tile-button compact-tile"
+                    onClick={() => onOpenTargetAccount(selectedGoal.target_account_rsn!)}
+                    type="button"
+                  >
+                    <span>Open target account</span>
+                    <small>{selectedGoal.target_account_rsn}</small>
+                  </button>
+                ) : null}
+                <div className="detail-row compact-detail compact-tile">
+                  <strong>Planner context</strong>
+                  <pre className="code-block compact-code">
+                    {JSON.stringify(selectedGoalPlan.context, null, 2)}
+                  </pre>
+                </div>
+              </div>
             </div>
           </div>
         </SectionCard>
