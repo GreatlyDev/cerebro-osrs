@@ -628,6 +628,72 @@ textarea {
   accent-color: var(--accent);
 }
 
+.trend-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.trend-list {
+  display: grid;
+  gap: 12px;
+}
+
+.trend-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 180px) minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid var(--border);
+}
+
+.trend-meta {
+  display: grid;
+  gap: 4px;
+}
+
+.trend-meta span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.trend-bars {
+  display: grid;
+  gap: 10px;
+}
+
+.trend-bar-group {
+  display: grid;
+  gap: 6px;
+}
+
+.trend-bar-group span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.trend-bar-track {
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.trend-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.trend-bar-fill.overall {
+  background: linear-gradient(90deg, rgba(210, 168, 93, 0.75), rgba(255, 226, 172, 0.95));
+}
+
+.trend-bar-fill.combat {
+  background: linear-gradient(90deg, rgba(107, 163, 255, 0.7), rgba(158, 201, 255, 0.95));
+}
+
 @media (max-width: 1080px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -660,6 +726,10 @@ textarea {
 
   .section-split {
     flex-direction: column;
+  }
+
+  .trend-row {
+    grid-template-columns: 1fr;
   }
 }
 

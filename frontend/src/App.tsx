@@ -215,6 +215,61 @@ function buildSnapshotDelta(current: AccountSnapshot | null, previous: AccountSn
   };
 }
 
+function buildSnapshotTrend(history: AccountSnapshot[]) {
+  if (history.length === 0) {
+    return null;
+  }
+
+  const latest = history[0];
+  const oldest = history[history.length - 1];
+  const maxOverall = Math.max(...history.map((snapshot) => snapshot.summary.overall_level), 1);
+  const maxCombat = Math.max(...history.map((snapshot) => snapshot.summary.combat_level ?? 0), 1);
+  const skillGainMap = new Map<string, number>();
+
+  for (let index = history.length - 1; index > 0; index -= 1) {
+    const older = history[index];
+    const newer = history[index - 1];
+    const olderSkills = new Map(
+      (older.summary.top_skills ?? []).map((skill) => [skill.skill, skill.level]),
+    );
+
+    for (const skill of newer.summary.top_skills ?? []) {
+      const previousLevel = olderSkills.get(skill.skill);
+      if (previousLevel === undefined) {
+        continue;
+      }
+      const delta = skill.level - previousLevel;
+      if (delta > 0) {
+        skillGainMap.set(skill.skill, (skillGainMap.get(skill.skill) ?? 0) + delta);
+      }
+    }
+  }
+
+  const topSkillMovers = Array.from(skillGainMap.entries())
+    .sort((left, right) => right[1] - left[1])
+    .slice(0, 4)
+    .map(([skill, delta]) => ({ skill, delta }));
+
+  return {
+    latest,
+    oldest,
+    syncCount: history.length,
+    overallGain: latest.summary.overall_level - oldest.summary.overall_level,
+    combatGain: (latest.summary.combat_level ?? 0) - (oldest.summary.combat_level ?? 0),
+    topSkillMovers,
+    points: history.map((snapshot, index) => ({
+      id: snapshot.id,
+      label: index === 0 ? "Latest" : index === history.length - 1 ? "Oldest" : `Sync ${history.length - index}`,
+      createdAt: snapshot.created_at,
+      overall: snapshot.summary.overall_level,
+      combat: snapshot.summary.combat_level ?? 0,
+      overallPercent: Math.max((snapshot.summary.overall_level / maxOverall) * 100, 8),
+      combatPercent: Math.max(((snapshot.summary.combat_level ?? 0) / maxCombat) * 100, 8),
+      status: snapshot.sync_status,
+    })),
+  };
+}
+
 export function App() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -2489,6 +2544,7 @@ function AccountDetailView(props: {
   const accountActionMatches = nextActions?.actions.filter(
     (action) => (action.target.account_rsn as string | undefined | null) === selectedAccount.rsn,
   ) ?? [];
+  const snapshotTrend = buildSnapshotTrend(selectedSnapshotHistory);
 
   return (
     <div className="detail-page-grid">
@@ -2545,38 +2601,152 @@ function AccountDetailView(props: {
         title="Sync History"
         subtitle="Recent progression movement and sync timeline for this account."
       >
-        {selectedSnapshotDelta ? (
+        {selectedSnapshotDelta || snapshotTrend ? (
           <div className="snapshot-change-grid">
             <Metric
               label="Overall Delta"
-              value={selectedSnapshotDelta.overallLevelDelta >= 0
-                ? `+${selectedSnapshotDelta.overallLevelDelta}`
-                : selectedSnapshotDelta.overallLevelDelta}
+              value={selectedSnapshotDelta
+                ? selectedSnapshotDelta.overallLevelDelta >= 0
+                  ? `+${selectedSnapshotDelta.overallLevelDelta}`
+                  : selectedSnapshotDelta.overallLevelDelta
+                : "n/a"}
             />
             <Metric
               label="Combat Delta"
-              value={selectedSnapshotDelta.combatLevelDelta >= 0
-                ? `+${selectedSnapshotDelta.combatLevelDelta}`
-                : selectedSnapshotDelta.combatLevelDelta}
+              value={selectedSnapshotDelta
+                ? selectedSnapshotDelta.combatLevelDelta >= 0
+                  ? `+${selectedSnapshotDelta.combatLevelDelta}`
+                  : selectedSnapshotDelta.combatLevelDelta
+                : "n/a"}
             />
-            <Metric label="Skills Improved" value={selectedSnapshotDelta.improvedSkills.length} />
-            <Metric label="New 90+ Skills" value={selectedSnapshotDelta.newNinetyPlusCount} />
+            <Metric
+              label="Skills Improved"
+              value={selectedSnapshotDelta ? selectedSnapshotDelta.improvedSkills.length : 0}
+            />
+            <Metric
+              label="New 90+ Skills"
+              value={selectedSnapshotDelta
+                ? selectedSnapshotDelta.newNinetyPlusCount >= 0
+                  ? `+${selectedSnapshotDelta.newNinetyPlusCount}`
+                  : selectedSnapshotDelta.newNinetyPlusCount
+                : "n/a"}
+            />
             <div className="detail-card wide-card">
-              <h3>Recent sync timeline</h3>
-              <div className="stack-list">
-                {selectedSnapshotHistory.map((snapshot, index) => (
-                  <div className="list-row" key={snapshot.id}>
-                    <div>
-                      <strong>{index === 0 ? "Latest" : "Previous"} | {formatTimestamp(snapshot.created_at)}</strong>
-                      <p>
-                        Overall {snapshot.summary.overall_level} | Combat {snapshot.summary.combat_level ?? "n/a"}
-                      </p>
-                    </div>
-                    <span className="pill">{snapshot.sync_status}</span>
+              <h3>Trend read</h3>
+              {snapshotTrend ? (
+                <div className="trend-grid">
+                  <div className="detail-card compact-detail">
+                    <strong>{snapshotTrend.syncCount} synced checkpoints</strong>
+                    <p className="muted-copy">
+                      Net overall {snapshotTrend.overallGain >= 0 ? "+" : ""}
+                      {snapshotTrend.overallGain} since {formatTimestamp(snapshotTrend.oldest.created_at)}
+                    </p>
+                    <p className="muted-copy">
+                      Combat {snapshotTrend.combatGain >= 0 ? "+" : ""}
+                      {snapshotTrend.combatGain} across the same window.
+                    </p>
                   </div>
-                ))}
-              </div>
+                  <div className="detail-card compact-detail">
+                    <strong>
+                      {snapshotTrend.topSkillMovers.length > 0 ? "Momentum is showing up" : "Still building history"}
+                    </strong>
+                    <p className="muted-copy">
+                      {snapshotTrend.topSkillMovers.length > 0
+                        ? `Most visible movement: ${snapshotTrend.topSkillMovers
+                          .map((skill) => `${skill.skill} +${skill.delta}`)
+                          .join(", ")}.`
+                        : "More syncs will turn this into a clearer progression read instead of a single snapshot."}
+                    </p>
+                  </div>
+                  <div className="detail-card wide-card">
+                    <h3>Overall and combat trend</h3>
+                    <div className="trend-list">
+                      {snapshotTrend.points.map((point) => (
+                        <div className="trend-row" key={point.id}>
+                          <div className="trend-meta">
+                            <strong>{point.label}</strong>
+                            <span>{formatTimestamp(point.createdAt)}</span>
+                          </div>
+                          <div className="trend-bars">
+                            <div className="trend-bar-group">
+                              <span>Overall {point.overall}</span>
+                              <div className="trend-bar-track">
+                                <div
+                                  className="trend-bar-fill overall"
+                                  style={{ width: `${point.overallPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                            <div className="trend-bar-group">
+                              <span>Combat {point.combat}</span>
+                              <div className="trend-bar-track">
+                                <div
+                                  className="trend-bar-fill combat"
+                                  style={{ width: `${point.combatPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                          <span className="pill">{point.status}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  {snapshotTrend.topSkillMovers.length > 0 ? (
+                    <div className="detail-card wide-card">
+                      <h3>Top skill movers</h3>
+                      <div className="chip-row">
+                        {snapshotTrend.topSkillMovers.map((skill) => (
+                          <span className="chip" key={skill.skill}>
+                            {skill.skill} +{skill.delta}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
+            {selectedSnapshotDelta ? (
+              <>
+                <div className="detail-card">
+                  <h3>Sync window</h3>
+                  <strong>{formatTimestamp(selectedSnapshotDelta.currentSyncAt)}</strong>
+                  <p className="muted-copy">
+                    Compared against {formatTimestamp(selectedSnapshotDelta.previousSyncAt)}
+                  </p>
+                </div>
+                <div className="detail-card">
+                  <h3>Momentum read</h3>
+                  <strong>
+                    {selectedSnapshotDelta.improvedSkills.length > 0 || selectedSnapshotDelta.overallLevelDelta > 0
+                      ? "Progress detected"
+                      : "Little visible movement"}
+                  </strong>
+                  <p className="muted-copy">
+                    {selectedSnapshotDelta.improvedSkills.length > 0
+                      ? "The account is moving forward between syncs instead of sitting on the same profile."
+                      : "Try syncing again after a play session to give Cerebro real momentum to work with."}
+                  </p>
+                </div>
+                <div className="detail-card wide-card">
+                  <h3>Improved tracked skills</h3>
+                  {selectedSnapshotDelta.improvedSkills.length > 0 ? (
+                    <div className="chip-row">
+                      {selectedSnapshotDelta.improvedSkills.map((skill) => (
+                        <span className="chip" key={skill.skill}>
+                          {skill.skill} {skill.previousLevel}{"->"}{skill.currentLevel}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="muted-copy">
+                      No top-skill movement was visible between the most recent two snapshots.
+                    </p>
+                  )}
+                </div>
+              </>
+            ) : null}
           </div>
         ) : (
           <EmptyState
