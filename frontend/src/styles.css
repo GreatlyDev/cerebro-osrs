@@ -666,6 +666,22 @@ textarea {
   color: rgba(255, 255, 255, 0.25);
 }
 
+.surface-lead {
+  display: grid;
+  gap: 12px;
+  padding: 16px 18px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(210, 168, 93, 0.08), rgba(255, 255, 255, 0.02));
+}
+
+.surface-lead-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
 .trend-grid {
   display: grid;
   gap: 14px;

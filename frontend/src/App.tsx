@@ -1240,9 +1240,14 @@ export function App() {
                 }
               >
                 <div className="chat-preview">
-                <div className="page-tip">
-                  Best for quick guidance questions tied to your own workspace, like progression, quest choices, or what to do next on the selected account.
-                </div>
+                  <SurfaceLead
+                    summary="Best for quick guidance questions tied to your own workspace, like progression, quest choices, or what to do next on the selected account."
+                    highlights={[
+                      "Uses your signed-in workspace",
+                      "Grounded in planner data",
+                      "Good for next-step coaching",
+                    ]}
+                  />
                   <div>
                     <p className="section-label">Sessions</p>
                   <div className="chip-row">
@@ -1310,9 +1315,14 @@ export function App() {
                   />
                 }
               >
-                <div className="page-tip">
-                  Pick a skill to get methods tailored to the selected account and current profile preferences.
-                </div>
+                <SurfaceLead
+                  summary="Pick a skill to get methods tailored to the selected account and current profile preferences."
+                  highlights={[
+                    `Account ${selectedAccountRsn ?? "none selected"}`,
+                    "Live backend methods",
+                    "Profile-aware training",
+                  ]}
+                />
                 <div className="tile-grid">
                   {filteredSkills.map((skill) => (
                     <button
@@ -1370,9 +1380,14 @@ export function App() {
                   />
                 }
               >
-                <div className="page-tip">
-                  Browse for unlocks, then open details to see what the quest gives back and what it enables next.
-                </div>
+                <SurfaceLead
+                  summary="Browse for unlocks, then open details to see what the quest gives back and what it enables next."
+                  highlights={[
+                    "Structured quest catalog",
+                    "Unlock-first planning",
+                    "Dedicated detail pages",
+                  ]}
+                />
                 <div className="stack-list">
                   {filteredQuests.map((quest) => (
                     <div className="list-row" key={quest.id}>
@@ -1468,9 +1483,14 @@ export function App() {
                   </div>
                 }
               >
-                <div className="page-tip">
-                  Goals are where the planner becomes more opinionated. Create one, then generate a plan to anchor the rest of the app.
-                </div>
+                <SurfaceLead
+                  summary="Goals are where the planner becomes more opinionated. Create one, then generate a plan to anchor the rest of the app."
+                  highlights={[
+                    "Turns advice into a plan",
+                    "Uses account context",
+                    "Feeds ranked actions",
+                  ]}
+                />
                 <div className="stack-list">
                   {goals.map((goal) => (
                     <div className="list-row" key={goal.id}>
@@ -1574,9 +1594,14 @@ export function App() {
                   </div>
                 }
               >
-                <div className="page-tip">
-                  Tell Cerebro what style and budget you care about, then filter out owned gear so the upgrades stay relevant.
-                </div>
+                <SurfaceLead
+                  summary="Tell Cerebro what style and budget you care about, then filter out owned gear so the upgrades stay relevant."
+                  highlights={[
+                    "Combat-style specific",
+                    "Budget-aware",
+                    "Owned gear respected",
+                  ]}
+                />
                 {gearRecommendations ? (
                   <div className="recommendation-grid">
                     <p className="muted-copy">
@@ -1641,9 +1666,14 @@ export function App() {
                   </div>
                 }
               >
-                <div className="page-tip">
-                  Use this when movement friction is the blocker. The backend can already account for tracked unlocks and fallback routes.
-                </div>
+                <SurfaceLead
+                  summary="Use this when movement friction is the blocker. The backend can already account for tracked unlocks and fallback routes."
+                  highlights={[
+                    "Destination planning",
+                    "Unlock-aware routing",
+                    "Fallback routes included",
+                  ]}
+                />
                 {teleportRoute ? (
                   <div className="plan-panel">
                     <div className="detail-card">
@@ -1694,9 +1724,14 @@ export function App() {
                   </button>
                 }
               >
-                <div className="page-tip">
-                  These preferences influence recommendation tone and routing across the rest of the app, so this page acts like your planning baseline.
-                </div>
+                <SurfaceLead
+                  summary="These preferences influence recommendation tone and routing across the rest of the app, so this page acts like your planning baseline."
+                  highlights={[
+                    "Workspace defaults",
+                    "Recommendation tone",
+                    "Primary RSN control",
+                  ]}
+                />
                 <div className="profile-grid">
                   <input
                     className="text-input"
@@ -3545,6 +3580,24 @@ function DetailBreadcrumbs(props: {
           )}
         </Fragment>
       ))}
+    </div>
+  );
+}
+
+function SurfaceLead(props: {
+  summary: string;
+  highlights: string[];
+}) {
+  return (
+    <div className="surface-lead">
+      <p className="surface-lead-copy">{props.summary}</p>
+      <div className="chip-row">
+        {props.highlights.map((item) => (
+          <span className="chip" key={item}>
+            {item}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
