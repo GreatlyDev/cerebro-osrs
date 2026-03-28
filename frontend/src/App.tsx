@@ -90,6 +90,14 @@ function getGoalDetailIdFromPath(pathname: string): number | null {
   return Number(match[1]);
 }
 
+function getQuestDetailIdFromPath(pathname: string): string | null {
+  const match = pathname.match(/^\/quests\/([^/]+)\/?$/);
+  if (!match) {
+    return null;
+  }
+  return match[1];
+}
+
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString([], {
     month: "short",
@@ -213,6 +221,7 @@ export function App() {
   const activeView = getViewFromPath(location.pathname);
   const accountDetailId = getAccountDetailIdFromPath(location.pathname);
   const goalDetailId = getGoalDetailIdFromPath(location.pathname);
+  const questDetailId = getQuestDetailIdFromPath(location.pathname);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -284,7 +293,8 @@ export function App() {
       location.pathname !== "/" &&
       !(Object.values(VIEW_PATHS) as string[]).includes(location.pathname) &&
       getAccountDetailIdFromPath(location.pathname) === null &&
-      getGoalDetailIdFromPath(location.pathname) === null
+      getGoalDetailIdFromPath(location.pathname) === null &&
+      getQuestDetailIdFromPath(location.pathname) === null
     ) {
       navigate(VIEW_PATHS.dashboard, { replace: true });
     }
@@ -697,12 +707,15 @@ export function App() {
     }
   }
 
-  async function handleLoadQuest(questId: string) {
+  async function handleLoadQuest(questId: string, options?: { openPage?: boolean }) {
     setBusyAction(`quest-${questId}`);
     setError(null);
     try {
       const quest = await api.getQuest(questId);
       setSelectedQuest(quest);
+      if (options?.openPage ?? true) {
+        navigate(`/quests/${questId}`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to load quest.");
     } finally {
@@ -842,6 +855,16 @@ export function App() {
       void handleInspectAccount(account, { openPage: false });
     }
   }, [accountDetailId, accounts, selectedAccountId]);
+
+  useEffect(() => {
+    if (questDetailId === null) {
+      return;
+    }
+    if (selectedQuest?.id === questDetailId) {
+      return;
+    }
+    void handleLoadQuest(questDetailId, { openPage: false });
+  }, [questDetailId, selectedQuest?.id]);
 
   function handleSelectAccount(accountId: number | null) {
     setSelectedAccountId(accountId);
@@ -1045,7 +1068,14 @@ export function App() {
               />
             ) : null}
 
-            {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null ? (
+            {questDetailId !== null ? (
+              <QuestDetailPage
+                onBackToQuests={() => navigateToView("quests")}
+                selectedQuest={selectedQuest}
+              />
+            ) : null}
+
+            {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
               <SectionCard
                 title="Ask Cerebro"
                 subtitle="Chat is still deterministic, but it already uses the real planning stack."
@@ -1125,7 +1155,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "skills" && accountDetailId === null && goalDetailId === null ? (
+            {activeView === "skills" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
               <SectionCard
                 title="Skills"
                 subtitle="Live catalog and recommendation fetches from the backend."
@@ -1185,7 +1215,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "quests" && accountDetailId === null && goalDetailId === null ? (
+            {activeView === "quests" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
               <SectionCard
                 title="Quests"
                 subtitle="Structured quest catalog from the backend service layer."
@@ -1228,41 +1258,19 @@ export function App() {
                   />
                 ) : null}
                 {selectedQuest ? (
-                  <div className="plan-panel">
-                    <div className="plan-header">
-                      <div>
-                        <p className="section-label">Quest Detail</p>
-                        <h3>{selectedQuest.name}</h3>
-                      </div>
-                      <span className="pill">{selectedQuest.category}</span>
-                    </div>
-                    <div className="plan-columns">
-                      <div className="detail-card">
-                        <h3>Requirements</h3>
-                        <ul className="plan-list unordered-list">
-                          {selectedQuest.requirements.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                      <div className="detail-card">
-                        <h3>Rewards</h3>
-                        <ul className="plan-list unordered-list">
-                          {selectedQuest.rewards.map((item) => (
-                            <li key={item}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                    <div className="detail-card">
-                      <h3>Why it matters</h3>
-                      <p className="muted-copy">{selectedQuest.why_it_matters}</p>
-                      <h3>Next steps</h3>
-                      <ol className="plan-list">
-                        {selectedQuest.next_steps.map((step) => (
-                          <li key={step}>{step}</li>
-                        ))}
-                      </ol>
+                  <div className="detail-card">
+                    <h3>Selected quest</h3>
+                    <p className="muted-copy">
+                      {selectedQuest.name} is loaded. Open its dedicated page to see requirements, rewards, and next steps in a fuller layout.
+                    </p>
+                    <div className="inline-actions">
+                      <button
+                        className="ghost-button"
+                        onClick={() => navigate(`/quests/${selectedQuest.id}`)}
+                        type="button"
+                      >
+                        Open quest page
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -1274,7 +1282,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "goals" && accountDetailId === null && goalDetailId === null ? (
+            {activeView === "goals" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
               <SectionCard
                 title="Goals"
                 subtitle="Active goals with one-click plan generation."
@@ -1389,7 +1397,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "gear" && accountDetailId === null && goalDetailId === null ? (
+            {activeView === "gear" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
               <SectionCard
                 title="Gear"
                 subtitle="Generate live gear upgrade recommendations from the backend."
@@ -1456,7 +1464,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "teleports" && accountDetailId === null && goalDetailId === null ? (
+            {activeView === "teleports" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
               <SectionCard
                 title="Teleports"
                 subtitle="Get a live route recommendation for a destination."
@@ -1530,7 +1538,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "profile" && accountDetailId === null && goalDetailId === null ? (
+            {activeView === "profile" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
               <SectionCard
                 title="Profile"
                 subtitle="Edit the frontend defaults that shape backend recommendations."
@@ -2846,6 +2854,93 @@ function GoalDetailView(props: {
             body="Generate a plan for this goal and Cerebro will start surfacing more targeted next actions here."
           />
         )}
+      </SectionCard>
+    </div>
+  );
+}
+
+function QuestDetailPage(props: {
+  onBackToQuests: () => void;
+  selectedQuest: QuestDetail | null;
+}) {
+  const { onBackToQuests, selectedQuest } = props;
+
+  if (!selectedQuest) {
+    return (
+      <SectionCard
+        title="Quest Detail"
+        subtitle="Pick a quest to open its full unlock page."
+      >
+        <EmptyState
+          title="No quest loaded"
+          body="Open a quest from the quest catalog to inspect requirements, rewards, and follow-up steps here."
+        />
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div className="detail-page-grid">
+      <SectionCard
+        title="Quest Detail"
+        subtitle={selectedQuest.name}
+        action={
+          <button className="ghost-button" onClick={onBackToQuests} type="button">
+            All quests
+          </button>
+        }
+      >
+        <div className="detail-page-hero">
+          <div className="detail-card">
+            <h3>Quest overview</h3>
+            <strong>{selectedQuest.name}</strong>
+            <p className="muted-copy">
+              {selectedQuest.difficulty} | {selectedQuest.category}
+            </p>
+          </div>
+          <div className="detail-card">
+            <h3>Why it matters</h3>
+            <strong>{selectedQuest.short_description}</strong>
+            <p className="muted-copy">{selectedQuest.why_it_matters}</p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Requirements and Rewards"
+        subtitle="What the quest asks for and what it unlocks in return."
+      >
+        <div className="plan-columns">
+          <div className="detail-card">
+            <h3>Requirements</h3>
+            <ul className="plan-list unordered-list">
+              {selectedQuest.requirements.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="detail-card">
+            <h3>Rewards</h3>
+            <ul className="plan-list unordered-list">
+              {selectedQuest.rewards.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Next Steps"
+        subtitle="A cleaner place for walkthrough-style guidance and richer content later."
+      >
+        <div className="detail-card">
+          <ol className="plan-list">
+            {selectedQuest.next_steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
       </SectionCard>
     </div>
   );
