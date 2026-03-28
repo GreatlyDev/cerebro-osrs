@@ -1,5 +1,5 @@
+import { Fragment, useEffect, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
-import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "./api";
@@ -1159,6 +1159,7 @@ export function App() {
                 accountGoals={goals.filter((goal) => goal.target_account_rsn === selectedAccount?.rsn)}
                 busyAction={busyAction}
                 nextActions={nextActions}
+                onBackToDashboard={() => navigateToView("dashboard")}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToGoals={() => navigateToView("goals")}
                 onSaveAccountProgress={handleSaveAccountProgress}
@@ -1179,6 +1180,7 @@ export function App() {
               <GoalDetailView
                 busyAction={busyAction}
                 nextActions={nextActions}
+                onBackToDashboard={() => navigateToView("dashboard")}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToGoals={() => navigateToView("goals")}
                 onOpenNextAction={handleOpenNextAction}
@@ -1197,6 +1199,7 @@ export function App() {
 
             {skillDetailKey !== null ? (
               <SkillDetailPage
+                onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToSkills={() => navigateToView("skills")}
                 onReloadSkill={(skillKey) => void handleLoadSkill(skillKey)}
                 selectedAccountRsn={selectedAccountRsn}
@@ -1206,6 +1209,7 @@ export function App() {
 
             {questDetailId !== null && skillDetailKey === null ? (
               <QuestDetailPage
+                onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToQuests={() => navigateToView("quests")}
                 onOpenNextAction={handleOpenNextAction}
                 nextActions={nextActions}
@@ -2578,6 +2582,7 @@ function AccountDetailView(props: {
   accountGoals: Goal[];
   busyAction: string | null;
   nextActions: NextActionResponse | null;
+  onBackToDashboard: () => void;
   onGeneratePlan: (goal: Goal) => void;
   onGoToGoals: () => void;
   onSaveAccountProgress: () => void;
@@ -2615,6 +2620,7 @@ function AccountDetailView(props: {
     accountGoals,
     busyAction,
     nextActions,
+    onBackToDashboard,
     onGeneratePlan,
     onGoToGoals,
     onSaveAccountProgress,
@@ -2651,6 +2657,13 @@ function AccountDetailView(props: {
 
   return (
     <div className="detail-page-grid">
+      <DetailBreadcrumbs
+        items={[
+          { label: "Dashboard", onClick: onBackToDashboard },
+          { label: "Accounts", onClick: onBackToDashboard },
+          { label: selectedAccount.rsn },
+        ]}
+      />
       <SectionCard
         title="Account Detail"
         subtitle={`Deep workspace view for ${selectedAccount.rsn}.`}
@@ -2978,6 +2991,7 @@ function AccountDetailView(props: {
 function GoalDetailView(props: {
   busyAction: string | null;
   nextActions: NextActionResponse | null;
+  onBackToDashboard: () => void;
   onGeneratePlan: (goal: Goal) => void;
   onGoToGoals: () => void;
   onOpenNextAction: (action: NextAction) => void;
@@ -2990,6 +3004,7 @@ function GoalDetailView(props: {
   const {
     busyAction,
     nextActions,
+    onBackToDashboard,
     onGeneratePlan,
     onGoToGoals,
     onOpenNextAction,
@@ -3047,6 +3062,13 @@ function GoalDetailView(props: {
 
   return (
     <div className="detail-page-grid">
+      <DetailBreadcrumbs
+        items={[
+          { label: "Dashboard", onClick: onBackToDashboard },
+          { label: "Goals", onClick: onGoToGoals },
+          { label: selectedGoal.title },
+        ]}
+      />
       <SectionCard
         title="Goal Detail"
         subtitle={`Full planning view for ${selectedGoal.title}.`}
@@ -3222,12 +3244,13 @@ function GoalDetailView(props: {
 }
 
 function QuestDetailPage(props: {
+  onBackToDashboard: () => void;
   onBackToQuests: () => void;
   onOpenNextAction: (action: NextAction) => void;
   nextActions: NextActionResponse | null;
   selectedQuest: QuestDetail | null;
 }) {
-  const { onBackToQuests, onOpenNextAction, nextActions, selectedQuest } = props;
+  const { onBackToDashboard, onBackToQuests, onOpenNextAction, nextActions, selectedQuest } = props;
 
   if (!selectedQuest) {
     return (
@@ -3250,6 +3273,13 @@ function QuestDetailPage(props: {
 
   return (
     <div className="detail-page-grid">
+      <DetailBreadcrumbs
+        items={[
+          { label: "Dashboard", onClick: onBackToDashboard },
+          { label: "Quests", onClick: onBackToQuests },
+          { label: selectedQuest.name },
+        ]}
+      />
       <SectionCard
         title="Quest Detail"
         subtitle={selectedQuest.name}
@@ -3354,12 +3384,19 @@ function QuestDetailPage(props: {
 }
 
 function SkillDetailPage(props: {
+  onBackToDashboard: () => void;
   onBackToSkills: () => void;
   onReloadSkill: (skillKey: string) => void;
   selectedAccountRsn: string | null;
   skillRecommendations: SkillRecommendationResponse | null;
 }) {
-  const { onBackToSkills, onReloadSkill, selectedAccountRsn, skillRecommendations } = props;
+  const {
+    onBackToDashboard,
+    onBackToSkills,
+    onReloadSkill,
+    selectedAccountRsn,
+    skillRecommendations,
+  } = props;
 
   if (!skillRecommendations) {
     return (
@@ -3377,6 +3414,13 @@ function SkillDetailPage(props: {
 
   return (
     <div className="detail-page-grid">
+      <DetailBreadcrumbs
+        items={[
+          { label: "Dashboard", onClick: onBackToDashboard },
+          { label: "Skills", onClick: onBackToSkills },
+          { label: skillRecommendations.skill },
+        ]}
+      />
       <SectionCard
         title="Skill Detail"
         subtitle={skillRecommendations.skill}
@@ -3481,6 +3525,27 @@ function SectionCard(props: {
       </div>
       {props.children}
     </section>
+  );
+}
+
+function DetailBreadcrumbs(props: {
+  items: Array<{ label: string; onClick?: () => void }>;
+}) {
+  return (
+    <div className="detail-breadcrumbs" aria-label="Breadcrumb">
+      {props.items.map((item, index) => (
+        <Fragment key={`${item.label}-${index}`}>
+          {index > 0 ? <span className="breadcrumb-separator">/</span> : null}
+          {item.onClick ? (
+            <button className="breadcrumb-link" onClick={item.onClick} type="button">
+              {item.label}
+            </button>
+          ) : (
+            <span className="breadcrumb-current">{item.label}</span>
+          )}
+        </Fragment>
+      ))}
+    </div>
   );
 }
 
