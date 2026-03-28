@@ -99,6 +99,14 @@ function getQuestDetailIdFromPath(pathname: string): string | null {
   return match[1];
 }
 
+function getSkillDetailKeyFromPath(pathname: string): string | null {
+  const match = pathname.match(/^\/skills\/([^/]+)\/?$/);
+  if (!match) {
+    return null;
+  }
+  return match[1];
+}
+
 function formatTimestamp(value: string): string {
   return new Date(value).toLocaleString([], {
     month: "short",
@@ -278,6 +286,7 @@ export function App() {
   const accountDetailId = getAccountDetailIdFromPath(location.pathname);
   const goalDetailId = getGoalDetailIdFromPath(location.pathname);
   const questDetailId = getQuestDetailIdFromPath(location.pathname);
+  const skillDetailKey = getSkillDetailKeyFromPath(location.pathname);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -350,7 +359,8 @@ export function App() {
       !(Object.values(VIEW_PATHS) as string[]).includes(location.pathname) &&
       getAccountDetailIdFromPath(location.pathname) === null &&
       getGoalDetailIdFromPath(location.pathname) === null &&
-      getQuestDetailIdFromPath(location.pathname) === null
+      getQuestDetailIdFromPath(location.pathname) === null &&
+      getSkillDetailKeyFromPath(location.pathname) === null
     ) {
       navigate(VIEW_PATHS.dashboard, { replace: true });
     }
@@ -717,12 +727,15 @@ export function App() {
     }
   }
 
-  async function handleLoadSkill(skillKey: string) {
+  async function handleLoadSkill(skillKey: string, options?: { openPage?: boolean }) {
     setBusyAction(`skill-${skillKey}`);
     setError(null);
     try {
       const response = await api.getSkillRecommendations(skillKey, selectedAccountRsn);
       setSkillRecommendations(response);
+      if (options?.openPage ?? true) {
+        navigate(`/skills/${skillKey}`);
+      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Unable to load skill recommendations.",
@@ -789,7 +802,12 @@ export function App() {
     }
 
     if (action.action_type === "skill") {
-      navigateToView("skills");
+      const skill = action.target.skill;
+      if (typeof skill === "string" && skill.length > 0) {
+        void handleLoadSkill(skill);
+      } else {
+        navigateToView("skills");
+      }
       return;
     }
 
@@ -955,6 +973,16 @@ export function App() {
     }
     void handleLoadQuest(questDetailId, { openPage: false });
   }, [questDetailId, selectedQuest?.id]);
+
+  useEffect(() => {
+    if (skillDetailKey === null) {
+      return;
+    }
+    if (skillRecommendations?.skill === skillDetailKey) {
+      return;
+    }
+    void handleLoadSkill(skillDetailKey, { openPage: false });
+  }, [skillDetailKey, skillRecommendations?.skill, selectedAccountRsn]);
 
   function handleSelectAccount(accountId: number | null) {
     setSelectedAccountId(accountId);
@@ -1167,7 +1195,16 @@ export function App() {
               />
             ) : null}
 
-            {questDetailId !== null ? (
+            {skillDetailKey !== null ? (
+              <SkillDetailPage
+                onBackToSkills={() => navigateToView("skills")}
+                onReloadSkill={(skillKey) => void handleLoadSkill(skillKey)}
+                selectedAccountRsn={selectedAccountRsn}
+                skillRecommendations={skillRecommendations}
+              />
+            ) : null}
+
+            {questDetailId !== null && skillDetailKey === null ? (
               <QuestDetailPage
                 onBackToQuests={() => navigateToView("quests")}
                 onOpenNextAction={handleOpenNextAction}
@@ -1176,7 +1213,7 @@ export function App() {
               />
             ) : null}
 
-            {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
+            {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
               <SectionCard
                 title="Ask Cerebro"
                 subtitle="Chat is still deterministic, but it already uses the real planning stack."
@@ -1256,7 +1293,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "skills" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
+            {activeView === "skills" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
               <SectionCard
                 title="Skills"
                 subtitle="Live catalog and recommendation fetches from the backend."
@@ -1316,7 +1353,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "quests" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
+            {activeView === "quests" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
               <SectionCard
                 title="Quests"
                 subtitle="Structured quest catalog from the backend service layer."
@@ -1383,7 +1420,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "goals" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
+            {activeView === "goals" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
               <SectionCard
                 title="Goals"
                 subtitle="Active goals with one-click plan generation."
@@ -1498,7 +1535,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "gear" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
+            {activeView === "gear" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
               <SectionCard
                 title="Gear"
                 subtitle="Generate live gear upgrade recommendations from the backend."
@@ -1565,7 +1602,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "teleports" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
+            {activeView === "teleports" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
               <SectionCard
                 title="Teleports"
                 subtitle="Get a live route recommendation for a destination."
@@ -1639,7 +1676,7 @@ export function App() {
               </SectionCard>
             ) : null}
 
-            {activeView === "profile" && accountDetailId === null && goalDetailId === null && questDetailId === null ? (
+            {activeView === "profile" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null ? (
               <SectionCard
                 title="Profile"
                 subtitle="Edit the frontend defaults that shape backend recommendations."
@@ -3311,6 +3348,117 @@ function QuestDetailPage(props: {
             body="Once this quest becomes part of your ranked next actions, it will show up here with a direct route back into the planner."
           />
         )}
+      </SectionCard>
+    </div>
+  );
+}
+
+function SkillDetailPage(props: {
+  onBackToSkills: () => void;
+  onReloadSkill: (skillKey: string) => void;
+  selectedAccountRsn: string | null;
+  skillRecommendations: SkillRecommendationResponse | null;
+}) {
+  const { onBackToSkills, onReloadSkill, selectedAccountRsn, skillRecommendations } = props;
+
+  if (!skillRecommendations) {
+    return (
+      <SectionCard
+        title="Skill Detail"
+        subtitle="Open a skill to inspect its current training path."
+      >
+        <EmptyState
+          title="No skill loaded"
+          body="Choose a skill from the skills catalog or from a recommendation card to inspect the live training methods here."
+        />
+      </SectionCard>
+    );
+  }
+
+  return (
+    <div className="detail-page-grid">
+      <SectionCard
+        title="Skill Detail"
+        subtitle={skillRecommendations.skill}
+        action={
+          <div className="inline-actions">
+            <button className="ghost-button" onClick={onBackToSkills} type="button">
+              All skills
+            </button>
+            <button
+              className="primary-button"
+              onClick={() => onReloadSkill(skillRecommendations.skill)}
+              type="button"
+            >
+              Refresh skill
+            </button>
+          </div>
+        }
+      >
+        <div className="detail-page-hero">
+          <div className="detail-card">
+            <h3>Current read</h3>
+            <strong>{skillRecommendations.skill}</strong>
+            <p className="muted-copy">
+              Account: {selectedAccountRsn ?? "none selected"} | Preference: {skillRecommendations.preference}
+            </p>
+            <div className="chip-row">
+              <span className="chip">
+                Current level {skillRecommendations.current_level ?? "unknown"}
+              </span>
+              <span className="chip">
+                Methods {skillRecommendations.recommendations.length}
+              </span>
+            </div>
+          </div>
+          <div className="detail-card">
+            <h3>Why this page exists</h3>
+            <strong>Training guidance belongs on its own screen.</strong>
+            <p className="muted-copy">
+              This gives us room for better method breakdowns, routes, video guides, and account-specific coaching later without crowding the catalog.
+            </p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Recommended Methods"
+        subtitle="Live methods from the backend recommendation layer."
+      >
+        <div className="stack-list">
+          {skillRecommendations.recommendations.map((recommendation) => (
+            <div className="detail-card" key={recommendation.method}>
+              <div className="list-row">
+                <div>
+                  <strong>{recommendation.method}</strong>
+                  <p>{recommendation.rationale}</p>
+                </div>
+                <span className="pill">{recommendation.estimated_xp_rate}</span>
+              </div>
+              <div className="chip-row">
+                <span className="chip">
+                  Levels {recommendation.min_level}-{recommendation.max_level}
+                </span>
+                <span className="chip">{recommendation.preference}</span>
+                {recommendation.tags.map((tag) => (
+                  <span className="chip" key={tag}>
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              {recommendation.requirements.length > 0 ? (
+                <div className="detail-row compact-detail">
+                  <strong>Requirements</strong>
+                  <ul className="plan-list unordered-list">
+                    {recommendation.requirements.map((requirement) => (
+                      <li key={requirement}>{requirement}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </div>
+          ))}
+        </div>
       </SectionCard>
     </div>
   );
