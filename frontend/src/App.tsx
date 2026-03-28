@@ -350,8 +350,10 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [authReady, setAuthReady] = useState(false);
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginDisplayName, setLoginDisplayName] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");
@@ -511,6 +513,33 @@ export function App() {
       setError(err instanceof Error ? err.message : "Unable to load your workspace.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleAuthSubmit() {
+    if (!loginEmail.trim() || !loginPassword.trim()) {
+      return;
+    }
+    setBusyAction("login");
+    setError(null);
+    try {
+      const payload = {
+        email: loginEmail.trim(),
+        password: loginPassword.trim(),
+        display_name: loginDisplayName.trim() || null,
+      };
+      const session =
+        authMode === "register"
+          ? await api.register(payload)
+          : await api.login(payload);
+      storeSessionToken(session.session_token);
+      setCurrentUser(session.user);
+      setLoginPassword("");
+      await loadDashboard({ skipHealthCheck: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sign in.");
+    } finally {
+      setBusyAction(null);
     }
   }
 
@@ -1023,14 +1052,19 @@ export function App() {
   if (backendStatus === "offline" && !currentUser) {
     return (
       <AuthView
+        authMode={authMode}
         backendStatus={backendStatus}
         busyAction={busyAction}
         error={error}
         loginDisplayName={loginDisplayName}
         loginEmail={loginEmail}
+        loginPassword={loginPassword}
         onLogin={handleDevLogin}
+        onPasswordSubmit={handleAuthSubmit}
+        setAuthMode={setAuthMode}
         setLoginDisplayName={setLoginDisplayName}
         setLoginEmail={setLoginEmail}
+        setLoginPassword={setLoginPassword}
       />
     );
   }
@@ -1038,14 +1072,19 @@ export function App() {
   if (!currentUser) {
     return (
       <AuthView
+        authMode={authMode}
         backendStatus={backendStatus}
         busyAction={busyAction}
         error={error}
         loginDisplayName={loginDisplayName}
         loginEmail={loginEmail}
+        loginPassword={loginPassword}
         onLogin={handleDevLogin}
+        onPasswordSubmit={handleAuthSubmit}
+        setAuthMode={setAuthMode}
         setLoginDisplayName={setLoginDisplayName}
         setLoginEmail={setLoginEmail}
+        setLoginPassword={setLoginPassword}
       />
     );
   }
@@ -3797,6 +3836,18 @@ function RecommendationsPage(props: {
     onOpenNextAction,
     selectedAccountRsn,
   } = props;
+  const [actionTypeFilter, setActionTypeFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const filteredActions = (nextActions?.actions ?? []).filter((action) => {
+    const typeMatches = actionTypeFilter === "all" || action.action_type === actionTypeFilter;
+    const priorityMatches = priorityFilter === "all" || action.priority === priorityFilter;
+    return typeMatches && priorityMatches;
+  });
+  const groupedActions = filteredActions.reduce<Record<string, NextAction[]>>((groups, action) => {
+    const key = action.action_type;
+    groups[key] = [...(groups[key] ?? []), action];
+    return groups;
+  }, {});
 
   return (
     <div className="detail-page-grid">
@@ -3820,56 +3871,104 @@ function RecommendationsPage(props: {
           highlights={[
             `Account ${selectedAccountRsn ?? "none selected"}`,
             `Goal ${nextActions?.goal_title ?? "not anchored"}`,
-            `Actions ${nextActions?.actions.length ?? 0}`,
+            `Actions ${filteredActions.length}`,
           ]}
         />
         {nextActions ? (
-          <div className="stack-list">
-            {nextActions.actions.map((action, index) => (
-              <div
-                className={`detail-card recommendation-card${index === 0 ? " recommendation-card-top" : ""}`}
-                key={`${action.action_type}-${action.title}`}
-              >
-                <div className="list-row action-row">
-                  <div>
-                    <strong>
-                      {index === 0 ? "Top ranked" : `Rank ${index + 1}`} | {action.title}
-                    </strong>
-                    <p>{action.summary}</p>
-                  </div>
-                  <div className="inline-actions">
-                    <span className="score-pill">{action.score}</span>
-                    <button
-                      className="ghost-button"
-                      onClick={() => onOpenNextAction(action)}
-                      type="button"
-                    >
-                      Open
-                    </button>
-                  </div>
-                </div>
-                <div className="chip-row">
-                  <span className="chip">{action.action_type}</span>
-                  <span className="chip">{action.priority}</span>
-                  {action.blockers.length > 0 ? (
-                    <span className="chip">Blockers {action.blockers.length}</span>
-                  ) : (
-                    <span className="chip">No blockers</span>
-                  )}
-                </div>
-                {action.blockers.length > 0 ? (
-                  <div className="detail-row compact-detail">
-                    <strong>Current blockers</strong>
-                    <ul className="plan-list unordered-list">
-                      {action.blockers.map((blocker) => (
-                        <li key={blocker}>{blocker}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
+          <>
+            <div className="surface-toolbar">
+              <div className="chip-row">
+                {["all", "quest", "skill", "gear", "travel"].map((item) => (
+                  <button
+                    key={item}
+                    className={`chip-button${actionTypeFilter === item ? " is-active" : ""}`}
+                    onClick={() => setActionTypeFilter(item)}
+                    type="button"
+                  >
+                    {item === "all" ? "All types" : item}
+                  </button>
+                ))}
               </div>
-            ))}
-          </div>
+              <div className="chip-row">
+                {["all", "high", "medium", "low"].map((item) => (
+                  <button
+                    key={item}
+                    className={`chip-button${priorityFilter === item ? " is-active" : ""}`}
+                    onClick={() => setPriorityFilter(item)}
+                    type="button"
+                  >
+                    {item === "all" ? "All priorities" : item}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {Object.keys(groupedActions).length > 0 ? (
+              <div className="recommendation-groups">
+                {Object.entries(groupedActions).map(([group, actions]) => (
+                  <div className="detail-card recommendation-group-card" key={group}>
+                    <div className="section-split">
+                      <div>
+                        <p className="section-label">Action group</p>
+                        <h3>{group}</h3>
+                      </div>
+                      <span className="pill">{actions.length}</span>
+                    </div>
+                    <div className="stack-list">
+                      {actions.map((action, index) => (
+                        <div
+                          className={`detail-card recommendation-card${index === 0 ? " recommendation-card-top" : ""}`}
+                          key={`${action.action_type}-${action.title}`}
+                        >
+                          <div className="list-row action-row">
+                            <div>
+                              <strong>
+                                {index === 0 ? "Top in group" : `Option ${index + 1}`} | {action.title}
+                              </strong>
+                              <p>{action.summary}</p>
+                            </div>
+                            <div className="inline-actions">
+                              <span className="score-pill">{action.score}</span>
+                              <button
+                                className="ghost-button"
+                                onClick={() => onOpenNextAction(action)}
+                                type="button"
+                              >
+                                Open
+                              </button>
+                            </div>
+                          </div>
+                          <div className="chip-row">
+                            <span className="chip">{action.action_type}</span>
+                            <span className="chip">{action.priority}</span>
+                            {action.blockers.length > 0 ? (
+                              <span className="chip">Blockers {action.blockers.length}</span>
+                            ) : (
+                              <span className="chip">No blockers</span>
+                            )}
+                          </div>
+                          {action.blockers.length > 0 ? (
+                            <div className="detail-row compact-detail">
+                              <strong>Current blockers</strong>
+                              <ul className="plan-list unordered-list">
+                                {action.blockers.map((blocker) => (
+                                  <li key={blocker}>{blocker}</li>
+                                ))}
+                              </ul>
+                            </div>
+                          ) : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No actions matched those filters"
+                body="Try broadening the type or priority filters to bring more recommendations back into view."
+              />
+            )}
+          </>
         ) : (
           <EmptyState
             title="No ranked actions yet"
@@ -4075,14 +4174,19 @@ function Metric(props: { label: string; value: string | number }) {
 }
 
 function AuthView(props: {
+  authMode: "login" | "register";
   backendStatus: "online" | "offline" | "checking";
   busyAction: string | null;
   error: string | null;
   loginEmail: string;
   loginDisplayName: string;
+  loginPassword: string;
+  setAuthMode: (value: "login" | "register") => void;
   setLoginEmail: (value: string) => void;
   setLoginDisplayName: (value: string) => void;
+  setLoginPassword: (value: string) => void;
   onLogin: () => void;
+  onPasswordSubmit: () => void;
 }) {
   return (
     <div className="auth-shell">
@@ -4090,14 +4194,29 @@ function AuthView(props: {
         <p className="eyebrow">Cerebro OSRS</p>
         <h2>Sign in to your planner cockpit.</h2>
         <p className="hero-copy">
-          This is a lightweight dev sign-in for now, but it gives the app a real user
-          identity instead of one shared profile for everyone.
+          Real email and password auth now powers the workspace. The old dev shortcut is still available below for local testing and legacy seeded accounts.
         </p>
         <div className={`status-pill is-${props.backendStatus}`}>
           <span className="status-dot" />
           Backend {props.backendStatus}
         </div>
         {props.error ? <div className="banner error-banner">{props.error}</div> : null}
+        <div className="chip-row">
+          <button
+            className={`chip-button${props.authMode === "login" ? " is-active" : ""}`}
+            onClick={() => props.setAuthMode("login")}
+            type="button"
+          >
+            Sign in
+          </button>
+          <button
+            className={`chip-button${props.authMode === "register" ? " is-active" : ""}`}
+            onClick={() => props.setAuthMode("register")}
+            type="button"
+          >
+            Create account
+          </button>
+        </div>
         <div className="auth-form">
           <input
             className="text-input"
@@ -4109,10 +4228,30 @@ function AuthView(props: {
             className="text-input"
             value={props.loginDisplayName}
             onChange={(event) => props.setLoginDisplayName(event.target.value)}
-            placeholder="Display name (optional)"
+            placeholder={props.authMode === "register" ? "Display name" : "Display name (optional)"}
           />
-          <button className="primary-button" onClick={props.onLogin} type="button">
-            {props.busyAction === "login" ? "Signing in..." : "Continue"}
+          <input
+            className="text-input"
+            type="password"
+            value={props.loginPassword}
+            onChange={(event) => props.setLoginPassword(event.target.value)}
+            placeholder="Password"
+          />
+          <button className="primary-button" onClick={props.onPasswordSubmit} type="button">
+            {props.busyAction === "login"
+              ? "Signing in..."
+              : props.authMode === "register"
+                ? "Create account"
+                : "Sign in"}
+          </button>
+        </div>
+        <div className="detail-card compact-detail">
+          <h3>Local dev shortcut</h3>
+          <p className="muted-copy">
+            If you already have a local workspace created during the earlier dev-login phase, you can still use the shortcut here while we transition.
+          </p>
+          <button className="ghost-button" onClick={props.onLogin} type="button">
+            Use dev shortcut
           </button>
         </div>
       </section>

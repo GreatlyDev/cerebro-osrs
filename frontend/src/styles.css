@@ -711,6 +711,12 @@ textarea {
   line-height: 1.55;
 }
 
+.surface-toolbar {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
 .trend-grid {
   display: grid;
   gap: 14px;
@@ -780,6 +786,17 @@ textarea {
 .recommendation-card {
   border: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(255, 255, 255, 0.01));
+}
+
+.recommendation-groups {
+  display: grid;
+  gap: 16px;
+}
+
+.recommendation-group-card {
+  background:
+    radial-gradient(circle at top right, rgba(132, 181, 255, 0.07), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.012));
 }
 
 .recommendation-card-top {
