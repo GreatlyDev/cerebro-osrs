@@ -14,6 +14,7 @@ import type {
   GearRecommendationResponse,
   Goal,
   GoalPlanResponse,
+  NextAction,
   NextActionResponse,
   Profile,
   QuestDetail,
@@ -778,6 +779,40 @@ export function App() {
     }
   }
 
+  function handleOpenNextAction(action: NextAction) {
+    if (action.action_type === "quest") {
+      const questId = action.target.quest_id;
+      if (typeof questId === "string" && questId.length > 0) {
+        void handleLoadQuest(questId);
+        return;
+      }
+    }
+
+    if (action.action_type === "skill") {
+      navigateToView("skills");
+      return;
+    }
+
+    if (action.action_type === "gear") {
+      navigateToView("gear");
+      return;
+    }
+
+    if (action.action_type === "travel") {
+      navigateToView("teleports");
+      return;
+    }
+
+    const accountRsn = action.target.account_rsn;
+    if (typeof accountRsn === "string") {
+      const account = accounts.find((entry) => entry.rsn === accountRsn);
+      if (account) {
+        void handleInspectAccount(account);
+        return;
+      }
+    }
+  }
+
   async function handleLoadGear() {
     setBusyAction("gear");
     setError(null);
@@ -1064,6 +1099,7 @@ export function App() {
                 currentUser={currentUser}
                 goals={goals}
                 nextActions={nextActions}
+                onOpenNextAction={handleOpenNextAction}
                 onGoToGoals={() => navigateToView("goals")}
                 onGoToProfile={() => navigateToView("profile")}
                 onCreateAccount={handleCreateAccount}
@@ -1117,6 +1153,7 @@ export function App() {
                 nextActions={nextActions}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToGoals={() => navigateToView("goals")}
+                onOpenNextAction={handleOpenNextAction}
                 onOpenRecommendedQuest={(questId) => void handleLoadQuest(questId)}
                 onOpenTargetAccount={(rsn) => {
                   const account = accounts.find((entry) => entry.rsn === rsn);
@@ -1133,6 +1170,8 @@ export function App() {
             {questDetailId !== null ? (
               <QuestDetailPage
                 onBackToQuests={() => navigateToView("quests")}
+                onOpenNextAction={handleOpenNextAction}
+                nextActions={nextActions}
                 selectedQuest={selectedQuest}
               />
             ) : null}
@@ -1759,6 +1798,7 @@ function DashboardView(props: {
   currentUser: AuthUser;
   goals: Goal[];
   nextActions: NextActionResponse | null;
+  onOpenNextAction: (action: NextAction) => void;
   onGoToGoals: () => void;
   onGoToProfile: () => void;
   onCreateAccount: () => void;
@@ -1808,6 +1848,7 @@ function DashboardView(props: {
     currentUser,
     goals,
     nextActions,
+    onOpenNextAction,
     onGoToGoals,
     onGoToProfile,
     onCreateAccount,
@@ -1902,6 +1943,15 @@ function DashboardView(props: {
                 <div className="chip-row">
                   <span className="chip">{nextActions.top_action.priority}</span>
                   <span className="chip">score {nextActions.top_action.score}</span>
+                </div>
+                <div className="inline-actions">
+                  <button
+                    className="ghost-button"
+                    onClick={() => onOpenNextAction(nextActions.top_action!)}
+                    type="button"
+                  >
+                    Open recommendation
+                  </button>
                 </div>
               </>
             ) : (
@@ -2065,7 +2115,16 @@ function DashboardView(props: {
                     </small>
                   ) : null}
                 </div>
-                <div className="score-pill">{action.score}</div>
+                <div className="inline-actions">
+                  <button
+                    className="ghost-button"
+                    onClick={() => onOpenNextAction(action)}
+                    type="button"
+                  >
+                    Open
+                  </button>
+                  <div className="score-pill">{action.score}</div>
+                </div>
               </div>
             ))
           ) : (
@@ -2884,6 +2943,7 @@ function GoalDetailView(props: {
   nextActions: NextActionResponse | null;
   onGeneratePlan: (goal: Goal) => void;
   onGoToGoals: () => void;
+  onOpenNextAction: (action: NextAction) => void;
   onOpenRecommendedQuest: (questId: string) => void;
   onOpenTargetAccount: (rsn: string) => void;
   profile: Profile | null;
@@ -2895,6 +2955,7 @@ function GoalDetailView(props: {
     nextActions,
     onGeneratePlan,
     onGoToGoals,
+    onOpenNextAction,
     onOpenRecommendedQuest,
     onOpenTargetAccount,
     profile,
@@ -3092,17 +3153,26 @@ function GoalDetailView(props: {
         subtitle="The ranked actions currently most relevant to this goal."
       >
         {matchedActions.length > 0 ? (
-          <div className="stack-list">
-            {matchedActions.map((action) => (
-              <div className="list-row action-row" key={`${action.action_type}-${action.title}`}>
-                <div>
-                  <strong>{action.title}</strong>
-                  <p>{action.summary}</p>
-                </div>
-                <div className="score-pill">{action.score}</div>
+              <div className="stack-list">
+                {matchedActions.map((action) => (
+                  <div className="list-row action-row" key={`${action.action_type}-${action.title}`}>
+                    <div>
+                      <strong>{action.title}</strong>
+                      <p>{action.summary}</p>
+                    </div>
+                    <div className="inline-actions">
+                      <button
+                        className="ghost-button"
+                        onClick={() => onOpenNextAction(action)}
+                        type="button"
+                      >
+                        Open
+                      </button>
+                      <div className="score-pill">{action.score}</div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
         ) : (
           <EmptyState
             title="No goal-specific actions yet"
@@ -3116,9 +3186,11 @@ function GoalDetailView(props: {
 
 function QuestDetailPage(props: {
   onBackToQuests: () => void;
+  onOpenNextAction: (action: NextAction) => void;
+  nextActions: NextActionResponse | null;
   selectedQuest: QuestDetail | null;
 }) {
-  const { onBackToQuests, selectedQuest } = props;
+  const { onBackToQuests, onOpenNextAction, nextActions, selectedQuest } = props;
 
   if (!selectedQuest) {
     return (
@@ -3133,6 +3205,11 @@ function QuestDetailPage(props: {
       </SectionCard>
     );
   }
+
+  const relatedActions = nextActions?.actions.filter((action) => {
+    const questId = action.target.quest_id;
+    return action.action_type === "quest" && typeof questId === "string" && questId === selectedQuest.id;
+  }) ?? [];
 
   return (
     <div className="detail-page-grid">
@@ -3196,6 +3273,44 @@ function QuestDetailPage(props: {
             ))}
           </ol>
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Quest Links"
+        subtitle="Use this page as a launch point back into the planner."
+      >
+        {relatedActions.length > 0 ? (
+          <div className="stack-list">
+            {relatedActions.map((action) => (
+              <div className="list-row action-row" key={`${action.action_type}-${action.title}`}>
+                <div>
+                  <strong>{action.title}</strong>
+                  <p>{action.summary}</p>
+                  {action.blockers.length > 0 ? (
+                    <small className="muted-copy">
+                      Blockers: {action.blockers.join(", ")}
+                    </small>
+                  ) : null}
+                </div>
+                <div className="inline-actions">
+                  <button
+                    className="ghost-button"
+                    onClick={() => onOpenNextAction(action)}
+                    type="button"
+                  >
+                    Open from recommendations
+                  </button>
+                  <div className="score-pill">{action.score}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            title="No active recommendation card for this quest"
+            body="Once this quest becomes part of your ranked next actions, it will show up here with a direct route back into the planner."
+          />
+        )}
       </SectionCard>
     </div>
   );
