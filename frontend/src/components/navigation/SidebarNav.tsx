@@ -45,11 +45,11 @@ function StatusPill({ backendStatus }: { backendStatus: "online" | "offline" | "
 
 function NavGroup({ items }: { items: SidebarNavItem[] }) {
   return (
-    <div className="space-y-2">
+    <div className="cerebro-stagger space-y-2">
       {items.map((item) => (
         <button
           key={item.id}
-          className={`cerebro-hover flex w-full items-start gap-3 rounded-[16px] border px-4 py-3 text-left ${
+          className={`cerebro-hover flex w-full items-start gap-3 rounded-[16px] border px-3.5 py-3 text-left ${
             item.active
               ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(200,164,90,0.22),rgba(58,47,38,0.12))] shadow-glowGold"
               : "border-osrs-border/60 bg-[linear-gradient(180deg,rgba(55,43,33,0.5),rgba(25,20,16,0.95))]"
@@ -58,7 +58,7 @@ function NavGroup({ items }: { items: SidebarNavItem[] }) {
           onClick={item.onClick}
           type="button"
         >
-          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] border border-osrs-border/80 bg-osrs-panel-2 text-xs uppercase tracking-[0.2em] text-osrs-gold">
+          <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] border border-osrs-border/80 bg-osrs-panel-2 text-[0.68rem] uppercase tracking-[0.2em] text-osrs-gold">
             {item.label.slice(0, 2)}
           </span>
           <span className="min-w-0 flex-1">
@@ -104,13 +104,15 @@ export function SidebarNav({
             </p>
           </div>
           <StatusPill backendStatus={backendStatus} />
-          <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.16em] text-osrs-text-soft">
-            <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/60 px-3 py-1">
-              Linked RSNs {accounts.length}
-            </span>
-            <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/60 px-3 py-1">
-              Active {selectedAccount?.rsn ?? "none"}
-            </span>
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-3 py-3 shadow-insetPanel">
+              <p className="text-[0.6rem] uppercase tracking-[0.18em] text-osrs-gold">Linked RSNs</p>
+              <p className="mt-1 font-display text-lg text-osrs-text">{accounts.length}</p>
+            </div>
+            <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-3 py-3 shadow-insetPanel">
+              <p className="text-[0.6rem] uppercase tracking-[0.18em] text-osrs-gold">Active focus</p>
+              <p className="mt-1 font-display text-lg text-osrs-text">{selectedAccount?.rsn ?? "none"}</p>
+            </div>
           </div>
         </div>
       </Panel>

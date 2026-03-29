@@ -99,6 +99,25 @@ export function DashboardUtilityRail({
           subtitle="A compact read on the currently selected account before the deeper utility panels below."
           title={selectedAccount ? `${selectedAccount.rsn} at a glance` : "Workspace at a glance"}
         />
+        <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(60,46,30,0.62),rgba(24,19,15,0.96))] px-4 py-4 shadow-insetPanel">
+          <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Current pulse</p>
+          <div className="mt-3 grid gap-2 text-sm text-osrs-text-soft">
+            <div className="flex items-center justify-between gap-3">
+              <span>Tracked account</span>
+              <strong className="font-display text-base text-osrs-text">{selectedAccount?.rsn ?? "none"}</strong>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>Top skill</span>
+              <strong className="font-display text-base text-osrs-text">
+                {selectedSnapshot?.summary.progression_profile?.highest_skill ?? "unknown"}
+              </strong>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <span>Owned gear tracked</span>
+              <strong className="font-display text-base text-osrs-text">{selectedProgress?.owned_gear.length ?? 0}</strong>
+            </div>
+          </div>
+        </div>
         <div className="cerebro-stagger grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
           <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
             <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Overall</p>
