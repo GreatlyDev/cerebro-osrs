@@ -9,7 +9,10 @@ import { AppShell } from "./components/layout/AppShell";
 import { SidebarNav, type SidebarNavItem } from "./components/navigation/SidebarNav";
 import { ChatView } from "./pages/Chat";
 import { DashboardPage } from "./pages/Dashboard";
+import { GoalsView } from "./pages/Goals";
+import { QuestsView } from "./pages/Quests";
 import { RecommendationsView } from "./pages/Recommendations";
+import { SkillsView } from "./pages/Skills";
 import type {
   Account,
   AccountProgress,
@@ -1361,260 +1364,51 @@ export function App() {
             ) : null}
 
             {activeView === "skills" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <SectionCard
-                title="Skills"
-                subtitle="Live catalog and recommendation fetches from the backend."
-                action={
-                  <input
-                    className="text-input"
-                    value={skillSearch}
-                    onChange={(event) => setSkillSearch(event.target.value)}
-                    placeholder="Search skills"
-                  />
-                }
-              >
-                <SurfaceLead
-                  summary="Pick a skill to get methods tailored to the selected account and current profile preferences."
-                  highlights={[
-                    `Account ${selectedAccountRsn ?? "none selected"}`,
-                    "Live backend methods",
-                    "Profile-aware training",
-                  ]}
-                />
-                <div className="tile-grid">
-                  {filteredSkills.map((skill) => (
-                    <button
-                      key={skill.key}
-                      className="tile-button"
-                      onClick={() => handleLoadSkill(skill.key)}
-                      type="button"
-                    >
-                      <span>{skill.label}</span>
-                      <small>{skill.category}</small>
-                    </button>
-                  ))}
-                </div>
-                {filteredSkills.length === 0 ? (
-                  <EmptyState
-                    title="No skills matched"
-                    body="Try a different search term or clear the filter to browse the full catalog."
-                  />
-                ) : null}
-                {skillRecommendations ? (
-                  <div className="detail-card">
-                    <h3>{skillRecommendations.skill} recommendations</h3>
-                    <p className="muted-copy">
-                      Account: {selectedAccountRsn ?? "none"} | Preference:{" "}
-                      {skillRecommendations.preference} | Current level:{" "}
-                      {skillRecommendations.current_level ?? "unknown"}
-                    </p>
-                    {skillRecommendations.recommendations.slice(0, 2).map((recommendation) => (
-                      <div className="detail-row" key={recommendation.method}>
-                        <strong>{recommendation.method}</strong>
-                        <span>{recommendation.estimated_xp_rate}</span>
-                        <p>{recommendation.rationale}</p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No skill loaded"
-                    body="Choose a skill card to fetch live recommendations for the selected account in your workspace."
-                  />
-                )}
-              </SectionCard>
+              <SkillsView
+                busyAction={busyAction}
+                filteredSkills={filteredSkills}
+                onLoadSkill={(skillKey) => void handleLoadSkill(skillKey)}
+                selectedAccountRsn={selectedAccountRsn}
+                setSkillSearch={setSkillSearch}
+                skillRecommendations={skillRecommendations}
+                skillSearch={skillSearch}
+              />
             ) : null}
 
             {activeView === "quests" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <SectionCard
-                title="Quests"
-                subtitle="Structured quest catalog from the backend service layer."
-                action={
-                  <input
-                    className="text-input"
-                    value={questSearch}
-                    onChange={(event) => setQuestSearch(event.target.value)}
-                    placeholder="Search quests"
-                  />
-                }
-              >
-                <SurfaceLead
-                  summary="Browse for unlocks, then open details to see what the quest gives back and what it enables next."
-                  highlights={[
-                    "Structured quest catalog",
-                    "Unlock-first planning",
-                    "Dedicated detail pages",
-                  ]}
-                />
-                <div className="stack-list">
-                  {filteredQuests.map((quest) => (
-                    <div className="list-row" key={quest.id}>
-                      <div>
-                        <strong>{quest.name}</strong>
-                        <p>{quest.recommendation_reason}</p>
-                      </div>
-                      <div className="inline-actions">
-                        <span className="pill">{quest.difficulty}</span>
-                        <button
-                          className="ghost-button"
-                          onClick={() => handleLoadQuest(quest.id)}
-                          type="button"
-                        >
-                          {busyAction === `quest-${quest.id}` ? "Opening..." : "Details"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {filteredQuests.length === 0 ? (
-                  <EmptyState
-                    title="No quests matched"
-                    body="Try a different search term or clear the filter to browse the quest catalog."
-                  />
-                ) : null}
-                {selectedQuest ? (
-                  <div className="detail-card">
-                    <h3>Selected quest</h3>
-                    <p className="muted-copy">
-                      {selectedQuest.name} is loaded. Open its dedicated page to see requirements, rewards, and next steps in a fuller layout.
-                    </p>
-                    <div className="inline-actions">
-                      <button
-                        className="ghost-button"
-                        onClick={() => navigate(`/quests/${selectedQuest.id}`)}
-                        type="button"
-                      >
-                        Open quest page
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No quest selected"
-                    body="Open a quest from the list to inspect requirements, rewards, and next steps."
-                  />
-                )}
-              </SectionCard>
+              <QuestsView
+                busyAction={busyAction}
+                filteredQuests={filteredQuests}
+                nextActions={nextActions}
+                onLoadQuest={(questId) => void handleLoadQuest(questId)}
+                onOpenSelectedQuest={() => {
+                  if (selectedQuest) {
+                    navigate(`/quests/${selectedQuest.id}`);
+                  }
+                }}
+                questSearch={questSearch}
+                selectedQuest={selectedQuest}
+                setQuestSearch={setQuestSearch}
+              />
             ) : null}
 
             {activeView === "goals" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <SectionCard
-                title="Goals"
-                subtitle="Active goals with one-click plan generation."
-                action={
-                  <div className="goal-form">
-                    <input
-                      className="text-input"
-                      value={newGoalTitle}
-                      onChange={(event) => setNewGoalTitle(event.target.value)}
-                      placeholder="Goal title"
-                    />
-                    <select
-                      className="select-input"
-                      value={newGoalType}
-                      onChange={(event) => setNewGoalType(event.target.value)}
-                    >
-                      <option value="quest cape">Quest Cape</option>
-                      <option value="barrows gloves">Barrows Gloves</option>
-                      <option value="fire cape">Fire Cape</option>
-                    </select>
-                    <input
-                      className="text-input"
-                      value={newGoalTargetRsn}
-                      onChange={(event) => setNewGoalTargetRsn(event.target.value)}
-                      placeholder="Target RSN (optional)"
-                    />
-                    <button
-                      className="ghost-button"
-                      onClick={() => setNewGoalTargetRsn(selectedAccountRsn ?? "")}
-                      type="button"
-                    >
-                      Use selected account
-                    </button>
-                    <button
-                      className="primary-button"
-                      onClick={handleCreateGoal}
-                      type="button"
-                    >
-                      {busyAction === "create-goal" ? "Creating..." : "Create goal"}
-                    </button>
-                  </div>
-                }
-              >
-                <SurfaceLead
-                  summary="Goals are where the planner becomes more opinionated. Create one, then generate a plan to anchor the rest of the app."
-                  highlights={[
-                    "Turns advice into a plan",
-                    "Uses account context",
-                    "Feeds ranked actions",
-                  ]}
-                />
-                <div className="stack-list">
-                  {goals.map((goal) => (
-                    <div className="list-row" key={goal.id}>
-                      <div>
-                        <strong>{goal.title}</strong>
-                        <p>{goal.goal_type}</p>
-                      </div>
-                      <div className="inline-actions">
-                        <button
-                          className="ghost-button"
-                          onClick={() => navigate(`/goals/${goal.id}`)}
-                          type="button"
-                        >
-                          Open
-                        </button>
-                        <button
-                          className="ghost-button"
-                          onClick={() => handleGeneratePlan(goal)}
-                          type="button"
-                        >
-                          {busyAction === `plan-${goal.id}` ? "Generating..." : "Generate plan"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                {selectedGoalPlan ? (
-                  <div className="plan-panel">
-                    <div className="plan-header">
-                      <div>
-                        <p className="section-label">Generated Plan</p>
-                        <h3>{selectedGoalPlan.summary}</h3>
-                      </div>
-                      <span className="pill">{selectedGoalPlan.status}</span>
-                    </div>
-                    <div className="plan-columns">
-                      <div className="detail-card">
-                        <h3>Steps</h3>
-                        <ol className="plan-list">
-                          {selectedGoalPlan.steps.map((step) => (
-                            <li key={step}>{step}</li>
-                          ))}
-                        </ol>
-                      </div>
-                      <div className="detail-card">
-                        <h3>Recommendation Snapshot</h3>
-                        <div className="recommendation-grid">
-                          {Object.entries(selectedGoalPlan.recommendations).map(([key, value]) => (
-                            <div className="detail-row compact-detail" key={key}>
-                              <strong>{key.replaceAll("_", " ")}</strong>
-                              <pre className="code-block compact-code">
-                                {JSON.stringify(value, null, 2)}
-                              </pre>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No plan selected"
-                    body="Generate a goal plan to inspect the steps and recommendation payload for one of your goals."
-                  />
-                )}
-              </SectionCard>
+              <GoalsView
+                busyAction={busyAction}
+                goals={goals}
+                newGoalTargetRsn={newGoalTargetRsn}
+                newGoalTitle={newGoalTitle}
+                newGoalType={newGoalType}
+                onCreateGoal={handleCreateGoal}
+                onGeneratePlan={handleGeneratePlan}
+                onGoToRecommendations={() => navigateToView("recommendations")}
+                onOpenGoal={(goalId) => navigate(`/goals/${goalId}`)}
+                selectedAccountRsn={selectedAccountRsn}
+                selectedGoalPlan={selectedGoalPlan}
+                setNewGoalTargetRsn={setNewGoalTargetRsn}
+                setNewGoalTitle={setNewGoalTitle}
+                setNewGoalType={setNewGoalType}
+              />
             ) : null}
 
             {activeView === "gear" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
