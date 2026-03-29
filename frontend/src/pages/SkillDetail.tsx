@@ -1,0 +1,110 @@
+import { Button } from "../components/ui/Button";
+import { Panel } from "../components/ui/Panel";
+import { SectionHeader } from "../components/ui/SectionHeader";
+import type { SkillRecommendationResponse } from "../types";
+
+type SkillDetailProps = {
+  onBackToDashboard: () => void;
+  onBackToSkills: () => void;
+  onReloadSkill: (skillKey: string) => void;
+  selectedAccountRsn: string | null;
+  skillRecommendations: SkillRecommendationResponse | null;
+};
+
+export function SkillDetailView({
+  onBackToDashboard,
+  onBackToSkills,
+  onReloadSkill,
+  selectedAccountRsn,
+  skillRecommendations,
+}: SkillDetailProps) {
+  if (!skillRecommendations) {
+    return (
+      <Panel>
+        <p className="text-sm leading-7 text-osrs-text-soft">No skill loaded.</p>
+      </Panel>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Panel tone="hero">
+        <SectionHeader
+          action={
+            <div className="flex gap-3">
+              <Button onClick={onBackToSkills} variant="secondary">All skills</Button>
+              <Button onClick={() => onReloadSkill(skillRecommendations.skill)}>Refresh skill</Button>
+            </div>
+          }
+          eyebrow="Skill Detail"
+          subtitle={skillRecommendations.skill}
+          title={`Train ${skillRecommendations.skill} smarter`}
+        />
+        <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
+          <button
+            className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5"
+            onClick={onBackToDashboard}
+            type="button"
+          >
+            Dashboard
+          </button>
+          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
+            Account {selectedAccountRsn ?? "none selected"}
+          </span>
+          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
+            Current level {skillRecommendations.current_level ?? "unknown"}
+          </span>
+        </div>
+      </Panel>
+
+      <Panel className="space-y-4">
+        <SectionHeader
+          eyebrow="Methods"
+          subtitle="Live methods from the backend recommendation layer."
+          title="Recommended training methods"
+        />
+        <div className="grid gap-4">
+          {skillRecommendations.recommendations.map((recommendation) => (
+            <div
+              className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-5 shadow-insetPanel"
+              key={recommendation.method}
+            >
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                  <strong className="block font-display text-2xl text-osrs-text">{recommendation.method}</strong>
+                  <p className="mt-2 text-sm leading-7 text-osrs-text-soft">{recommendation.rationale}</p>
+                </div>
+                <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs uppercase tracking-[0.18em] text-osrs-text-soft">
+                  {recommendation.estimated_xp_rate}
+                </span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-3 py-1 text-xs text-osrs-gold-soft">
+                  Levels {recommendation.min_level}-{recommendation.max_level}
+                </span>
+                <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs text-osrs-text-soft">
+                  {recommendation.preference}
+                </span>
+                {recommendation.tags.map((tag) => (
+                  <span
+                    className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs text-osrs-text-soft"
+                    key={tag}
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              {recommendation.requirements.length > 0 ? (
+                <ul className="mt-4 space-y-2 text-sm leading-7 text-osrs-text-soft">
+                  {recommendation.requirements.map((requirement) => (
+                    <li key={requirement}>- {requirement}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  );
+}

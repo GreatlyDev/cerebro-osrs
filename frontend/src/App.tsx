@@ -11,13 +11,17 @@ import { AccountDetailView as AccountDetailPageView } from "./pages/AccountDetai
 import { AuthView as AuthScreen } from "./pages/Auth";
 import { ChatView } from "./pages/Chat";
 import { DashboardPage } from "./pages/Dashboard";
+import { GearDetailView } from "./pages/GearDetail";
 import { GearView } from "./pages/Gear";
 import { GoalDetailView as GoalDetailPageView } from "./pages/GoalDetail";
 import { GoalsView } from "./pages/Goals";
 import { ProfileView } from "./pages/Profile";
+import { QuestDetailView } from "./pages/QuestDetail";
 import { QuestsView } from "./pages/Quests";
 import { RecommendationsView } from "./pages/Recommendations";
+import { SkillDetailView } from "./pages/SkillDetail";
 import { SkillsView } from "./pages/Skills";
+import { TeleportDetailView } from "./pages/TeleportDetail";
 import { TeleportsView } from "./pages/Teleports";
 import type {
   Account,
@@ -1306,7 +1310,7 @@ export function App() {
             ) : null}
 
             {skillDetailKey !== null ? (
-              <SkillDetailPage
+              <SkillDetailView
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToSkills={() => navigateToView("skills")}
                 onReloadSkill={(skillKey) => void handleLoadSkill(skillKey)}
@@ -1316,7 +1320,7 @@ export function App() {
             ) : null}
 
             {gearDetailOpen ? (
-              <GearDetailPage
+              <GearDetailView
                 gearRecommendations={gearRecommendations}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToGear={() => navigateToView("gear")}
@@ -1326,7 +1330,7 @@ export function App() {
             ) : null}
 
             {teleportDetailOpen ? (
-              <TeleportDetailPage
+              <TeleportDetailView
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToTeleports={() => navigateToView("teleports")}
                 onReloadTeleport={handleLoadTeleport}
@@ -1336,7 +1340,7 @@ export function App() {
             ) : null}
 
             {questDetailId !== null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <QuestDetailPage
+              <QuestDetailView
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToQuests={() => navigateToView("quests")}
                 onOpenNextAction={handleOpenNextAction}
