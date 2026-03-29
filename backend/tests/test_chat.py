@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from app.services.assistant import assistant_service
+from app.services.accounts import account_service
 
 
 @pytest.mark.asyncio
@@ -123,6 +124,209 @@ async def test_chat_can_answer_direct_skill_level_question(client: AsyncClient) 
 
     assert response.status_code == 201
     assert response.json()["assistant_message"]["content"] == "Your Fishing level is 72."
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_top_skills_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "TopSkills"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Top Skills"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What are my top skills right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "magic 82" in content
+    assert "woodcutting 78" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_completed_quests_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "QuestTracker"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"completed_quests": ["bone voyage", "waterfall quest"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Quest State"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What completed quests do I have tracked?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "2 tracked completed quests" in content
+    assert "bone voyage" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_prefers_primary_account_for_personal_stat_questions(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        fishing_level = 72 if rsn == "PrimaryOne" else 55
+        return {
+            "rsn": rsn,
+            "overall_rank": 123,
+            "overall_level": 2277 if rsn == "PrimaryOne" else 1800,
+            "overall_experience": 4_600_000_000,
+            "combat_level": 126 if rsn == "PrimaryOne" else 103,
+            "skills": {
+                "overall": {
+                    "rank": 123,
+                    "level": 2277 if rsn == "PrimaryOne" else 1800,
+                    "experience": 4_600_000_000,
+                },
+                "magic": {
+                    "rank": 2500,
+                    "level": 82 if rsn == "PrimaryOne" else 70,
+                    "experience": 2_250_000,
+                },
+                "woodcutting": {
+                    "rank": 4100,
+                    "level": 78 if rsn == "PrimaryOne" else 60,
+                    "experience": 1_650_000,
+                },
+                "fishing": {
+                    "rank": 5800,
+                    "level": fishing_level,
+                    "experience": 820_000,
+                },
+                "attack": {
+                    "rank": 3200,
+                    "level": 76 if rsn == "PrimaryOne" else 65,
+                    "experience": 1_340_000,
+                },
+            },
+            "top_skills": [
+                {"skill": "magic", "level": 82 if rsn == "PrimaryOne" else 70, "experience": 2_250_000},
+                {"skill": "woodcutting", "level": 78 if rsn == "PrimaryOne" else 60, "experience": 1_650_000},
+            ],
+            "skill_categories": {
+                "combat": {"average_level": 79.0, "highest_level": 82, "lowest_level": 76},
+                "gathering": {"average_level": 78.0, "highest_level": 78, "lowest_level": 72},
+            },
+            "progression_profile": {
+                "highest_skill": "magic",
+                "lowest_tracked_skill": "attack",
+                "total_skills_at_99": 0,
+                "total_skills_at_90_plus": 0,
+            },
+            "activity_metrics": [{"position": 1, "rank": 44, "score": 123}],
+            "activity_row_count": 1,
+            "activity_overview": {"tracked_activity_count": 1, "active_activity_count": 1},
+        }
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    primary_response = await client.post("/api/accounts", json={"rsn": "PrimaryOne"})
+    latest_response = await client.post("/api/accounts", json={"rsn": "LatestTwo"})
+    await client.post(f"/api/accounts/{primary_response.json()['id']}/sync")
+    await client.post(f"/api/accounts/{latest_response.json()['id']}/sync")
+    await client.patch("/api/profile", json={"primary_account_rsn": "PrimaryOne"})
+    session_response = await client.post("/api/chat/sessions", json={"title": "Primary Focus"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What is my fishing level?"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["assistant_message"]["content"] == "Your Fishing level is 72."
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_changes_since_last_sync_question(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "DeltaCheck"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+
+    async def fake_fetch_updated_summary(rsn: str) -> dict[str, object]:
+        return {
+            "rsn": rsn,
+            "overall_rank": 123,
+            "overall_level": 2281,
+            "overall_experience": 4_600_800_000,
+            "combat_level": 127,
+            "skills": {
+                "overall": {
+                    "rank": 123,
+                    "level": 2281,
+                    "experience": 4_600_800_000,
+                },
+                "magic": {
+                    "rank": 2500,
+                    "level": 83,
+                    "experience": 2_350_000,
+                },
+                "woodcutting": {
+                    "rank": 4100,
+                    "level": 79,
+                    "experience": 1_750_000,
+                },
+                "fishing": {
+                    "rank": 5800,
+                    "level": 73,
+                    "experience": 920_000,
+                },
+                "attack": {
+                    "rank": 3200,
+                    "level": 76,
+                    "experience": 1_340_000,
+                },
+            },
+            "top_skills": [
+                {"skill": "magic", "level": 83, "experience": 2_350_000},
+                {"skill": "woodcutting", "level": 79, "experience": 1_750_000},
+            ],
+            "skill_categories": {
+                "combat": {"average_level": 80.0, "highest_level": 83, "lowest_level": 76},
+                "gathering": {"average_level": 79.0, "highest_level": 79, "lowest_level": 73},
+            },
+            "progression_profile": {
+                "highest_skill": "magic",
+                "lowest_tracked_skill": "attack",
+                "total_skills_at_99": 0,
+                "total_skills_at_90_plus": 0,
+            },
+            "activity_metrics": [{"position": 1, "rank": 44, "score": 123}],
+            "activity_row_count": 1,
+            "activity_overview": {"tracked_activity_count": 1, "active_activity_count": 1},
+        }
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_updated_summary,
+    )
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Sync Delta"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What changed since my last sync?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "overall level changed by +4" in content
+    assert "combat level changed by +1" in content
+    assert "fishing" in content
 
 
 @pytest.mark.asyncio

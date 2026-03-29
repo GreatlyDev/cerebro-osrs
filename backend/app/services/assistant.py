@@ -17,6 +17,8 @@ class AssistantChatContext:
     account_summary: str | None = None
     snapshot_summary: str | None = None
     skills_summary: str | None = None
+    progress_summary: str | None = None
+    snapshot_delta_summary: str | None = None
     goal_summary: str | None = None
 
 
@@ -47,6 +49,8 @@ class AssistantService:
             "Give concise, grounded advice based only on the structured context you are given. "
             "Do not invent skills, quests, gear, or account state that is not present in the prompt. "
             "If context is missing, say what is missing and give the safest useful next step. "
+            "If the player asks a direct account question about a stat, unlock, quest count, gear, or recent progress, "
+            "answer that question directly first using the exact data provided. "
             "Prefer practical coaching over generic hype, and write like a capable in-game advisor."
         )
 
@@ -62,6 +66,8 @@ class AssistantService:
             f"Account context: {context.account_summary or 'No linked account summary yet.'}",
             f"Snapshot context: {context.snapshot_summary or 'No synced snapshot yet.'}",
             f"Skill readout: {context.skills_summary or 'No detailed skill readout yet.'}",
+            f"Progress context: {context.progress_summary or 'No tracked progress state yet.'}",
+            f"Recent sync delta: {context.snapshot_delta_summary or 'No snapshot delta available yet.'}",
             f"Goal context: {context.goal_summary or 'No active goal summary yet.'}",
             f"Recent chat history:\n{recent_history}",
             f"Structured fallback answer:\n{context.structured_fallback}",
