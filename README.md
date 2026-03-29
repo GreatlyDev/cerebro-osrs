@@ -48,4 +48,4 @@ Cerebro is not a bot or gameplay automation tool. It is a player advisory platfo
 
 ## Status
 
-Project initialization phase.
+Project Demo Phase 
