@@ -36,7 +36,7 @@ export function GoalProgressPanel({ goals }: GoalProgressPanelProps) {
                 <div>
                   <strong className="font-display text-base text-osrs-text">{goal.title}</strong>
                   <p className="mt-1 text-xs uppercase tracking-[0.16em] text-osrs-text-soft">
-                    {goal.targetAccount ? `${goal.targetAccount} • ${goal.status}` : goal.status}
+                    {goal.targetAccount ? `${goal.targetAccount} | ${goal.status}` : goal.status}
                   </p>
                 </div>
                 <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-2.5 py-1 text-xs text-osrs-gold-soft">

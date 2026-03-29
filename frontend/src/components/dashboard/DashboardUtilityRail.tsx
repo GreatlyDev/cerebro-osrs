@@ -1,4 +1,6 @@
 import type { Account, AccountProgress, AccountSnapshot, Goal, NextActionResponse } from "../../types";
+import { Panel } from "../ui/Panel";
+import { SectionHeader } from "../ui/SectionHeader";
 import { GoalProgressPanel } from "./GoalProgressPanel";
 import { InventoryPanel } from "./InventoryPanel";
 import { QuestJournalPanel } from "./QuestJournalPanel";
@@ -91,6 +93,33 @@ export function DashboardUtilityRail({
 
   return (
     <>
+      <Panel className="space-y-4">
+        <SectionHeader
+          eyebrow="Command Rail"
+          subtitle="A compact read on the currently selected account before the deeper utility panels below."
+          title={selectedAccount ? `${selectedAccount.rsn} at a glance` : "Workspace at a glance"}
+        />
+        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+          <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Overall</p>
+            <strong className="mt-2 block font-display text-2xl text-osrs-text">
+              {selectedSnapshot?.summary.overall_level ?? "n/a"}
+            </strong>
+          </div>
+          <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Quest log</p>
+            <strong className="mt-2 block font-display text-2xl text-osrs-text">
+              {selectedProgress?.completed_quests.length ?? 0}
+            </strong>
+          </div>
+          <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Momentum</p>
+            <strong className="mt-2 block font-display text-2xl text-osrs-text">
+              {selectedSnapshotDelta ? selectedSnapshotDelta.improvedSkills.length : 0}
+            </strong>
+          </div>
+        </div>
+      </Panel>
       <InventoryPanel
         items={inventorySlots}
         title={selectedAccount ? `${selectedAccount.rsn} loadout chest` : "Loadout chest"}

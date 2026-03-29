@@ -88,6 +88,8 @@ export function SidebarNav({
   primaryItems,
   secondaryItems,
 }: SidebarNavProps) {
+  const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
+
   return (
     <div className="flex h-full flex-col gap-5">
       <Panel tone="hero" className="overflow-hidden">
@@ -102,6 +104,14 @@ export function SidebarNav({
             </p>
           </div>
           <StatusPill backendStatus={backendStatus} />
+          <div className="flex flex-wrap gap-2 text-xs uppercase tracking-[0.16em] text-osrs-text-soft">
+            <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/60 px-3 py-1">
+              Linked RSNs {accounts.length}
+            </span>
+            <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/60 px-3 py-1">
+              Active {selectedAccount?.rsn ?? "none"}
+            </span>
+          </div>
         </div>
       </Panel>
 
@@ -128,6 +138,14 @@ export function SidebarNav({
               </option>
             ))}
           </select>
+        </div>
+        <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+          <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Workspace read</p>
+          <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
+            {selectedAccount
+              ? `${selectedAccount.rsn} is currently steering the planner. Switch the active RSN here when you want the rest of the app to pivot with it.`
+              : "Choose an RSN here and the planner, advisor, and recommendation pages will shift around that account."}
+          </p>
         </div>
         <Button className="w-full" onClick={onSignOut} variant="ghost">
           Sign out
