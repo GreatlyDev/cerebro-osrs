@@ -1245,24 +1245,33 @@ export function App() {
         <>
           {activeView === "dashboard" ? (
             <DashboardPage
+              accountCount={accounts.length}
+              busyAction={busyAction}
               chatHistory={chatHistory}
               chatPrompt={chatPrompt}
               chatReply={chatReply}
               currentUser={currentUser}
               goals={goals}
+              newAccountRsn={newAccountRsn}
               nextActions={nextActions}
+              onChangeNewAccountRsn={setNewAccountRsn}
               onGoToGear={() => navigateToView("gear")}
               onGoToGoals={() => navigateToView("goals")}
+              onGoToProfile={() => navigateToView("profile")}
               onGoToQuests={() => navigateToView("quests")}
               onGoToRecommendations={() => navigateToView("recommendations")}
               onGoToSkills={() => navigateToView("skills")}
               onOpenNextAction={handleOpenNextAction}
               onPromptChange={setChatPrompt}
+              onQuickstartAccount={handleQuickstartAccount}
+              onQuickstartGoal={handleQuickstartGoal}
               onRunChatPrompt={handleRunChatPrompt}
               profile={profile}
               selectedAccount={selectedAccount}
               selectedProgress={selectedProgress}
               selectedSnapshot={selectedSnapshot}
+              workspaceChecklist={workspaceChecklist}
+              workspaceProgress={workspaceProgress}
             />
           ) : null}
 

@@ -11,12 +11,17 @@ import type {
 import { AdvisorConsole } from "../components/dashboard/AdvisorConsole";
 import { FeatureGrid } from "../components/dashboard/FeatureGrid";
 import { HeroPanel } from "../components/dashboard/HeroPanel";
+import { WorkspaceSetupPanel } from "../components/dashboard/WorkspaceSetupPanel";
 
 type DashboardPageProps = {
+  accountCount: number;
+  busyAction: string | null;
   currentUser: AuthUser;
   profile: Profile | null;
   goals: Goal[];
+  newAccountRsn: string;
   nextActions: NextActionResponse | null;
+  onChangeNewAccountRsn: (value: string) => void;
   selectedAccount: { rsn: string } | null;
   selectedProgress: AccountProgress | null;
   selectedSnapshot: AccountSnapshot | null;
@@ -30,7 +35,12 @@ type DashboardPageProps = {
   onGoToGear: () => void;
   onGoToQuests: () => void;
   onGoToRecommendations: () => void;
+  onGoToProfile: () => void;
   onGoToSkills: () => void;
+  onQuickstartAccount: () => void;
+  onQuickstartGoal: () => void;
+  workspaceChecklist: Array<{ title: string; done: boolean; detail: string }>;
+  workspaceProgress: number;
 };
 
 function formatBankValue(selectedProgress: AccountProgress | null) {
@@ -52,7 +62,11 @@ export function DashboardPage(props: DashboardPageProps) {
     currentUser,
     profile,
     goals,
+    accountCount,
+    busyAction,
+    newAccountRsn,
     nextActions,
+    onChangeNewAccountRsn,
     selectedAccount,
     selectedProgress,
     selectedSnapshot,
@@ -66,7 +80,12 @@ export function DashboardPage(props: DashboardPageProps) {
     onGoToGear,
     onGoToQuests,
     onGoToRecommendations,
+    onGoToProfile,
     onGoToSkills,
+    onQuickstartAccount,
+    onQuickstartGoal,
+    workspaceChecklist,
+    workspaceProgress,
   } = props;
 
   const topAction = nextActions?.top_action ?? null;
@@ -146,6 +165,21 @@ export function DashboardPage(props: DashboardPageProps) {
         displayName={profile?.display_name ?? currentUser.display_name}
         questPoints={formatQuestPoints(selectedProgress)}
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
+      />
+      <WorkspaceSetupPanel
+        accountCount={accountCount}
+        busyAction={busyAction}
+        currentUserName={currentUser.display_name}
+        goalCount={goals.length}
+        newAccountRsn={newAccountRsn}
+        onChangeNewAccountRsn={onChangeNewAccountRsn}
+        onGoToGoals={onGoToGoals}
+        onGoToProfile={onGoToProfile}
+        onQuickstartAccount={onQuickstartAccount}
+        onQuickstartGoal={onQuickstartGoal}
+        primaryAccountRsn={profile?.primary_account_rsn ?? null}
+        workspaceChecklist={workspaceChecklist}
+        workspaceProgress={workspaceProgress}
       />
       <FeatureGrid items={featureItems} />
       <AdvisorConsole
