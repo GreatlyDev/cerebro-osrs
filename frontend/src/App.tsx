@@ -519,6 +519,11 @@ export function App() {
 
   async function handleAuthSubmit() {
     if (!loginEmail.trim() || !loginPassword.trim()) {
+      setError("Email and password are both required.");
+      return;
+    }
+    if (authMode === "register" && loginPassword.trim().length < 8) {
+      setError("Password must be at least 8 characters.");
       return;
     }
     setBusyAction("login");
@@ -4551,11 +4556,11 @@ function AuthView(props: {
             type="password"
             value={props.loginPassword}
             onChange={(event) => props.setLoginPassword(event.target.value)}
-            placeholder="Password"
+            placeholder={isRegister ? "Password (8+ characters)" : "Password"}
           />
           <p className="muted-copy auth-note">
             {isRegister
-              ? "Pick a password you will remember for this local workspace. You can keep using the same email as the app becomes more fully personalized."
+              ? "Pick a password with at least 8 characters for this local workspace. You can keep using the same email as the app becomes more fully personalized."
               : "Use the password tied to this local workspace account. If you created an older seeded account, the dev shortcut below still works."}
           </p>
           <button className="primary-button" onClick={props.onPasswordSubmit} type="button">

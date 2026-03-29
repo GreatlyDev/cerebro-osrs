@@ -25,6 +25,51 @@ import type {
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "/api";
 const SESSION_TOKEN_KEY = "cerebro.sessionToken";
 
+function extractErrorMessage(body: unknown): string {
+  if (typeof body === "string") {
+    return body;
+  }
+
+  if (!body || typeof body !== "object") {
+    return "Request failed.";
+  }
+
+  const detail = (body as { detail?: unknown }).detail;
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => {
+        if (typeof item === "string") {
+          return item;
+        }
+        if (item && typeof item === "object") {
+          const typedItem = item as { msg?: unknown; loc?: unknown };
+          const message = typeof typedItem.msg === "string" ? typedItem.msg : null;
+          const location = Array.isArray(typedItem.loc)
+            ? typedItem.loc
+                .filter((part): part is string | number => typeof part === "string" || typeof part === "number")
+                .join(" -> ")
+            : null;
+          if (message && location) {
+            return `${location}: ${message}`;
+          }
+          return message;
+        }
+        return null;
+      })
+      .filter((message): message is string => Boolean(message));
+
+    if (messages.length > 0) {
+      return messages.join(" ");
+    }
+  }
+
+  return "Request failed.";
+}
+
 function getSessionToken(): string | null {
   if (typeof window === "undefined") {
     return null;
@@ -66,7 +111,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: "Request failed." }));
-    throw new Error(body.detail ?? "Request failed.");
+    throw new Error(extractErrorMessage(body));
   }
 
   return response.json() as Promise<T>;
