@@ -8,9 +8,9 @@ type PanelProps = HTMLAttributes<HTMLDivElement> & {
 export function Panel({ children, className = "", tone = "default", ...props }: PanelProps) {
   const toneClass = {
     default:
-      "bg-[linear-gradient(180deg,rgba(42,33,26,0.96),rgba(26,21,17,0.98))]",
+      "bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.025),transparent_28%),linear-gradient(180deg,rgba(42,33,26,0.96),rgba(26,21,17,0.98))]",
     soft:
-      "bg-[linear-gradient(180deg,rgba(49,39,30,0.88),rgba(25,20,16,0.96))]",
+      "bg-[radial-gradient(circle_at_top_left,rgba(217,191,134,0.08),transparent_24%),linear-gradient(180deg,rgba(49,39,30,0.88),rgba(25,20,16,0.96))]",
     hero:
       "bg-[radial-gradient(circle_at_top_right,rgba(143,183,201,0.14),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(200,164,90,0.16),transparent_30%),linear-gradient(180deg,rgba(44,34,24,0.96),rgba(23,18,14,0.98))]",
   } as const;

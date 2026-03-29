@@ -13,7 +13,7 @@ export function Button({
   ...props
 }: ButtonProps) {
   const base =
-    "inline-flex items-center justify-center gap-2 rounded-[14px] border px-4 py-2.5 text-sm font-semibold tracking-[0.01em] cerebro-hover disabled:cursor-not-allowed disabled:opacity-50";
+    "inline-flex items-center justify-center gap-2 rounded-[14px] border px-4 py-2.5 text-sm font-semibold tracking-[0.01em] cerebro-hover cerebro-press disabled:cursor-not-allowed disabled:opacity-50";
   const variants = {
     primary:
       "border-osrs-border-light/70 bg-osrs-button text-[#241708] shadow-[inset_0_1px_0_rgba(255,241,214,0.35),0_10px_20px_rgba(71,47,18,0.24)]",
