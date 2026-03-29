@@ -813,6 +813,13 @@ textarea {
   gap: 16px;
 }
 
+.supporting-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
 .recommendation-group-card {
   background:
     radial-gradient(circle at top right, rgba(132, 181, 255, 0.07), transparent 35%),

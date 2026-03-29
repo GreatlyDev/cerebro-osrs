@@ -317,6 +317,7 @@ export function App() {
   });
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [chatHistory, setChatHistory] = useState<ChatExchange[]>([]);
+  const [selectedChatSessionId, setSelectedChatSessionId] = useState<number | null>(null);
   const [chatReply, setChatReply] = useState("");
   const [chatPrompt, setChatPrompt] = useState("What's my next best action?");
   const [skills, setSkills] = useState<SkillCatalogItem[]>([]);
@@ -756,11 +757,13 @@ export function App() {
     setBusyAction("chat");
     setError(null);
     try {
-      let session = chatSessions[0];
+      let session =
+        chatSessions.find((item) => item.id === selectedChatSessionId) ?? chatSessions[0];
       if (!session) {
         session = await api.createChatSession("Frontend Prompt");
         setChatSessions((current) => [session, ...current]);
       }
+      setSelectedChatSessionId(session.id);
       const reply = await api.sendChatMessage(session.id, prompt);
       setChatReply(reply.assistant_message.content);
       setChatHistory((current) => [
@@ -1311,6 +1314,8 @@ export function App() {
                 chatReply={chatReply}
                 chatSessions={chatSessions}
                 onRunChatPrompt={handleRunChatPrompt}
+                selectedChatSessionId={selectedChatSessionId}
+                setSelectedChatSessionId={setSelectedChatSessionId}
                 setChatPrompt={setChatPrompt}
                 selectedAccountRsn={selectedAccountRsn}
               />
@@ -3929,6 +3934,55 @@ function RecommendationsPage(props: {
     return groups;
   }, {});
 
+  function renderSupportingData(action: NextAction) {
+    const entries = Object.entries(action.supporting_data ?? {});
+    if (entries.length === 0) {
+      return null;
+    }
+
+    return (
+      <div className="supporting-grid">
+        {entries.map(([key, value]) => {
+          const label = key.replaceAll("_", " ");
+          if (Array.isArray(value)) {
+            return (
+              <div className="detail-row compact-detail" key={key}>
+                <strong>{label}</strong>
+                {value.length > 0 ? (
+                  <div className="chip-row">
+                    {value.map((item, index) => (
+                      <span className="chip" key={`${key}-${index}`}>
+                        {typeof item === "string" ? item : JSON.stringify(item)}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="muted-copy">None tracked.</p>
+                )}
+              </div>
+            );
+          }
+
+          if (value && typeof value === "object") {
+            return (
+              <div className="detail-row compact-detail" key={key}>
+                <strong>{label}</strong>
+                <pre className="code-block compact-code">{JSON.stringify(value, null, 2)}</pre>
+              </div>
+            );
+          }
+
+          return (
+            <div className="detail-row compact-detail" key={key}>
+              <strong>{label}</strong>
+              <p className="muted-copy">{String(value)}</p>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className="detail-page-grid">
       <DetailBreadcrumbs
@@ -4036,6 +4090,7 @@ function RecommendationsPage(props: {
                               </ul>
                             </div>
                           ) : null}
+                          {renderSupportingData(action)}
                         </div>
                       ))}
                     </div>
@@ -4068,6 +4123,8 @@ function ChatPage(props: {
   chatSessions: ChatSession[];
   onRunChatPrompt: (promptOverride?: string) => void;
   selectedAccountRsn: string | null;
+  selectedChatSessionId: number | null;
+  setSelectedChatSessionId: Dispatch<SetStateAction<number | null>>;
   setChatPrompt: Dispatch<SetStateAction<string>>;
 }) {
   const {
@@ -4078,8 +4135,14 @@ function ChatPage(props: {
     chatSessions,
     onRunChatPrompt,
     selectedAccountRsn,
+    selectedChatSessionId,
+    setSelectedChatSessionId,
     setChatPrompt,
   } = props;
+  const visibleHistory =
+    selectedChatSessionId === null
+      ? chatHistory
+      : chatHistory.filter((exchange) => exchange.sessionId === selectedChatSessionId);
 
   return (
     <SectionCard
@@ -4146,17 +4209,22 @@ function ChatPage(props: {
           <div className="chip-row">
             {chatSessions.length === 0 ? <span className="muted-copy">No sessions yet.</span> : null}
             {chatSessions.map((session) => (
-              <span className="chip" key={session.id}>
+              <button
+                className={`chip-button${selectedChatSessionId === session.id ? " is-active" : ""}`}
+                key={session.id}
+                onClick={() => setSelectedChatSessionId(session.id)}
+                type="button"
+              >
                 {session.title}
-              </span>
+              </button>
             ))}
           </div>
         </div>
-        {chatHistory.length > 0 ? (
+        {visibleHistory.length > 0 ? (
           <div className="detail-card">
-            <h3>Recent exchanges</h3>
+            <h3>{selectedChatSessionId ? "Selected session history" : "Recent exchanges"}</h3>
             <div className="stack-list">
-              {chatHistory.map((exchange) => (
+              {visibleHistory.map((exchange) => (
                 <div className="detail-row" key={`${exchange.sessionId}-${exchange.prompt}`}>
                   <strong>{exchange.prompt}</strong>
                   <p>{exchange.reply}</p>
@@ -4166,8 +4234,12 @@ function ChatPage(props: {
           </div>
         ) : (
           <EmptyState
-            title="No chat history yet"
-            body="Send a prompt or use a quick prompt to start building a history for your account workspace."
+            title={selectedChatSessionId ? "No exchanges in this session yet" : "No chat history yet"}
+            body={
+              selectedChatSessionId
+                ? "Use the prompt box above to keep building this session."
+                : "Send a prompt or use a quick prompt to start building a history for your account workspace."
+            }
           />
         )}
       </div>
