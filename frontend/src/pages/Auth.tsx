@@ -30,6 +30,8 @@ export function AuthView(props: AuthViewProps) {
     <div className="relative min-h-screen overflow-hidden bg-osrs-bg text-osrs-text">
       <div className="pointer-events-none absolute inset-0 cerebro-texture" />
       <div className="pointer-events-none absolute inset-0 cerebro-vignette" />
+      <div className="pointer-events-none absolute left-[-5rem] top-16 h-56 w-56 rounded-full bg-osrs-gold/15 cerebro-ambient-orb" />
+      <div className="pointer-events-none absolute bottom-20 right-[-6rem] h-72 w-72 rounded-full bg-emerald-950/30 cerebro-ambient-orb" />
       <div className="relative mx-auto grid min-h-screen max-w-7xl items-center gap-8 px-6 py-8 xl:grid-cols-[1.1fr_32rem]">
         <div className="space-y-8">
           <div className="space-y-5">

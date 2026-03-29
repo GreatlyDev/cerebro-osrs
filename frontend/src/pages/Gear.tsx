@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { GearRecommendationResponse } from "../types";
@@ -34,12 +35,16 @@ export function GearView({
 }: GearViewProps) {
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          eyebrow="Gear Optimizer"
-          subtitle="Tell Cerebro what combat lane and budget you care about, then let the live backend surface cleaner upgrade ladders."
-          title="Loadout upgrades with account-aware filtering"
-        />
+      <PageHero
+        chips={[
+          { label: "Active account", value: selectedAccountRsn ?? "None selected" },
+          { label: "Combat lane", value: gearCombatStyle },
+          { label: "Budget tier", value: gearBudgetTier },
+        ]}
+        description="Tell Cerebro what combat lane and budget you care about, then let the live backend surface cleaner upgrade ladders with owned-gear filtering already applied."
+        eyebrow="Gear Optimizer"
+        title="Loadout upgrades with account-aware filtering"
+      >
         <div className="grid gap-3 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto]">
           <select
             className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none focus:border-osrs-border-light/80"
@@ -68,7 +73,7 @@ export function GearView({
             {busyAction === "gear" ? "Loading..." : "Get upgrades"}
           </Button>
         </div>
-      </Panel>
+      </PageHero>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
         <Panel className="space-y-4">

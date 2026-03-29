@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { TeleportRouteResponse } from "../types";
@@ -30,12 +31,16 @@ export function TeleportsView({
 }: TeleportsViewProps) {
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          eyebrow="Teleport Planner"
-          subtitle="When movement friction is the blocker, use this surface to ask Cerebro for the cleanest route into the content you care about."
-          title="Unlock-aware route planning"
-        />
+      <PageHero
+        chips={[
+          { label: "Active account", value: selectedAccountRsn ?? "None selected" },
+          { label: "Destination", value: teleportDestination },
+          { label: "Route preference", value: teleportPreference },
+        ]}
+        description="When movement friction is the blocker, use this surface to ask Cerebro for the cleanest route into the content you care about."
+        eyebrow="Teleport Planner"
+        title="Unlock-aware route planning"
+      >
         <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
           <select
             className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none focus:border-osrs-border-light/80"
@@ -60,7 +65,7 @@ export function TeleportsView({
             {busyAction === "teleport" ? "Routing..." : "Find route"}
           </Button>
         </div>
-      </Panel>
+      </PageHero>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
         <Panel className="space-y-4">
