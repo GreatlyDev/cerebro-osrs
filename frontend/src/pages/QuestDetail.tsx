@@ -1,4 +1,5 @@
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { NextAction, NextActionResponse, QuestDetail as QuestDetailType } from "../types";
@@ -33,13 +34,17 @@ export function QuestDetailView({
 
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={<Button onClick={onBackToQuests} variant="secondary">All quests</Button>}
-          eyebrow="Quest Detail"
-          subtitle={selectedQuest.short_description}
-          title={selectedQuest.name}
-        />
+      <PageHero
+        action={<Button onClick={onBackToQuests} variant="secondary">All quests</Button>}
+        chips={[
+          { label: "Difficulty", value: selectedQuest.difficulty },
+          { label: "Category", value: selectedQuest.category },
+          { label: "Planner links", value: String(relatedActions.length) },
+        ]}
+        description={selectedQuest.short_description}
+        eyebrow="Quest Detail"
+        title={selectedQuest.name}
+      >
         <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
           <button
             className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5"
@@ -48,14 +53,8 @@ export function QuestDetailView({
           >
             Dashboard
           </button>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            {selectedQuest.difficulty}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            {selectedQuest.category}
-          </span>
         </div>
-      </Panel>
+      </PageHero>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
         <div className="space-y-6">
@@ -91,7 +90,7 @@ export function QuestDetailView({
         </div>
 
         <Panel className="space-y-4">
-          <SectionHeader eyebrow="Planner links" title="Related actions" />
+          <SectionHeader eyebrow="Planner links" title="Related actions" subtitle="Ranked quest pressure and follow-through for this unlock." />
           {relatedActions.length > 0 ? (
             relatedActions.map((action) => (
               <div

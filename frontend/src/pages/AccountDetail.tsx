@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type {
@@ -96,34 +97,35 @@ export function AccountDetailView(props: AccountDetailProps) {
 
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={() => onSetPrimaryAccount(selectedAccount)} variant="secondary">
-                {busyAction === `primary-${selectedAccount.id}` ? "Saving..." : "Set primary"}
-              </Button>
-              <Button onClick={() => onSyncAccount(selectedAccount)}>
-                {busyAction === `sync-${selectedAccount.id}` ? "Syncing..." : "Sync now"}
-              </Button>
-            </div>
-          }
-          eyebrow="Account Workspace"
-          subtitle="A deeper planning room for one linked RSN, with sync history, manual progress state, and account-specific goals."
-          title={selectedAccount.rsn}
-        />
+      <PageHero
+        action={
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={() => onSetPrimaryAccount(selectedAccount)} variant="secondary">
+              {busyAction === `primary-${selectedAccount.id}` ? "Saving..." : "Set primary"}
+            </Button>
+            <Button onClick={() => onSyncAccount(selectedAccount)}>
+              {busyAction === `sync-${selectedAccount.id}` ? "Syncing..." : "Sync now"}
+            </Button>
+          </div>
+        }
+        chips={[
+          {
+            label: "Account state",
+            value: profile?.primary_account_rsn === selectedAccount.rsn ? "Primary account" : "Linked account",
+          },
+          { label: "Goals attached", value: String(accountGoals.length) },
+          { label: "Latest sync", value: selectedSnapshot ? formatStamp(selectedSnapshot.created_at) : "Not synced" },
+        ]}
+        description="A deeper planning room for one linked RSN, with sync history, manual progress state, and account-specific goals."
+        eyebrow="Account Workspace"
+        title={selectedAccount.rsn}
+      >
         <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
           <button className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5" onClick={onBackToDashboard} type="button">
             Back to dashboard
           </button>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            {profile?.primary_account_rsn === selectedAccount.rsn ? "Primary account" : "Linked account"}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Goals {accountGoals.length}
-          </span>
         </div>
-      </Panel>
+      </PageHero>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
         <div className="space-y-6">
@@ -139,6 +141,21 @@ export function AccountDetailView(props: AccountDetailProps) {
               <MetricCard label="Tracked quests" value={selectedProgress?.completed_quests.length ?? 0} />
               <MetricCard label="Unlock chains" value={selectedProgress?.active_unlocks.length ?? 0} />
             </div>
+            {selectedSnapshot?.summary.top_skills?.length ? (
+              <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/45 px-4 py-4 shadow-insetPanel">
+                <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Top skills on this snapshot</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {selectedSnapshot.summary.top_skills.slice(0, 5).map((skill) => (
+                    <span
+                      className="rounded-full border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-1 text-xs text-osrs-text-soft"
+                      key={skill.skill}
+                    >
+                      {skill.skill} {skill.level}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </Panel>
 
           <Panel className="space-y-4">
@@ -210,7 +227,7 @@ export function AccountDetailView(props: AccountDetailProps) {
           </Panel>
 
           <Panel className="space-y-4">
-            <SectionHeader eyebrow="Planner pressure" title="Account-specific actions" />
+            <SectionHeader eyebrow="Planner pressure" title="Account-specific actions" subtitle="These are the ranked actions that currently resolve directly onto this account." />
             {accountActionMatches.length > 0 ? (
               <div className="grid gap-3">
                 {accountActionMatches.slice(0, 3).map((action) => (

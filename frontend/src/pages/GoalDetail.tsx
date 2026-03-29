@@ -1,4 +1,5 @@
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { Goal, GoalPlanResponse, NextAction, NextActionResponse, Profile } from "../types";
@@ -46,36 +47,33 @@ export function GoalDetailView(props: GoalDetailProps) {
 
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={
-            <div className="flex gap-3">
-              <Button onClick={onGoToGoals} variant="secondary">All goals</Button>
-              <Button onClick={() => onGeneratePlan(selectedGoal)}>
-                {busyAction === `plan-${selectedGoal.id}` ? "Generating..." : "Refresh plan"}
-              </Button>
-            </div>
-          }
-          eyebrow="Goal Detail"
-          subtitle={`Full planning view for ${selectedGoal.title}.`}
-          title={selectedGoal.title}
-        />
+      <PageHero
+        action={
+          <div className="flex gap-3">
+            <Button onClick={onGoToGoals} variant="secondary">All goals</Button>
+            <Button onClick={() => onGeneratePlan(selectedGoal)}>
+              {busyAction === `plan-${selectedGoal.id}` ? "Generating..." : "Refresh plan"}
+            </Button>
+          </div>
+        }
+        chips={[
+          { label: "Goal type", value: selectedGoal.goal_type },
+          { label: "Status", value: selectedGoal.status },
+          { label: "Target RSN", value: selectedGoal.target_account_rsn ?? "Workspace-wide" },
+        ]}
+        description={`Full planning view for ${selectedGoal.title}.`}
+        eyebrow="Goal Detail"
+        title={selectedGoal.title}
+      >
         <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
           <button className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5" onClick={onBackToDashboard} type="button">Dashboard</button>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">{selectedGoal.goal_type}</span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">{selectedGoal.status}</span>
-          {selectedGoal.target_account_rsn ? (
-            <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-              {selectedGoal.target_account_rsn}
-            </span>
-          ) : null}
         </div>
-      </Panel>
+      </PageHero>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
         <div className="space-y-6">
           <Panel className="space-y-4">
-            <SectionHeader eyebrow="Goal read" title="Planning context" subtitle="A dedicated surface for this goal’s direction and generated plan." />
+            <SectionHeader eyebrow="Goal read" title="Planning context" subtitle="A dedicated surface for this goal's direction and generated plan." />
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
                 <strong className="block text-osrs-text">Workspace focus</strong>
@@ -86,6 +84,21 @@ export function GoalDetailView(props: GoalDetailProps) {
                 <p className="mt-2 text-sm text-osrs-text-soft">{selectedGoal.notes ?? "No notes yet."}</p>
               </div>
             </div>
+            {matchedActions.length > 0 ? (
+              <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/45 px-4 py-4 shadow-insetPanel">
+                <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Planner pressure</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {matchedActions.slice(0, 4).map((action) => (
+                    <span
+                      className="rounded-full border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-1 text-xs text-osrs-text-soft"
+                      key={`${action.action_type}-${action.title}`}
+                    >
+                      {action.action_type} · {action.priority}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : null}
           </Panel>
 
           <Panel className="space-y-4">
@@ -128,7 +141,7 @@ export function GoalDetailView(props: GoalDetailProps) {
         </div>
 
         <Panel className="space-y-4">
-          <SectionHeader eyebrow="Goal-aware actions" title="Ranked actions" />
+          <SectionHeader eyebrow="Goal-aware actions" title="Ranked actions" subtitle="The planner's live next moves for this exact goal." />
           {matchedActions.length > 0 ? (
             <div className="grid gap-3">
               {matchedActions.map((action) => (
