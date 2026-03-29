@@ -110,6 +110,22 @@ async def test_chat_can_answer_work_on_next_prompt_without_goal(client: AsyncCli
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_direct_skill_level_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "SkillCheck"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Skill Check"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What is my fishing level?"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["assistant_message"]["content"] == "Your Fishing level is 72."
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

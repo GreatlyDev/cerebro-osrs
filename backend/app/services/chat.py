@@ -111,6 +111,13 @@ class ChatService:
             db_session=db_session,
             account=latest_account,
         )
+        stat_answer = self._build_direct_stat_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+        )
+        if stat_answer is not None:
+            return stat_answer
+
         structured_response = await self._generate_structured_response(
             db_session=db_session,
             user=user,
@@ -134,6 +141,7 @@ class ChatService:
                 profile_summary=self._summarize_profile(profile),
                 account_summary=self._summarize_account(latest_account),
                 snapshot_summary=self._summarize_snapshot(latest_snapshot),
+                skills_summary=self._summarize_skills(latest_snapshot),
                 goal_summary=self._summarize_goal(latest_goal),
             )
         )
@@ -348,6 +356,111 @@ class ChatService:
             f"progression_profile={summary.get('progression_profile')}, "
             f"top_skills={top_skills or 'unknown'}, activity_overview={activity_overview or 'unknown'}"
         )
+
+    def _summarize_skills(self, snapshot: AccountSnapshot | None) -> str | None:
+        if snapshot is None:
+            return None
+
+        skills = snapshot.summary.get("skills")
+        if not isinstance(skills, dict):
+            return None
+
+        parts: list[str] = []
+        for skill_name, data in skills.items():
+            if skill_name == "overall" or not isinstance(data, dict):
+                continue
+            level = data.get("level")
+            if isinstance(level, int):
+                parts.append(f"{skill_name}={level}")
+
+        return ", ".join(parts) if parts else None
+
+    def _build_direct_stat_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot | None,
+    ) -> str | None:
+        if latest_snapshot is None:
+            return None
+
+        normalized = message.lower()
+        summary = latest_snapshot.summary or {}
+        skills = summary.get("skills")
+        if not isinstance(skills, dict):
+            skills = {}
+
+        metric = self._detect_stat_metric(normalized)
+        skill_name = self._detect_skill_name(normalized, skills)
+
+        if skill_name is not None:
+            skill_data = skills.get(skill_name)
+            if isinstance(skill_data, dict):
+                label = skill_name.replace("_", " ").title()
+                if metric == "experience":
+                    experience = skill_data.get("experience")
+                    if isinstance(experience, int):
+                        return f"Your {label} experience is {experience:,}."
+                elif metric == "rank":
+                    rank = skill_data.get("rank")
+                    if isinstance(rank, int):
+                        return f"Your {label} rank is {rank:,}."
+                else:
+                    level = skill_data.get("level")
+                    if isinstance(level, int):
+                        return f"Your {label} level is {level}."
+
+        if "combat" in normalized and "level" in normalized:
+            combat_level = summary.get("combat_level")
+            if isinstance(combat_level, int):
+                return f"Your combat level is {combat_level}."
+
+        if ("overall" in normalized or "total" in normalized) and "level" in normalized:
+            overall_level = summary.get("overall_level")
+            if isinstance(overall_level, int):
+                return f"Your overall level is {overall_level}."
+
+        if ("overall" in normalized or "total" in normalized) and "rank" in normalized:
+            overall_rank = summary.get("overall_rank")
+            if isinstance(overall_rank, int):
+                return f"Your overall rank is {overall_rank:,}."
+
+        return None
+
+    def _detect_skill_name(
+        self,
+        normalized_message: str,
+        skills: dict[str, Any],
+    ) -> str | None:
+        aliases = {
+            "hp": "hitpoints",
+            "hits": "hitpoints",
+            "range": "ranged",
+            "rc": "runecraft",
+            "wc": "woodcutting",
+            "con": "construction",
+            "def": "defence",
+            "pray": "prayer",
+        }
+
+        for alias, canonical in aliases.items():
+            if alias in normalized_message and canonical in skills:
+                return canonical
+
+        for skill_name in skills:
+            if skill_name == "overall":
+                continue
+            if skill_name in normalized_message:
+                return skill_name
+
+        return None
+
+    def _detect_stat_metric(self, normalized_message: str) -> str:
+        if "xp" in normalized_message or "experience" in normalized_message:
+            return "experience"
+        if "rank" in normalized_message:
+            return "rank"
+        return "level"
 
     def _join_preview(self, value: Any) -> str | None:
         if isinstance(value, list):

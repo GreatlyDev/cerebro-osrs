@@ -16,6 +16,7 @@ class AssistantChatContext:
     profile_summary: str | None = None
     account_summary: str | None = None
     snapshot_summary: str | None = None
+    skills_summary: str | None = None
     goal_summary: str | None = None
 
 
@@ -60,6 +61,7 @@ class AssistantService:
             f"Profile context: {context.profile_summary or 'No profile summary yet.'}",
             f"Account context: {context.account_summary or 'No linked account summary yet.'}",
             f"Snapshot context: {context.snapshot_summary or 'No synced snapshot yet.'}",
+            f"Skill readout: {context.skills_summary or 'No detailed skill readout yet.'}",
             f"Goal context: {context.goal_summary or 'No active goal summary yet.'}",
             f"Recent chat history:\n{recent_history}",
             f"Structured fallback answer:\n{context.structured_fallback}",
