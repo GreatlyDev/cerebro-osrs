@@ -1,4 +1,5 @@
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { TeleportRouteResponse } from "../types";
@@ -28,18 +29,22 @@ export function TeleportDetailView({
 
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={
-            <div className="flex gap-3">
-              <Button onClick={onBackToTeleports} variant="secondary">All routes</Button>
-              <Button onClick={onReloadTeleport}>Refresh route</Button>
-            </div>
-          }
-          eyebrow="Teleport Detail"
-          subtitle={teleportRoute.destination}
-          title={teleportRoute.recommended_route.method}
-        />
+      <PageHero
+        action={
+          <div className="flex gap-3">
+            <Button onClick={onBackToTeleports} variant="secondary">All routes</Button>
+            <Button onClick={onReloadTeleport}>Refresh route</Button>
+          </div>
+        }
+        chips={[
+          { label: "Account", value: selectedAccountRsn ?? "None selected" },
+          { label: "Destination", value: teleportRoute.destination },
+          { label: "Preference", value: teleportRoute.preference },
+        ]}
+        description={teleportRoute.destination}
+        eyebrow="Teleport Detail"
+        title={teleportRoute.recommended_route.method}
+      >
         <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
           <button
             className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5"
@@ -48,14 +53,8 @@ export function TeleportDetailView({
           >
             Dashboard
           </button>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Account {selectedAccountRsn ?? "none selected"}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            {teleportRoute.preference}
-          </span>
         </div>
-      </Panel>
+      </PageHero>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
         <Panel className="space-y-4">
@@ -84,7 +83,7 @@ export function TeleportDetailView({
         </Panel>
 
         <Panel className="space-y-4">
-          <SectionHeader eyebrow="Fallbacks" title="Alternative routes" />
+          <SectionHeader eyebrow="Fallbacks" title="Alternative routes" subtitle="Other ways into the destination when the primary method is missing or less ideal." />
           {teleportRoute.alternatives.length > 0 ? (
             teleportRoute.alternatives.map((option) => (
               <div
