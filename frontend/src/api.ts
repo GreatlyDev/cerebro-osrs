@@ -75,6 +75,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   getHealth: () => request<HealthCheck>("/health"),
   getSession: () => request<AuthUser>("/auth/session"),
+  logout: () =>
+    request<{ detail: string }>("/auth/logout", {
+      method: "POST",
+    }),
   register: (payload: { email: string; password: string; display_name?: string | null }) =>
     request<AuthSession>("/auth/register", {
       method: "POST",

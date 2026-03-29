@@ -564,23 +564,30 @@ export function App() {
     }
   }
 
-  function handleSignOut() {
-    storeSessionToken(null);
-    setCurrentUser(null);
-    setProfile(null);
-    setAccounts([]);
-    setGoals([]);
-    setNextActions(null);
-    setSelectedGoalPlan(null);
-    setSelectedSnapshot(null);
-    setSelectedSnapshotHistory([]);
-    setSelectedProgress(null);
-    setSelectedAccountId(null);
-    setChatSessions([]);
-    setChatHistory([]);
-    setChatReply("");
-    setProgressDraft(emptyProgressDraft());
-    setError(null);
+  async function handleSignOut() {
+    try {
+      await api.logout();
+    } catch {
+      // Local cleanup still matters if the backend session was already gone.
+    } finally {
+      storeSessionToken(null);
+      setCurrentUser(null);
+      setProfile(null);
+      setAccounts([]);
+      setGoals([]);
+      setNextActions(null);
+      setSelectedGoalPlan(null);
+      setSelectedSnapshot(null);
+      setSelectedSnapshotHistory([]);
+      setSelectedProgress(null);
+      setSelectedAccountId(null);
+      setChatSessions([]);
+      setChatHistory([]);
+      setChatReply("");
+      setProgressDraft(emptyProgressDraft());
+      setError(null);
+      setLoginPassword("");
+    }
   }
 
   async function handleCreateAccount() {

@@ -108,3 +108,22 @@ async def test_login_rejects_wrong_password(client: AsyncClient) -> None:
     )
 
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_logout_revokes_current_session(client: AsyncClient) -> None:
+    login_response = await client.post(
+        "/api/auth/register",
+        json={
+            "email": "logout@example.com",
+            "display_name": "Logout User",
+            "password": "hunter2pass",
+        },
+    )
+    auth_headers = {"Authorization": f"Bearer {login_response.json()['session_token']}"}
+
+    logout_response = await client.post("/api/auth/logout", headers=auth_headers)
+    session_response = await client.get("/api/auth/session", headers=auth_headers)
+
+    assert logout_response.status_code == 200
+    assert session_response.status_code == 401

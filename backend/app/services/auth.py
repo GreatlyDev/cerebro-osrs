@@ -7,7 +7,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import hash_password, verify_password
 from app.models.user import User
 from app.models.user_session import UserSession
-from app.schemas.auth import AuthSessionResponse, AuthUserResponse, DevLoginRequest, EmailPasswordAuthRequest
+from app.schemas.auth import (
+    AuthSessionResponse,
+    AuthUserResponse,
+    DevLoginRequest,
+    EmailPasswordAuthRequest,
+)
 
 
 class AuthService:
@@ -110,6 +115,23 @@ class AuthService:
                 detail="Session user no longer exists.",
             )
         return user
+
+    async def revoke_session(
+        self,
+        db_session: AsyncSession,
+        session_token: str,
+    ) -> None:
+        session = await db_session.scalar(
+            select(UserSession).where(UserSession.token == session_token)
+        )
+        if session is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired session.",
+            )
+
+        await db_session.delete(session)
+        await db_session.commit()
 
     async def _create_session(
         self,

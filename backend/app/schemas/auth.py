@@ -55,3 +55,7 @@ class AuthUserResponse(BaseModel):
 class AuthSessionResponse(BaseModel):
     user: AuthUserResponse
     session_token: str
+
+
+class LogoutResponse(BaseModel):
+    detail: str
