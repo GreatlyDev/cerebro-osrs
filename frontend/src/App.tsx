@@ -4008,6 +4008,69 @@ function RecommendationsPage(props: {
     return groups;
   }, {});
 
+  function formatSupportLabel(value: string) {
+    return value
+      .replaceAll("_", " ")
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  }
+
+  function formatSupportValue(value: unknown) {
+    if (typeof value === "boolean") {
+      return value ? "Yes" : "No";
+    }
+    if (typeof value === "number") {
+      return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+    }
+    if (typeof value === "string") {
+      return value.replaceAll("_", " ");
+    }
+    return String(value);
+  }
+
+  function buildRecommendationSummary(action: NextAction) {
+    const supporting = action.supporting_data ?? {};
+    const snippets: string[] = [];
+
+    if (typeof supporting.recommended_skill === "string") {
+      const level = supporting.current_level;
+      snippets.push(
+        level !== undefined && level !== null
+          ? `Push ${supporting.recommended_skill} next from level ${level}.`
+          : `Push ${supporting.recommended_skill} next.`
+      );
+    }
+
+    if (typeof supporting.recommended_quest === "string") {
+      snippets.push(`This path is anchored around ${supporting.recommended_quest}.`);
+    }
+
+    if (typeof supporting.recommended_upgrade === "string") {
+      snippets.push(`The most relevant upgrade right now is ${supporting.recommended_upgrade}.`);
+    }
+
+    if (typeof supporting.recommended_route === "string") {
+      snippets.push(`Travel setup points toward ${supporting.recommended_route}.`);
+    }
+
+    if (Array.isArray(supporting.missing_skills) && supporting.missing_skills.length > 0) {
+      snippets.push(`You still need ${supporting.missing_skills.join(", ")} before this fully opens up.`);
+    }
+
+    if (Array.isArray(supporting.recently_progressed_skills) && supporting.recently_progressed_skills.length > 0) {
+      snippets.push(`Recent momentum showed up in ${supporting.recently_progressed_skills.join(", ")}.`);
+    }
+
+    if (supporting.skill_stalled) {
+      snippets.push("The planner thinks this path has stalled recently, so it is surfacing a cleaner next move.");
+    }
+
+    if (snippets.length === 0) {
+      return action.summary;
+    }
+
+    return snippets.join(" ");
+  }
+
   function renderSupportingData(action: NextAction) {
     const entries = Object.entries(action.supporting_data ?? {});
     if (entries.length === 0) {
@@ -4015,9 +4078,11 @@ function RecommendationsPage(props: {
     }
 
     return (
-      <div className="supporting-grid">
+      <div className="supporting-stack">
+        <p className="muted-copy supporting-summary">{buildRecommendationSummary(action)}</p>
+        <div className="supporting-grid">
         {entries.map(([key, value]) => {
-          const label = key.replaceAll("_", " ");
+          const label = formatSupportLabel(key);
           if (Array.isArray(value)) {
             return (
               <div className="detail-row compact-detail" key={key}>
@@ -4026,7 +4091,7 @@ function RecommendationsPage(props: {
                   <div className="chip-row">
                     {value.map((item, index) => (
                       <span className="chip" key={`${key}-${index}`}>
-                        {typeof item === "string" ? item : JSON.stringify(item)}
+                        {typeof item === "string" ? item.replaceAll("_", " ") : JSON.stringify(item)}
                       </span>
                     ))}
                   </div>
@@ -4041,7 +4106,13 @@ function RecommendationsPage(props: {
             return (
               <div className="detail-row compact-detail" key={key}>
                 <strong>{label}</strong>
-                <pre className="code-block compact-code">{JSON.stringify(value, null, 2)}</pre>
+                <div className="chip-row">
+                  {Object.entries(value).map(([nestedKey, nestedValue]) => (
+                    <span className="chip" key={`${key}-${nestedKey}`}>
+                      {formatSupportLabel(nestedKey)}: {formatSupportValue(nestedValue)}
+                    </span>
+                  ))}
+                </div>
               </div>
             );
           }
@@ -4049,10 +4120,11 @@ function RecommendationsPage(props: {
           return (
             <div className="detail-row compact-detail" key={key}>
               <strong>{label}</strong>
-              <p className="muted-copy">{String(value)}</p>
+              <p className="muted-copy">{formatSupportValue(value)}</p>
             </div>
           );
         })}
+        </div>
       </div>
     );
   }
@@ -4414,11 +4486,13 @@ function AuthView(props: {
   onLogin: () => void;
   onPasswordSubmit: () => void;
 }) {
+  const isRegister = props.authMode === "register";
+
   return (
     <div className="auth-shell">
       <section className="auth-card">
         <p className="eyebrow">Cerebro OSRS</p>
-        <h2>Sign in to your planner cockpit.</h2>
+        <h2>{isRegister ? "Create your planning workspace." : "Sign in to your planner cockpit."}</h2>
         <p className="hero-copy">
           Real email and password auth now powers the workspace. The old dev shortcut is still available below for local testing and legacy seeded accounts.
         </p>
@@ -4427,6 +4501,22 @@ function AuthView(props: {
           Backend {props.backendStatus}
         </div>
         {props.error ? <div className="banner error-banner">{props.error}</div> : null}
+        <div className="auth-highlights">
+          <div className="detail-card compact-detail auth-highlight-card">
+            <p className="section-label">What you get</p>
+            <strong>Your own workspace</strong>
+            <p className="muted-copy">
+              Accounts, goals, chat sessions, and planning context stay attached to your login instead of one shared demo state.
+            </p>
+          </div>
+          <div className="detail-card compact-detail auth-highlight-card">
+            <p className="section-label">For now</p>
+            <strong>Built for local development</strong>
+            <p className="muted-copy">
+              This is a real sign-in flow for the app, but it is still part of the local product buildout while we keep improving the experience.
+            </p>
+          </div>
+        </div>
         <div className="chip-row">
           <button
             className={`chip-button${props.authMode === "login" ? " is-active" : ""}`}
@@ -4454,7 +4544,7 @@ function AuthView(props: {
             className="text-input"
             value={props.loginDisplayName}
             onChange={(event) => props.setLoginDisplayName(event.target.value)}
-            placeholder={props.authMode === "register" ? "Display name" : "Display name (optional)"}
+            placeholder={isRegister ? "Display name" : "Display name (optional)"}
           />
           <input
             className="text-input"
@@ -4463,10 +4553,15 @@ function AuthView(props: {
             onChange={(event) => props.setLoginPassword(event.target.value)}
             placeholder="Password"
           />
+          <p className="muted-copy auth-note">
+            {isRegister
+              ? "Pick a password you will remember for this local workspace. You can keep using the same email as the app becomes more fully personalized."
+              : "Use the password tied to this local workspace account. If you created an older seeded account, the dev shortcut below still works."}
+          </p>
           <button className="primary-button" onClick={props.onPasswordSubmit} type="button">
             {props.busyAction === "login"
               ? "Signing in..."
-              : props.authMode === "register"
+              : isRegister
                 ? "Create account"
                 : "Sign in"}
           </button>

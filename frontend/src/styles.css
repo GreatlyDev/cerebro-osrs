@@ -63,6 +63,21 @@ textarea {
   gap: 12px;
 }
 
+.auth-highlights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-highlight-card {
+  min-height: 100%;
+}
+
+.auth-note {
+  margin: -2px 0 2px;
+  font-size: 0.92rem;
+}
+
 .sidebar {
   padding: 28px;
   border-right: 1px solid var(--border);
@@ -827,6 +842,19 @@ textarea {
   margin-top: 12px;
 }
 
+.supporting-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.supporting-summary {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(210, 168, 93, 0.18);
+  background: linear-gradient(180deg, rgba(210, 168, 93, 0.08), rgba(255, 255, 255, 0.02));
+}
+
 .recommendation-group-card {
   background:
     radial-gradient(circle at top right, rgba(132, 181, 255, 0.07), transparent 35%),
@@ -884,6 +912,10 @@ textarea {
   .guided-start-card {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .auth-highlights {
+    grid-template-columns: 1fr;
   }
 
   .setup-path-grid {
