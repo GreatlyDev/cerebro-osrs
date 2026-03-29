@@ -7,7 +7,9 @@ import { storeSessionToken } from "./api";
 import { DashboardUtilityRail } from "./components/dashboard/DashboardUtilityRail";
 import { AppShell } from "./components/layout/AppShell";
 import { SidebarNav, type SidebarNavItem } from "./components/navigation/SidebarNav";
+import { ChatView } from "./pages/Chat";
 import { DashboardPage } from "./pages/Dashboard";
+import { RecommendationsView } from "./pages/Recommendations";
 import type {
   Account,
   AccountProgress,
@@ -1335,7 +1337,7 @@ export function App() {
             ) : null}
 
             {activeView === "ask-cerebro" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <ChatPage
+              <ChatView
                 busyAction={busyAction}
                 chatHistory={chatHistory}
                 chatPrompt={chatPrompt}
@@ -1350,11 +1352,10 @@ export function App() {
             ) : null}
 
             {activeView === "recommendations" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <RecommendationsPage
+              <RecommendationsView
                 nextActions={nextActions}
                 onOpenNextAction={handleOpenNextAction}
                 onGoToGoals={() => navigateToView("goals")}
-                onGoToDashboard={() => navigateToView("dashboard")}
                 selectedAccountRsn={selectedAccountRsn}
               />
             ) : null}
