@@ -7,9 +7,12 @@ import { storeSessionToken } from "./api";
 import { DashboardUtilityRail } from "./components/dashboard/DashboardUtilityRail";
 import { AppShell } from "./components/layout/AppShell";
 import { SidebarNav, type SidebarNavItem } from "./components/navigation/SidebarNav";
+import { AccountDetailView as AccountDetailPageView } from "./pages/AccountDetail";
+import { AuthView as AuthScreen } from "./pages/Auth";
 import { ChatView } from "./pages/Chat";
 import { DashboardPage } from "./pages/Dashboard";
 import { GearView } from "./pages/Gear";
+import { GoalDetailView as GoalDetailPageView } from "./pages/GoalDetail";
 import { GoalsView } from "./pages/Goals";
 import { ProfileView } from "./pages/Profile";
 import { QuestsView } from "./pages/Quests";
@@ -1078,7 +1081,7 @@ export function App() {
 
   if (backendStatus === "offline" && !currentUser) {
     return (
-      <AuthView
+      <AuthScreen
         authMode={authMode}
         backendStatus={backendStatus}
         busyAction={busyAction}
@@ -1098,7 +1101,7 @@ export function App() {
 
   if (!currentUser) {
     return (
-      <AuthView
+      <AuthScreen
         authMode={authMode}
         backendStatus={backendStatus}
         busyAction={busyAction}
@@ -1260,7 +1263,7 @@ export function App() {
           ) : null}
 
             {accountDetailId !== null ? (
-              <AccountDetailView
+              <AccountDetailPageView
                 accountGoals={goals.filter((goal) => goal.target_account_rsn === selectedAccount?.rsn)}
                 busyAction={busyAction}
                 nextActions={nextActions}
@@ -1282,7 +1285,7 @@ export function App() {
             ) : null}
 
             {goalDetailId !== null ? (
-              <GoalDetailView
+              <GoalDetailPageView
                 busyAction={busyAction}
                 nextActions={nextActions}
                 onBackToDashboard={() => navigateToView("dashboard")}
