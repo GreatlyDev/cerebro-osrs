@@ -9,10 +9,13 @@ import { AppShell } from "./components/layout/AppShell";
 import { SidebarNav, type SidebarNavItem } from "./components/navigation/SidebarNav";
 import { ChatView } from "./pages/Chat";
 import { DashboardPage } from "./pages/Dashboard";
+import { GearView } from "./pages/Gear";
 import { GoalsView } from "./pages/Goals";
+import { ProfileView } from "./pages/Profile";
 import { QuestsView } from "./pages/Quests";
 import { RecommendationsView } from "./pages/Recommendations";
 import { SkillsView } from "./pages/Skills";
+import { TeleportsView } from "./pages/Teleports";
 import type {
   Account,
   AccountProgress,
@@ -1412,305 +1415,45 @@ export function App() {
             ) : null}
 
             {activeView === "gear" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <SectionCard
-                title="Gear"
-                subtitle="Generate live gear upgrade recommendations from the backend."
-                action={
-                  <div className="goal-form">
-                    <select
-                      className="select-input"
-                      value={gearCombatStyle}
-                      onChange={(event) => setGearCombatStyle(event.target.value)}
-                    >
-                      <option value="melee">Melee</option>
-                      <option value="magic">Magic</option>
-                      <option value="ranged">Ranged</option>
-                    </select>
-                    <select
-                      className="select-input"
-                      value={gearBudgetTier}
-                      onChange={(event) => setGearBudgetTier(event.target.value)}
-                    >
-                      <option value="budget">Budget</option>
-                      <option value="midgame">Midgame</option>
-                    </select>
-                    <input
-                      className="text-input"
-                      value={gearCurrentItems}
-                      onChange={(event) => setGearCurrentItems(event.target.value)}
-                      placeholder="Owned gear, comma-separated"
-                    />
-                    <button className="primary-button" onClick={handleLoadGear} type="button">
-                      {busyAction === "gear" ? "Loading..." : "Get upgrades"}
-                    </button>
-                  </div>
-                }
-              >
-                <SurfaceLead
-                  summary="Tell Cerebro what style and budget you care about, then filter out owned gear so the upgrades stay relevant."
-                  highlights={[
-                    "Combat-style specific",
-                    "Budget-aware",
-                    "Owned gear respected",
-                  ]}
-                />
-                {gearRecommendations ? (
-                  <div className="recommendation-grid">
-                    <p className="muted-copy">
-                      Showing upgrades for {selectedAccountRsn ?? "no selected account"}.
-                    </p>
-                    {gearRecommendations.recommendations.map((item) => (
-                      <div className="detail-row" key={item.item_name}>
-                        <strong>
-                          {item.item_name} | {item.slot}
-                        </strong>
-                        <span>
-                          {item.priority} priority | {item.estimated_cost}
-                        </span>
-                        <p>{item.upgrade_reason}</p>
-                        <small className="muted-copy">
-                          Requirements: {item.requirements.join(", ")}
-                        </small>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No gear recommendations yet"
-                    body="Pick a combat style and budget tier, then fetch upgrade recommendations for the selected account."
-                  />
-                )}
-              </SectionCard>
+              <GearView
+                busyAction={busyAction}
+                gearBudgetTier={gearBudgetTier}
+                gearCombatStyle={gearCombatStyle}
+                gearCurrentItems={gearCurrentItems}
+                gearRecommendations={gearRecommendations}
+                onLoadGear={handleLoadGear}
+                onOpenDetail={() => navigate("/gear/current")}
+                selectedAccountRsn={selectedAccountRsn}
+                setGearBudgetTier={setGearBudgetTier}
+                setGearCombatStyle={setGearCombatStyle}
+                setGearCurrentItems={setGearCurrentItems}
+              />
             ) : null}
 
             {activeView === "teleports" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <SectionCard
-                title="Teleports"
-                subtitle="Get a live route recommendation for a destination."
-                action={
-                  <div className="goal-form">
-                    <select
-                      className="select-input"
-                      value={teleportDestination}
-                      onChange={(event) => setTeleportDestination(event.target.value)}
-                    >
-                      <option value="fossil island">Fossil Island</option>
-                      <option value="barrows">Barrows</option>
-                      <option value="wintertodt">Wintertodt</option>
-                      <option value="fairy ring network">Fairy Ring Network</option>
-                    </select>
-                    <select
-                      className="select-input"
-                      value={teleportPreference}
-                      onChange={(event) => setTeleportPreference(event.target.value)}
-                    >
-                      <option value="balanced">Balanced</option>
-                      <option value="convenience">Convenience</option>
-                      <option value="low-cost">Low Cost</option>
-                    </select>
-                    <button
-                      className="primary-button"
-                      onClick={handleLoadTeleport}
-                      type="button"
-                    >
-                      {busyAction === "teleport" ? "Routing..." : "Find route"}
-                    </button>
-                  </div>
-                }
-              >
-                <SurfaceLead
-                  summary="Use this when movement friction is the blocker. The backend can already account for tracked unlocks and fallback routes."
-                  highlights={[
-                    "Destination planning",
-                    "Unlock-aware routing",
-                    "Fallback routes included",
-                  ]}
-                />
-                {teleportRoute ? (
-                  <div className="plan-panel">
-                    <div className="detail-card">
-                      <p className="section-label">Selected account</p>
-                      <p className="muted-copy">{selectedAccountRsn ?? "none"}</p>
-                      <h3>{teleportRoute.recommended_route.method}</h3>
-                      <p className="muted-copy">
-                        {teleportRoute.recommended_route.travel_notes}
-                      </p>
-                      <small className="muted-copy">
-                        Requirements: {teleportRoute.recommended_route.requirements.join(", ")}
-                      </small>
-                    </div>
-                    {teleportRoute.alternatives.length > 0 ? (
-                      <div className="detail-card">
-                        <h3>Alternatives</h3>
-                        <div className="recommendation-grid">
-                          {teleportRoute.alternatives.map((option) => (
-                            <div className="detail-row" key={option.method}>
-                              <strong>{option.method}</strong>
-                              <p>{option.travel_notes}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <EmptyState
-                    title="No route calculated yet"
-                    body="Pick a destination and run the route finder to see travel options for your current workspace account."
-                  />
-                )}
-              </SectionCard>
+              <TeleportsView
+                busyAction={busyAction}
+                onLoadTeleport={handleLoadTeleport}
+                onOpenDetail={() => navigate("/teleports/current")}
+                selectedAccountRsn={selectedAccountRsn}
+                setTeleportDestination={setTeleportDestination}
+                setTeleportPreference={setTeleportPreference}
+                teleportDestination={teleportDestination}
+                teleportPreference={teleportPreference}
+                teleportRoute={teleportRoute}
+              />
             ) : null}
 
             {activeView === "profile" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
-              <SectionCard
-                title="Profile"
-                subtitle="Edit the frontend defaults that shape backend recommendations."
-                action={
-                  <button
-                    className="primary-button"
-                    onClick={handleSaveProfile}
-                    type="button"
-                  >
-                    {busyAction === "profile" ? "Saving..." : "Save profile"}
-                  </button>
-                }
-              >
-                <SurfaceLead
-                  summary="These preferences influence recommendation tone and routing across the rest of the app, so this page acts like your planning baseline."
-                  highlights={[
-                    "Workspace defaults",
-                    "Recommendation tone",
-                    "Primary RSN control",
-                  ]}
-                />
-                <div className="profile-grid">
-                  <input
-                    className="text-input"
-                    value={profileDraft.display_name}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        display_name: event.target.value,
-                      }))
-                    }
-                    placeholder="Display name"
-                  />
-                  <input
-                    className="text-input"
-                    value={profileDraft.primary_account_rsn}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        primary_account_rsn: event.target.value,
-                      }))
-                    }
-                    placeholder="Primary account RSN"
-                  />
-                  <select
-                    className="select-input"
-                    value={profileDraft.play_style}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        play_style: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value="balanced">Balanced</option>
-                    <option value="afk">AFK</option>
-                    <option value="profitable">Profitable</option>
-                  </select>
-                  <select
-                    className="select-input"
-                    value={profileDraft.goals_focus}
-                    onChange={(event) =>
-                      setProfileDraft((current) => ({
-                        ...current,
-                        goals_focus: event.target.value,
-                      }))
-                    }
-                  >
-                    <option value="progression">Progression</option>
-                    <option value="quest cape">Quest Cape</option>
-                    <option value="bossing">Bossing</option>
-                  </select>
-                  <label className="toggle-row">
-                    <input
-                      type="checkbox"
-                      checked={profileDraft.prefers_afk_methods}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          prefers_afk_methods: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>Prefer AFK methods</span>
-                  </label>
-                  <label className="toggle-row">
-                    <input
-                      type="checkbox"
-                      checked={profileDraft.prefers_profitable_methods}
-                      onChange={(event) =>
-                        setProfileDraft((current) => ({
-                          ...current,
-                          prefers_profitable_methods: event.target.checked,
-                        }))
-                      }
-                    />
-                    <span>Prefer profitable methods</span>
-                  </label>
-                </div>
-                <div className="detail-card onboarding-card">
-                  <div className="section-split">
-                    <div>
-                      <p className="section-label">Linked accounts</p>
-                      <h3>Choose a primary account for this workspace.</h3>
-                    </div>
-                    {accounts.length > 0 ? (
-                      <button
-                        className="ghost-button"
-                        onClick={() =>
-                          setProfileDraft((current) => ({
-                            ...current,
-                            primary_account_rsn: selectedAccountRsn ?? current.primary_account_rsn,
-                          }))
-                        }
-                        type="button"
-                      >
-                        Use selected account
-                      </button>
-                    ) : null}
-                  </div>
-                  {accounts.length > 0 ? (
-                    <div className="chip-row">
-                      {accounts.map((account) => (
-                        <button
-                          key={account.id}
-                          className={`chip-button${
-                            profileDraft.primary_account_rsn === account.rsn ? " is-active" : ""
-                          }`}
-                          onClick={() =>
-                            setProfileDraft((current) => ({
-                              ...current,
-                              primary_account_rsn: account.rsn,
-                            }))
-                          }
-                          type="button"
-                        >
-                          {account.rsn}
-                        </button>
-                      ))}
-                    </div>
-                  ) : (
-                    <EmptyState
-                      title="No linked accounts yet"
-                      body="Add an RSN on the dashboard first, then come back here to mark it as the primary account for this workspace."
-                    />
-                  )}
-                </div>
-              </SectionCard>
+              <ProfileView
+                accounts={accounts}
+                busyAction={busyAction}
+                onSaveProfile={handleSaveProfile}
+                profile={profile}
+                profileDraft={profileDraft}
+                selectedAccountRsn={selectedAccountRsn}
+                setProfileDraft={setProfileDraft}
+              />
             ) : null}
 
         </>
