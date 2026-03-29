@@ -2036,6 +2036,42 @@ function DashboardView(props: {
                 secondaryLabel: "Open first account",
                 secondaryAction: accounts.length > 0 ? () => onInspectAccount(accounts[0]) : null,
               };
+  const setupPathCards = [
+    {
+      title: "Baseline",
+      status: workspaceChecklist[0]?.done ? "done" : "next",
+      summary: "Set the play style and focus that shape recommendation tone.",
+      actionLabel: "Open profile",
+      action: onGoToProfile,
+    },
+    {
+      title: "Account",
+      status: workspaceChecklist[1]?.done ? "done" : "next",
+      summary: accounts.length > 0
+        ? `Linked ${accounts.length} account${accounts.length > 1 ? "s" : ""}.`
+        : "Add your first RSN and start syncing real hiscores context.",
+      actionLabel: accounts.length > 0 ? "Review account" : "Quick setup account",
+      action: accounts.length > 0 ? () => onInspectAccount(accounts[0]) : onQuickstartAccount,
+    },
+    {
+      title: "Primary",
+      status: workspaceChecklist[2]?.done ? "done" : "next",
+      summary: primaryAccount
+        ? `${primaryAccount} is currently steering the workspace.`
+        : "Choose the RSN this workspace should revolve around.",
+      actionLabel: primaryAccount ? "Open profile" : "Use first account",
+      action: primaryAccount || accounts.length === 0 ? onGoToProfile : () => onSetPrimaryAccount(accounts[0]),
+    },
+    {
+      title: "Goal",
+      status: workspaceChecklist[3]?.done ? "done" : "next",
+      summary: goals.length > 0
+        ? `Planner anchored by ${goals.length} goal${goals.length > 1 ? "s" : ""}.`
+        : "Create the first goal so the recommendations stop feeling generic.",
+      actionLabel: goals.length > 0 ? "Open goals" : "Create first goal",
+      action: goals.length > 0 ? onGoToGoals : onQuickstartGoal,
+    },
+  ];
 
   return (
     <div className="dashboard-grid">
@@ -2115,6 +2151,44 @@ function DashboardView(props: {
             ) : null}
           </div>
         </div>
+        <div className="setup-path-grid">
+          {setupPathCards.map((item) => (
+            <div className="detail-card compact-detail" key={item.title}>
+              <div className="section-split">
+                <div>
+                  <p className="section-label">{item.status}</p>
+                  <h3>{item.title}</h3>
+                </div>
+                <span className={`pill ${item.status === "done" ? "pill-success" : ""}`}>
+                  {item.status}
+                </span>
+              </div>
+              <p className="muted-copy">{item.summary}</p>
+              <button className="ghost-button" onClick={item.action} type="button">
+                {item.actionLabel}
+              </button>
+            </div>
+          ))}
+        </div>
+        {!workspaceChecklist[1]?.done ? (
+          <div className="detail-card compact-detail">
+            <h3>Fastest way to get moving</h3>
+            <p className="muted-copy">
+              Add an RSN here and Cerebro will link it, sync it, and make it the primary account in one pass.
+            </p>
+            <div className="inline-form">
+              <input
+                className="text-input"
+                value={newAccountRsn}
+                onChange={(event) => setNewAccountRsn(event.target.value)}
+                placeholder="Enter your RSN"
+              />
+              <button className="primary-button" onClick={onQuickstartAccount} type="button">
+                {busyAction === "quickstart-account" ? "Setting up..." : "Run quick setup"}
+              </button>
+            </div>
+          </div>
+        ) : null}
       </SectionCard>
 
       <SectionCard

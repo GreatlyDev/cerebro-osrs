@@ -737,6 +737,13 @@ textarea {
   flex-wrap: wrap;
 }
 
+.setup-path-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .trend-grid {
   display: grid;
   gap: 14px;
@@ -878,6 +885,10 @@ textarea {
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .setup-path-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -925,6 +936,10 @@ textarea {
   }
 
   .snapshot-change-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .setup-path-grid {
     grid-template-columns: 1fr;
   }
 }
