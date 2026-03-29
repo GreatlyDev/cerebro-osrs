@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { Goal, GoalPlanResponse } from "../types";
@@ -50,25 +51,17 @@ export function GoalsView({
 }: GoalsViewProps) {
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={<Button onClick={onGoToRecommendations} variant="secondary">Open recommendations</Button>}
-          eyebrow="Goal Planner"
-          subtitle="Goals are where Cerebro stops being broad advice and starts turning account context into a real progression plan."
-          title="Anchor the workspace around a real target"
-        />
-        <div className="grid gap-3 text-sm text-osrs-text-soft lg:grid-cols-[minmax(0,1fr)_auto_auto]">
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Active RSN {selectedAccountRsn ?? "none selected"}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Goals {goals.length}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Plan {selectedGoalPlan ? "loaded" : "not loaded"}
-          </span>
-        </div>
-      </Panel>
+      <PageHero
+        action={<Button onClick={onGoToRecommendations} variant="secondary">Open recommendations</Button>}
+        chips={[
+          { label: "Active RSN", value: selectedAccountRsn ?? "None selected" },
+          { label: "Tracked goals", value: String(goals.length) },
+          { label: "Latest plan", value: selectedGoalPlan ? "Loaded" : "Not loaded" },
+        ]}
+        description="Goals are where Cerebro stops being broad advice and starts turning account context, unlock pressure, and momentum into a real progression plan."
+        eyebrow="Goal Planner"
+        title="Anchor the workspace around a real target"
+      />
 
       <div className="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]">
         <Panel className="space-y-4">
@@ -215,7 +208,7 @@ export function GoalsView({
                           <strong className="block text-sm text-osrs-text">
                             {key.replaceAll("_", " ")}
                           </strong>
-                          <p className="mt-2 text-sm leading-6 whitespace-pre-wrap text-osrs-text-soft">
+                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-osrs-text-soft">
                             {formatRecommendationValue(value)}
                           </p>
                         </div>

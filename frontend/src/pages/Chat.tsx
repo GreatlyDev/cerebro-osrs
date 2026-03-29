@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { ChatExchange, ChatSession } from "../types";
@@ -44,22 +45,21 @@ export function ChatView({
 
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={
-            <div className="flex flex-wrap gap-3">
-              <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5 text-sm text-osrs-text-soft">
-                Account {selectedAccountRsn ?? "none selected"}
-              </span>
-              <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5 text-sm text-osrs-text-soft">
-                Sessions {chatSessions.length}
-              </span>
-            </div>
-          }
-          eyebrow="Advisor Chamber"
-          subtitle="Use this when you want Cerebro to translate planner context into clear, grounded OSRS advice."
-          title="Ask Cerebro"
-        />
+      <PageHero
+        action={
+          <Button className="min-w-[12rem]" onClick={() => onRunChatPrompt()}>
+            {busyAction === "chat" ? "Thinking..." : "Consult Advisor"}
+          </Button>
+        }
+        chips={[
+          { label: "Active account", value: selectedAccountRsn ?? "None selected" },
+          { label: "Open sessions", value: String(chatSessions.length) },
+          { label: "Workspace mode", value: "Live advisor" },
+        ]}
+        description="Use the advisor chamber when you want Cerebro to translate synced account context, planner momentum, and ranked actions into grounded OSRS guidance."
+        eyebrow="Advisor Chamber"
+        title="Ask Cerebro from the center of the workspace"
+      >
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
           <input
             className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
@@ -67,11 +67,8 @@ export function ChatView({
             placeholder="Ask Cerebro anything about your account"
             value={chatPrompt}
           />
-          <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>
-            {busyAction === "chat" ? "Thinking..." : "Consult Advisor"}
-          </Button>
         </div>
-      </Panel>
+      </PageHero>
 
       <div className="grid gap-6 xl:grid-cols-[16rem_minmax(0,1fr)_20rem]">
         <Panel className="space-y-3">

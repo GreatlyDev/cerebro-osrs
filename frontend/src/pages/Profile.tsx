@@ -1,6 +1,7 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { Account, Profile } from "../types";
@@ -35,25 +36,17 @@ export function ProfileView({
 }: ProfileViewProps) {
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={<Button onClick={onSaveProfile}>{busyAction === "profile" ? "Saving..." : "Save profile"}</Button>}
-          eyebrow="Profile"
-          subtitle="These settings shape recommendation tone, default routing, and which account this workspace treats as the main one."
-          title="Set the planning baseline for your workspace"
-        />
-        <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Primary {profileDraft.primary_account_rsn || "not set"}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Focus {profileDraft.goals_focus}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Style {profileDraft.play_style}
-          </span>
-        </div>
-      </Panel>
+      <PageHero
+        action={<Button onClick={onSaveProfile}>{busyAction === "profile" ? "Saving..." : "Save profile"}</Button>}
+        chips={[
+          { label: "Primary RSN", value: profileDraft.primary_account_rsn || "Not set" },
+          { label: "Goal focus", value: profileDraft.goals_focus },
+          { label: "Play style", value: profileDraft.play_style },
+        ]}
+        description="These settings shape recommendation tone, default routing, and which account the rest of the workspace should naturally orient around."
+        eyebrow="Profile"
+        title="Set the planning baseline for your workspace"
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
         <Panel className="space-y-4">

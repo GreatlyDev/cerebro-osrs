@@ -1,4 +1,5 @@
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { NextActionResponse, QuestDetail, QuestSummary } from "../types";
@@ -28,32 +29,24 @@ export function QuestsView({
 
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={
-            <input
-              className="w-full min-w-[14rem] rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
-              onChange={(event) => setQuestSearch(event.target.value)}
-              placeholder="Search quests"
-              value={questSearch}
-            />
-          }
-          eyebrow="Quest Helper"
-          subtitle="Use the live quest catalog as an unlock board, then open a dedicated quest page when you want requirements, rewards, and follow-up value."
-          title="Unlock-first quest planning"
-        />
-        <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Catalog {filteredQuests.length}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Ranked quest actions {recommendedQuestActions.length}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Dedicated detail pages
-          </span>
-        </div>
-      </Panel>
+      <PageHero
+        action={
+          <input
+            className="w-full min-w-[14rem] rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+            onChange={(event) => setQuestSearch(event.target.value)}
+            placeholder="Search quests"
+            value={questSearch}
+          />
+        }
+        chips={[
+          { label: "Catalog entries", value: String(filteredQuests.length) },
+          { label: "Quest pressure", value: String(recommendedQuestActions.length) },
+          { label: "Detail mode", value: "Dedicated pages" },
+        ]}
+        description="Use the live quest catalog as an unlock board, then open a dedicated quest page when you want requirements, rewards, blockers, and follow-up value."
+        eyebrow="Quest Helper"
+        title="Unlock-first quest planning"
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
         <Panel className="space-y-4">

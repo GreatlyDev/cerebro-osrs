@@ -1,3 +1,4 @@
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { SkillCatalogItem, SkillRecommendationResponse } from "../types";
@@ -23,32 +24,24 @@ export function SkillsView({
 }: SkillsViewProps) {
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={
-            <input
-              className="w-full min-w-[14rem] rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
-              onChange={(event) => setSkillSearch(event.target.value)}
-              placeholder="Search skills"
-              value={skillSearch}
-            />
-          }
-          eyebrow="Skill Atlas"
-          subtitle="Browse the live skill catalog, then open a dedicated skill page to fetch account-aware methods from the backend recommendation layer."
-          title="Training guidance with real account context"
-        />
-        <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Account {selectedAccountRsn ?? "none selected"}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Skills {filteredSkills.length}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Live methods
-          </span>
-        </div>
-      </Panel>
+      <PageHero
+        action={
+          <input
+            className="w-full min-w-[14rem] rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+            onChange={(event) => setSkillSearch(event.target.value)}
+            placeholder="Search skills"
+            value={skillSearch}
+          />
+        }
+        chips={[
+          { label: "Active account", value: selectedAccountRsn ?? "None selected" },
+          { label: "Catalog size", value: String(filteredSkills.length) },
+          { label: "Method source", value: "Live methods" },
+        ]}
+        description="Browse the live skill atlas, then open a dedicated skill page to fetch account-aware methods from Cerebro's backend recommendation layer."
+        eyebrow="Skill Atlas"
+        title="Training guidance with real account context"
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
         <Panel className="space-y-4">

@@ -1,6 +1,6 @@
 import { Button } from "../components/ui/Button";
+import { PageHero } from "../components/ui/PageHero";
 import { Panel } from "../components/ui/Panel";
-import { SectionHeader } from "../components/ui/SectionHeader";
 import type { NextAction, NextActionResponse } from "../types";
 
 type RecommendationsPageProps = {
@@ -154,25 +154,17 @@ export function RecommendationsView({
 
   return (
     <div className="space-y-6">
-      <Panel tone="hero">
-        <SectionHeader
-          action={<Button onClick={onGoToGoals} variant="secondary">Open Goal Planner</Button>}
-          eyebrow="Recommendation Board"
-          subtitle="This is Cerebro’s ranked action room: a premium readout of what matters next, why it matters, and where each recommendation points."
-          title="Ranked next actions"
-        />
-        <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Account {selectedAccountRsn ?? "none selected"}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Goal {nextActions?.goal_title ?? "not anchored"}
-          </span>
-          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5">
-            Actions {actions.length}
-          </span>
-        </div>
-      </Panel>
+      <PageHero
+        action={<Button onClick={onGoToGoals} variant="secondary">Open Goal Planner</Button>}
+        chips={[
+          { label: "Active account", value: selectedAccountRsn ?? "None selected" },
+          { label: "Goal anchor", value: nextActions?.goal_title ?? "Not anchored" },
+          { label: "Ranked actions", value: String(actions.length) },
+        ]}
+        description="This board is Cerebro's ranked action room: a premium readout of what matters next, why it matters, and which surface each recommendation wants to open."
+        eyebrow="Recommendation Board"
+        title="See the next actions the planner is actually backing"
+      />
 
       {actions.length === 0 ? (
         <Panel>
@@ -217,7 +209,7 @@ export function RecommendationsView({
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current blockers</p>
                   <ul className="mt-2 space-y-2 text-sm text-osrs-text-soft">
                     {action.blockers.map((blocker) => (
-                      <li key={blocker}>• {blocker}</li>
+                      <li key={blocker}>- {blocker}</li>
                     ))}
                   </ul>
                 </div>
