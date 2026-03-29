@@ -17,7 +17,7 @@ export function Panel({ children, className = "", tone = "default", ...props }: 
 
   return (
     <div
-      className={`cerebro-frame rounded-panel border border-osrs-border/80 p-5 shadow-osrs shadow-insetPanel ${toneClass[tone]} ${className}`.trim()}
+      className={`cerebro-frame rounded-panel border border-osrs-border/80 p-5 shadow-osrs shadow-insetPanel transition-[border-color,box-shadow,transform] duration-200 ease-out ${toneClass[tone]} ${className}`.trim()}
       {...props}
     >
       {children}

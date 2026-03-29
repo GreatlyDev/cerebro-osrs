@@ -99,7 +99,7 @@ export function DashboardUtilityRail({
           subtitle="A compact read on the currently selected account before the deeper utility panels below."
           title={selectedAccount ? `${selectedAccount.rsn} at a glance` : "Workspace at a glance"}
         />
-        <div className="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+        <div className="cerebro-stagger grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
           <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
             <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Overall</p>
             <strong className="mt-2 block font-display text-2xl text-osrs-text">
@@ -120,12 +120,14 @@ export function DashboardUtilityRail({
           </div>
         </div>
       </Panel>
-      <InventoryPanel
-        items={inventorySlots}
-        title={selectedAccount ? `${selectedAccount.rsn} loadout chest` : "Loadout chest"}
-      />
-      <GoalProgressPanel goals={goalLedger} />
-      <QuestJournalPanel entries={journalEntries} />
+      <div className="cerebro-stagger space-y-5">
+        <InventoryPanel
+          items={inventorySlots}
+          title={selectedAccount ? `${selectedAccount.rsn} loadout chest` : "Loadout chest"}
+        />
+        <GoalProgressPanel goals={goalLedger} />
+        <QuestJournalPanel entries={journalEntries} />
+      </div>
     </>
   );
 }

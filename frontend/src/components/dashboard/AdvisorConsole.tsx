@@ -98,7 +98,7 @@ export function AdvisorConsole({
             </span>
           </div>
 
-          <div className="space-y-3">
+          <div className="cerebro-stagger space-y-3">
             {messages.map((message, index) => (
               <MessageBubble content={message.content} key={`${message.role}-${index}`} role={message.role} />
             ))}

@@ -24,7 +24,7 @@ export function FeatureGrid({ items }: FeatureGridProps) {
         subtitle="These are the highest-value Cerebro surfaces to keep close at hand as the planner gets smarter."
         title="Command modules"
       />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="cerebro-stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
           <FeatureCard key={item.title} {...item} />
         ))}
