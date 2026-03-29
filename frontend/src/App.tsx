@@ -1983,6 +1983,54 @@ function DashboardView(props: {
     workspaceChecklist,
     workspaceProgress,
   } = props;
+  const primaryAccount = profile?.primary_account_rsn ?? accounts[0]?.rsn ?? null;
+  const nextSetupStep =
+    !profile?.display_name || !profile?.goals_focus || !profile?.play_style
+      ? {
+          title: "Set your planning baseline",
+          detail: "Lock in your play style and focus first so every recommendation starts from the right point of view.",
+          primaryLabel: "Open profile",
+          primaryAction: onGoToProfile,
+          secondaryLabel: null,
+          secondaryAction: null,
+        }
+      : accounts.length === 0
+        ? {
+            title: "Link your first RuneScape account",
+            detail: "Add an RSN and let Cerebro start building real snapshot, ranking, and planner context around it.",
+            primaryLabel: "Add + sync + set primary",
+            primaryAction: onQuickstartAccount,
+            secondaryLabel: "Open profile",
+            secondaryAction: onGoToProfile,
+          }
+        : !profile?.primary_account_rsn
+          ? {
+              title: "Choose the account this workspace revolves around",
+              detail: "A primary RSN makes the rest of the product feel personal instead of generic.",
+              primaryLabel: "Use first account",
+              primaryAction: () => onSetPrimaryAccount(accounts[0]),
+              secondaryLabel: "Review account",
+              secondaryAction: () => onInspectAccount(accounts[0]),
+            }
+          : goals.length === 0
+            ? {
+                title: "Create the first real goal",
+                detail: "Goals give the planner a target, which makes recommendations sharper everywhere else in the app.",
+                primaryLabel: "Create first goal",
+                primaryAction: onQuickstartGoal,
+                secondaryLabel: "Open goals",
+                secondaryAction: onGoToGoals,
+              }
+            : {
+                title: "Your workspace is live",
+                detail: "You are past basic setup. From here, the best move is to keep syncing, inspect account history, and act on the ranked recommendations.",
+                primaryLabel: nextActions?.top_action ? "Open top recommendation" : "Open goals",
+                primaryAction: nextActions?.top_action
+                  ? () => onOpenNextAction(nextActions.top_action!)
+                  : onGoToGoals,
+                secondaryLabel: "Open first account",
+                secondaryAction: accounts.length > 0 ? () => onInspectAccount(accounts[0]) : null,
+              };
 
   return (
     <div className="dashboard-grid">
@@ -2036,6 +2084,31 @@ function DashboardView(props: {
             <span>Review account</span>
             <small>Jump into the first linked account and inspect it</small>
           </button>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Guided Start"
+        subtitle={nextSetupStep.title}
+      >
+        <div className="guided-start-card">
+          <div>
+            <p className="muted-copy">{nextSetupStep.detail}</p>
+            <div className="chip-row">
+              <span className="chip">Setup {workspaceProgress}/{workspaceChecklist.length}</span>
+              <span className="chip">{primaryAccount ? `Primary ${primaryAccount}` : "No primary RSN yet"}</span>
+            </div>
+          </div>
+          <div className="guided-start-actions">
+            <button className="primary-button" onClick={nextSetupStep.primaryAction} type="button">
+              {nextSetupStep.primaryLabel}
+            </button>
+            {nextSetupStep.secondaryLabel && nextSetupStep.secondaryAction ? (
+              <button className="ghost-button" onClick={nextSetupStep.secondaryAction} type="button">
+                {nextSetupStep.secondaryLabel}
+              </button>
+            ) : null}
+          </div>
         </div>
       </SectionCard>
 

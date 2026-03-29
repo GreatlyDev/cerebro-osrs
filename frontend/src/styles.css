@@ -717,6 +717,26 @@ textarea {
   margin-bottom: 16px;
 }
 
+.guided-start-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background:
+    radial-gradient(circle at top right, rgba(132, 181, 255, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.025), rgba(210, 168, 93, 0.08));
+}
+
+.guided-start-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
 .trend-grid {
   display: grid;
   gap: 14px;
@@ -845,6 +865,11 @@ textarea {
 
   .chat-layout {
     grid-template-columns: 1fr;
+  }
+
+  .guided-start-card {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
