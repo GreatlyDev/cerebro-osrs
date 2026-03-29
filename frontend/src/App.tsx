@@ -725,7 +725,7 @@ export function App() {
   }
 
   async function handleCreateGoal() {
-    if (!newGoalTitle.trim()) {
+    if (!newGoalTitle.trim() || !newGoalType.trim()) {
       return;
     }
     setBusyAction("create-goal");
@@ -733,7 +733,7 @@ export function App() {
     try {
       const goal = await api.createGoal({
         title: newGoalTitle.trim(),
-        goal_type: newGoalType,
+        goal_type: newGoalType.trim(),
         target_account_rsn: newGoalTargetRsn.trim() || null,
       });
       setNewGoalTitle("");

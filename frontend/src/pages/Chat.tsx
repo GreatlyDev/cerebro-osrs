@@ -46,11 +46,6 @@ export function ChatView({
   return (
     <div className="space-y-6">
       <PageHero
-        action={
-          <Button className="min-w-[12rem]" onClick={() => onRunChatPrompt()}>
-            {busyAction === "chat" ? "Thinking..." : "Consult Advisor"}
-          </Button>
-        }
         chips={[
           { label: "Active account", value: selectedAccountRsn ?? "None selected" },
           { label: "Open sessions", value: String(chatSessions.length) },
@@ -64,9 +59,18 @@ export function ChatView({
           <input
             className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
             onChange={(event) => setChatPrompt(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                onRunChatPrompt();
+              }
+            }}
             placeholder="Ask Cerebro anything about your account"
             value={chatPrompt}
           />
+          <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>
+            {busyAction === "chat" ? "Thinking..." : "Consult Advisor"}
+          </Button>
         </div>
       </PageHero>
 
@@ -97,13 +101,6 @@ export function ChatView({
             subtitle="This is where the planner turns structured account intelligence into readable advice."
           />
           <div className="space-y-3">
-            <div className="max-w-[90%] rounded-[18px] border border-osrs-border-light/60 bg-[linear-gradient(180deg,rgba(58,45,31,0.88),rgba(30,24,18,0.98))] px-4 py-3 shadow-insetPanel">
-              <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Advisor</p>
-              <p className="text-sm leading-7 text-osrs-text-soft">
-                {chatReply || "Use the prompt above or one of the quick prompts to start a live planning conversation."}
-              </p>
-            </div>
-
             {visibleHistory.length > 0 ? (
               visibleHistory.map((exchange) => (
                 <div className="space-y-3" key={`${exchange.sessionId}-${exchange.prompt}`}>
@@ -119,7 +116,7 @@ export function ChatView({
               ))
             ) : (
               <div className="rounded-[16px] border border-dashed border-osrs-border/70 bg-osrs-panel/40 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
-                No session history yet. Start with a quick prompt and Cerebro will begin building conversation context here.
+                {chatReply || "No session history yet. Start with a quick prompt and Cerebro will begin building conversation context here."}
               </div>
             )}
           </div>

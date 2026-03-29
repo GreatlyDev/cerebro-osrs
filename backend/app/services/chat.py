@@ -225,6 +225,23 @@ class ChatService:
                     f"{top_action.summary}"
                 )
 
+        if latest_goal is None and ("work on next" in normalized or "do next" in normalized):
+            next_actions = await recommendation_service.get_next_actions(
+                db_session=db_session,
+                user=user,
+                payload=NextActionRequest(
+                    account_rsn=latest_account.rsn if latest_account else None,
+                    goal_id=latest_goal.id if latest_goal else None,
+                    limit=3,
+                ),
+            )
+            top_action = next_actions.top_action
+            if top_action is not None:
+                return (
+                    f"If I were steering this account, I'd start with {top_action.title.lower()}. "
+                    f"{top_action.summary}"
+                )
+
         if "goal" in normalized and latest_goal is not None:
             recommendations = await planner_service.build_goal_recommendations(
                 db_session=db_session,

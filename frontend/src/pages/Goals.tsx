@@ -6,6 +6,17 @@ import { Panel } from "../components/ui/Panel";
 import { SectionHeader } from "../components/ui/SectionHeader";
 import type { Goal, GoalPlanResponse } from "../types";
 
+const COMMON_GOAL_TYPES = [
+  "quest cape",
+  "barrows gloves",
+  "fire cape",
+  "infernal cape",
+  "achievement diary cape",
+  "max cape",
+  "raid ready",
+  "money making",
+];
+
 type GoalsViewProps = {
   busyAction: string | null;
   goals: Goal[];
@@ -77,15 +88,34 @@ export function GoalsView({
               placeholder="Goal title"
               value={newGoalTitle}
             />
-            <select
+            <input
               className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none focus:border-osrs-border-light/80"
               onChange={(event) => setNewGoalType(event.target.value)}
+              placeholder="Goal type"
               value={newGoalType}
-            >
-              <option value="quest cape">Quest Cape</option>
-              <option value="barrows gloves">Barrows Gloves</option>
-              <option value="fire cape">Fire Cape</option>
-            </select>
+              list="goal-type-suggestions"
+            />
+            <datalist id="goal-type-suggestions">
+              {COMMON_GOAL_TYPES.map((goalType) => (
+                <option key={goalType} value={goalType} />
+              ))}
+            </datalist>
+            <div className="flex flex-wrap gap-2">
+              {COMMON_GOAL_TYPES.map((goalType) => (
+                <button
+                  className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.16em] transition ${
+                    newGoalType === goalType
+                      ? "border-osrs-border-light/80 bg-osrs-gold/12 text-osrs-gold-soft"
+                      : "border-osrs-border/70 bg-osrs-panel-2/60 text-osrs-text-soft hover:border-osrs-border-light/60"
+                  }`}
+                  key={goalType}
+                  onClick={() => setNewGoalType(goalType)}
+                  type="button"
+                >
+                  {goalType}
+                </button>
+              ))}
+            </div>
             <input
               className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) => setNewGoalTargetRsn(event.target.value)}
@@ -105,7 +135,7 @@ export function GoalsView({
             </Button>
           </div>
           <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/50 px-4 py-4 text-sm leading-6 text-osrs-text-soft">
-            Goal plans feed ranked actions, advisor replies, and account-aware planning. Keep the title concrete so the workspace knows what winning looks like.
+            Goal plans feed ranked actions, advisor replies, and account-aware planning. Use one of the common goal types or make your own if your target does not fit the preset list.
           </div>
         </Panel>
 

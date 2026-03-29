@@ -183,7 +183,7 @@ export function DashboardPage(props: DashboardPageProps) {
       />
       <FeatureGrid items={featureItems} />
       <AdvisorConsole
-        busy={false}
+        busy={busyAction === "chat"}
         chatHistory={chatHistory}
         chatPrompt={chatPrompt}
         chatReply={chatReply}

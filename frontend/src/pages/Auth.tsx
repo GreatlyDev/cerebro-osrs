@@ -131,7 +131,9 @@ export function AuthView(props: AuthViewProps) {
             </p>
             <Button className="w-full" onClick={props.onPasswordSubmit}>
               {props.busyAction === "login"
-                ? "Signing in..."
+                ? isRegister
+                  ? "Creating account..."
+                  : "Signing in..."
                 : isRegister
                   ? "Create account"
                   : "Sign in"}

@@ -94,6 +94,22 @@ async def test_chat_can_answer_next_best_action_prompt(client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_work_on_next_prompt_without_goal(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "Momentum"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "What Now"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What should I work on next?"},
+    )
+
+    assert response.status_code == 201
+    assert "i'd start with" in response.json()["assistant_message"]["content"].lower()
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

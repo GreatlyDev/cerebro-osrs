@@ -114,27 +114,27 @@ export function WorkspaceSetupPanel({
               </Button>
               {hasGoal ? <Button onClick={onGoToGoals} variant="secondary">Open goal planner</Button> : null}
             </div>
-          </div>
 
-          {!hasAccount ? (
-            <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/50 px-5 py-5 shadow-insetPanel">
-              <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Fastest way to get moving</p>
-              <p className="mt-3 text-sm leading-7 text-osrs-text-soft">
-                Add an RSN here and Cerebro will link it, sync it, and make it the primary account in one pass.
-              </p>
-              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                <input
-                  className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
-                  onChange={(event) => onChangeNewAccountRsn(event.target.value)}
-                  placeholder="Enter your RSN"
-                  value={newAccountRsn}
-                />
-                <Button onClick={onQuickstartAccount}>
-                  {busyAction === "quickstart-account" ? "Setting up..." : "Run quick setup"}
-                </Button>
+            {!hasAccount ? (
+              <div className="mt-5 rounded-[18px] border border-osrs-border/65 bg-osrs-panel-2/45 px-4 py-4 shadow-insetPanel">
+                <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Fastest way to get moving</p>
+                <p className="mt-3 text-sm leading-7 text-osrs-text-soft">
+                  Add an RSN here and Cerebro will link it, sync it, and make it the primary account in one pass.
+                </p>
+                <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <input
+                    className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+                    onChange={(event) => onChangeNewAccountRsn(event.target.value)}
+                    placeholder="Enter your RSN"
+                    value={newAccountRsn}
+                  />
+                  <Button onClick={onQuickstartAccount}>
+                    {busyAction === "quickstart-account" ? "Setting up..." : "Run quick setup"}
+                  </Button>
+                </div>
               </div>
-            </div>
-          ) : null}
+            ) : null}
+          </div>
         </div>
 
         <div className="space-y-3">
