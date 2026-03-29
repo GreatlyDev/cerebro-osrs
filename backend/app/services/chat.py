@@ -1,3 +1,5 @@
+from typing import Any
+
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -22,6 +24,7 @@ from app.services.recommendations import recommendation_service
 from app.services.skills import skill_service
 from app.services.teleports import teleport_service
 from app.services.user_context import user_context_service
+from app.services.assistant import AssistantChatContext, assistant_service
 from app.schemas.gear import GearRecommendationRequest
 from app.schemas.recommendation import NextActionRequest
 from app.schemas.teleport import TeleportRouteRequest
@@ -101,17 +104,53 @@ class ChatService:
         session: ChatSession,
         message: str,
     ) -> str:
-        normalized = message.lower()
         profile = await user_context_service.get_profile(db_session=db_session, user=user)
         latest_goal = await user_context_service.get_latest_goal(db_session=db_session, user=user)
         latest_account = await user_context_service.get_latest_account(db_session=db_session, user=user)
-        latest_snapshot = None
-        if latest_account is not None:
-            latest_snapshot = await db_session.scalar(
-                select(AccountSnapshot)
-                .where(AccountSnapshot.account_id == latest_account.id)
-                .order_by(desc(AccountSnapshot.created_at), desc(AccountSnapshot.id))
+        latest_snapshot = await self._get_latest_snapshot(
+            db_session=db_session,
+            account=latest_account,
+        )
+        structured_response = await self._generate_structured_response(
+            db_session=db_session,
+            user=user,
+            session=session,
+            message=message,
+            profile=profile,
+            latest_goal=latest_goal,
+            latest_account=latest_account,
+            latest_snapshot=latest_snapshot,
+        )
+        ai_response = await assistant_service.generate_chat_reply(
+            AssistantChatContext(
+                session_title=session.title,
+                user_display_name=user.display_name,
+                user_message=message,
+                structured_fallback=structured_response,
+                recent_messages=await self._get_recent_messages(
+                    db_session=db_session,
+                    session_id=session.id,
+                ),
+                profile_summary=self._summarize_profile(profile),
+                account_summary=self._summarize_account(latest_account),
+                snapshot_summary=self._summarize_snapshot(latest_snapshot),
+                goal_summary=self._summarize_goal(latest_goal),
             )
+        )
+        return ai_response or structured_response
+
+    async def _generate_structured_response(
+        self,
+        db_session: AsyncSession,
+        user: User,
+        session: ChatSession,
+        message: str,
+        profile: Profile | None,
+        latest_goal: Goal | None,
+        latest_account: Account | None,
+        latest_snapshot: AccountSnapshot | None,
+    ) -> str:
+        normalized = message.lower()
 
         if "skill" in normalized or "train" in normalized:
             recommendations = await skill_service.get_recommendations(
@@ -161,7 +200,9 @@ class ChatService:
             )
 
         if "quest" in normalized:
-            quest = quest_service.get_quest("recipe-for-disaster" if "barrows" in normalized else "bone-voyage")
+            quest = quest_service.get_quest(
+                "recipe-for-disaster" if "barrows" in normalized else "bone-voyage"
+            )
             return (
                 f"{quest.name} is worth prioritizing because {quest.why_it_matters} "
                 f"Next, I'd {quest.next_steps[0].lower()}"
@@ -191,21 +232,22 @@ class ChatService:
                 goal=latest_goal,
                 profile=profile,
                 snapshot=latest_snapshot,
-                target_rsn=latest_goal.target_account_rsn or (latest_account.rsn if latest_account else None),
+                target_rsn=latest_goal.target_account_rsn
+                or (latest_account.rsn if latest_account else None),
             )
             return planner_service.summarize_next_action(latest_goal, recommendations)
 
-        if "next" in normalized or "should i do" in normalized:
-            if latest_goal is not None:
-                recommendations = await planner_service.build_goal_recommendations(
-                    db_session=db_session,
-                    user=user,
-                    goal=latest_goal,
-                    profile=profile,
-                    snapshot=latest_snapshot,
-                    target_rsn=latest_goal.target_account_rsn or (latest_account.rsn if latest_account else None),
-                )
-                return planner_service.summarize_next_action(latest_goal, recommendations)
+        if ("next" in normalized or "should i do" in normalized) and latest_goal is not None:
+            recommendations = await planner_service.build_goal_recommendations(
+                db_session=db_session,
+                user=user,
+                goal=latest_goal,
+                profile=profile,
+                snapshot=latest_snapshot,
+                target_rsn=latest_goal.target_account_rsn
+                or (latest_account.rsn if latest_account else None),
+            )
+            return planner_service.summarize_next_action(latest_goal, recommendations)
 
         if latest_snapshot is not None and profile is not None:
             return (
@@ -217,6 +259,84 @@ class ChatService:
             f"This chat session '{session.title}' is ready. Ask me about skills, quests, gear, teleports, or goals and "
             "I'll answer from the structured data we've built so far."
         )
+
+    async def _get_latest_snapshot(
+        self,
+        db_session: AsyncSession,
+        account: Account | None,
+    ) -> AccountSnapshot | None:
+        if account is None:
+            return None
+
+        return await db_session.scalar(
+            select(AccountSnapshot)
+            .where(AccountSnapshot.account_id == account.id)
+            .order_by(desc(AccountSnapshot.created_at), desc(AccountSnapshot.id))
+        )
+
+    async def _get_recent_messages(
+        self,
+        db_session: AsyncSession,
+        session_id: int,
+        limit: int = 6,
+    ) -> list[tuple[str, str]]:
+        messages = list(
+            reversed(
+                list(
+                    (
+                        await db_session.scalars(
+                            select(ChatMessage)
+                            .where(ChatMessage.session_id == session_id)
+                            .order_by(desc(ChatMessage.id))
+                            .limit(limit)
+                        )
+                    ).all()
+                )
+            )
+        )
+        return [(message.role, message.content) for message in messages]
+
+    def _summarize_profile(self, profile: Profile | None) -> str | None:
+        if profile is None:
+            return None
+        return (
+            f"display_name={profile.display_name}, play_style={profile.play_style}, "
+            f"goals_focus={profile.goals_focus}, prefers_afk={profile.prefers_afk_methods}, "
+            f"prefers_profitable={profile.prefers_profitable_methods}, "
+            f"primary_account={profile.primary_account_rsn or 'none'}"
+        )
+
+    def _summarize_account(self, account: Account | None) -> str | None:
+        if account is None:
+            return None
+        return f"latest_account={account.rsn}, active={account.is_active}"
+
+    def _summarize_goal(self, goal: Goal | None) -> str | None:
+        if goal is None:
+            return None
+        return (
+            f"title={goal.title}, type={goal.goal_type}, status={goal.status}, "
+            f"target_account={goal.target_account_rsn or 'none'}"
+        )
+
+    def _summarize_snapshot(self, snapshot: AccountSnapshot | None) -> str | None:
+        if snapshot is None:
+            return None
+
+        summary = snapshot.summary or {}
+        top_skills = self._join_preview(summary.get("top_skills"))
+        activity_overview = self._join_preview(summary.get("activity_overview"))
+        return (
+            f"overall_level={summary.get('overall_level')}, combat_level={summary.get('combat_level')}, "
+            f"progression_profile={summary.get('progression_profile')}, "
+            f"top_skills={top_skills or 'unknown'}, activity_overview={activity_overview or 'unknown'}"
+        )
+
+    def _join_preview(self, value: Any) -> str | None:
+        if isinstance(value, list):
+            preview = value[:3]
+            return ", ".join(str(item) for item in preview)
+        return None
 
 
 chat_service = ChatService()

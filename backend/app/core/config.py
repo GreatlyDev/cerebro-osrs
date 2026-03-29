@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     app_host: str = "0.0.0.0"
     app_port: int = 8000
     app_version: str = "0.1.0"
+    openai_api_key: str | None = None
+    openai_base_url: str = "https://api.openai.com/v1"
+    openai_chat_model: str = "gpt-5-mini"
+    openai_chat_enabled: bool = True
+    openai_timeout_seconds: float = 20.0
 
     postgres_user: str = "postgres"
     postgres_password: str = "postgres"
@@ -35,6 +40,11 @@ class Settings(BaseSettings):
     @property
     def debug(self) -> bool:
         return self.app_env.lower() == "development"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def ai_chat_available(self) -> bool:
+        return self.openai_chat_enabled and bool(self.openai_api_key)
 
     @computed_field  # type: ignore[prop-decorator]
     @property

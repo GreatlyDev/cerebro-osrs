@@ -1,6 +1,8 @@
 import pytest
 from httpx import AsyncClient
 
+from app.services.assistant import assistant_service
+
 
 @pytest.mark.asyncio
 async def test_create_and_list_chat_sessions(client: AsyncClient) -> None:
@@ -89,3 +91,25 @@ async def test_chat_can_answer_next_best_action_prompt(client: AsyncClient) -> N
 
     assert response.status_code == 201
     assert "next best action" in response.json()["assistant_message"]["content"].lower()
+
+
+@pytest.mark.asyncio
+async def test_chat_can_use_ai_reply_when_available(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_generate_chat_reply(*args, **kwargs) -> str:
+        return "Try pushing Magic first, then let me plan the rest."
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+
+    session_response = await client.post("/api/chat/sessions", json={"title": "AI Advice"})
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What should I do next?"},
+    )
+
+    assert response.status_code == 201
+    assert response.json()["assistant_message"]["content"] == (
+        "Try pushing Magic first, then let me plan the rest."
+    )
