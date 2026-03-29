@@ -4,6 +4,10 @@ import { useLocation, useNavigate } from "react-router-dom";
 
 import { api } from "./api";
 import { storeSessionToken } from "./api";
+import { DashboardUtilityRail } from "./components/dashboard/DashboardUtilityRail";
+import { AppShell } from "./components/layout/AppShell";
+import { SidebarNav, type SidebarNavItem } from "./components/navigation/SidebarNav";
+import { DashboardPage } from "./pages/Dashboard";
 import type {
   Account,
   AccountProgress,
@@ -1104,129 +1108,148 @@ export function App() {
     );
   }
 
+  const primaryNavItems: SidebarNavItem[] = [
+    {
+      id: "dashboard",
+      label: "Dashboard",
+      description: "Command overview and live account read",
+      active: activeView === "dashboard",
+      onClick: () => navigateToView("dashboard"),
+    },
+    {
+      id: "advisor",
+      label: "Advisor",
+      description: "AI-flavored planner console over your workspace",
+      active: activeView === "ask-cerebro",
+      onClick: () => navigateToView("ask-cerebro"),
+    },
+    {
+      id: "gear-optimizer",
+      label: "Gear Optimizer",
+      description: "Upgrade ladders and loadout planning",
+      active: activeView === "gear",
+      onClick: () => navigateToView("gear"),
+    },
+    {
+      id: "quest-helper",
+      label: "Quest Helper",
+      description: "Unlock-first quest guidance and progression gates",
+      active: activeView === "quests",
+      onClick: () => navigateToView("quests"),
+    },
+    {
+      id: "money-makers",
+      label: "Money Makers",
+      description: "Profit routes and economy-aware planning are coming next",
+      disabled: true,
+      badge: "Soon",
+    },
+    {
+      id: "goal-planner",
+      label: "Goal Planner",
+      description: "Anchor the workspace around progression targets",
+      active: activeView === "goals",
+      onClick: () => navigateToView("goals"),
+    },
+    {
+      id: "saved-builds",
+      label: "Saved Builds",
+      description: "Preset account setups will live here later",
+      disabled: true,
+      badge: "Soon",
+    },
+    {
+      id: "inventory",
+      label: "Inventory",
+      description: "A richer inventory and bank surface is planned",
+      disabled: true,
+      badge: "Soon",
+    },
+  ];
+
+  const secondaryNavItems: SidebarNavItem[] = [
+    {
+      id: "skills",
+      label: "Skills",
+      description: "Live training methods and account-aware levels",
+      active: activeView === "skills",
+      onClick: () => navigateToView("skills"),
+    },
+    {
+      id: "recommendations",
+      label: "Recommendations",
+      description: "Ranked next actions across the planner",
+      active: activeView === "recommendations",
+      onClick: () => navigateToView("recommendations"),
+    },
+    {
+      id: "teleports",
+      label: "Teleports",
+      description: "Route planning and travel shortcuts",
+      active: activeView === "teleports",
+      onClick: () => navigateToView("teleports"),
+    },
+    {
+      id: "profile",
+      label: "Profile",
+      description: "Workspace defaults, focus, and account steering",
+      active: activeView === "profile",
+      onClick: () => navigateToView("profile"),
+    },
+  ];
+
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-block">
-          <p className="eyebrow">Cerebro OSRS</p>
-          <h1>Planner cockpit for RuneScape progression.</h1>
-          <p className="brand-copy">
-            FastAPI intelligence underneath, frontend shell on top, and room for AI
-            when it actually adds product value.
-          </p>
-        </div>
+    <AppShell
+      sidebar={
+        <SidebarNav
+          accounts={accounts}
+          backendStatus={backendStatus}
+          currentUser={currentUser}
+          onSelectAccount={handleSelectAccount}
+          onSignOut={handleSignOut}
+          primaryItems={primaryNavItems}
+          secondaryItems={secondaryNavItems}
+          selectedAccountId={selectedAccountId}
+        />
+      }
+      utilityRail={
+        <DashboardUtilityRail
+          goals={goals}
+          nextActions={nextActions}
+          selectedAccount={selectedAccount}
+          selectedProgress={selectedProgress}
+          selectedSnapshot={selectedSnapshot}
+          selectedSnapshotDelta={snapshotDelta}
+        />
+      }
+    >
+      {error ? <div className="banner error-banner">{error}</div> : null}
+      {loading ? <div className="banner">Loading Cerebro surfaces...</div> : null}
 
-        <div className="sidebar-status">
-          <div className={`status-pill is-${backendStatus}`}>
-            <span className="status-dot" />
-            Backend {backendStatus}
-          </div>
-          <div className="detail-card compact-user-card">
-            <p className="section-label">Signed in</p>
-            <strong>{currentUser.display_name}</strong>
-            <p className="muted-copy">{currentUser.email}</p>
-            <button className="ghost-button" onClick={handleSignOut} type="button">
-              Sign out
-            </button>
-          </div>
-          <select
-            className="select-input"
-            value={selectedAccountId ?? ""}
-            onChange={(event) =>
-              handleSelectAccount(event.target.value ? Number(event.target.value) : null)
-            }
-          >
-            {accounts.length === 0 ? <option value="">No account selected</option> : null}
-            {accounts.map((account) => (
-              <option key={account.id} value={account.id}>
-                {account.rsn}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <nav className="nav-grid">
-          {NAV_ITEMS.map((item) => (
-            <button
-              key={item.key}
-              className={`nav-item${activeView === item.key ? " is-active" : ""}`}
-              onClick={() => navigateToView(item.key)}
-              type="button"
-            >
-              <span>{item.label}</span>
-              <small>{item.blurb}</small>
-            </button>
-          ))}
-        </nav>
-      </aside>
-
-      <main className="main-panel">
-        <header className="hero-card">
-          <div>
-            <p className="eyebrow">Your workspace</p>
-            <h2>
-              {profile
-                ? `Welcome back, ${profile.display_name}.`
-                : currentUser
-                  ? `Welcome back, ${currentUser.display_name}.`
-                  : "Cerebro frontend is coming online."}
-            </h2>
-            <p className="hero-copy">
-              This workspace now runs on your own accounts, goals, chat sessions, and
-              recommendation context instead of one shared planner for everyone.
-            </p>
-          </div>
-
-          <div className="hero-stats">
-            <Metric label="Accounts" value={accounts.length} />
-            <Metric label="Goals" value={goals.length} />
-            <Metric label="Setup" value={`${workspaceProgress}/4`} />
-          </div>
-        </header>
-
-        {error ? <div className="banner error-banner">{error}</div> : null}
-        {loading ? <div className="banner">Loading Cerebro surfaces...</div> : null}
-
-        {!loading ? (
-          <>
-            {activeView === "dashboard" ? (
-              <DashboardView
-                accounts={accounts}
-                busyAction={busyAction}
-                currentUser={currentUser}
-                goals={goals}
-                nextActions={nextActions}
-                onGoToGear={() => navigateToView("gear")}
-                onGoToRecommendations={() => navigateToView("recommendations")}
-                onOpenNextAction={handleOpenNextAction}
-                onGoToGoals={() => navigateToView("goals")}
-                onGoToQuests={() => navigateToView("quests")}
-                onGoToProfile={() => navigateToView("profile")}
-                onGoToSkills={() => navigateToView("skills")}
-                onGoToTeleports={() => navigateToView("teleports")}
-                onCreateAccount={handleCreateAccount}
-                onInspectAccount={handleInspectAccount}
-                onQuickstartAccount={handleQuickstartAccount}
-                onQuickstartGoal={handleQuickstartGoal}
-                onGeneratePlan={handleGeneratePlan}
-                onSaveAccountProgress={handleSaveAccountProgress}
-                onSetPrimaryAccount={handleSetPrimaryAccount}
-                onSyncAccount={handleSyncAccount}
-                profile={profile}
-                progressDraft={progressDraft}
-                selectedAccount={selectedAccount}
-                selectedProgress={selectedProgress}
-                selectedSnapshotDelta={snapshotDelta}
-                selectedSnapshotHistory={selectedSnapshotHistory}
-                selectedSnapshot={selectedSnapshot}
-                newAccountRsn={newAccountRsn}
-                selectedAccountId={selectedAccountId}
-                setProgressDraft={setProgressDraft}
-                setNewAccountRsn={setNewAccountRsn}
-                workspaceChecklist={workspaceChecklist}
-                workspaceProgress={workspaceProgress}
-              />
-            ) : null}
+      {!loading ? (
+        <>
+          {activeView === "dashboard" ? (
+            <DashboardPage
+              chatHistory={chatHistory}
+              chatPrompt={chatPrompt}
+              chatReply={chatReply}
+              currentUser={currentUser}
+              goals={goals}
+              nextActions={nextActions}
+              onGoToGear={() => navigateToView("gear")}
+              onGoToGoals={() => navigateToView("goals")}
+              onGoToQuests={() => navigateToView("quests")}
+              onGoToRecommendations={() => navigateToView("recommendations")}
+              onGoToSkills={() => navigateToView("skills")}
+              onOpenNextAction={handleOpenNextAction}
+              onPromptChange={setChatPrompt}
+              onRunChatPrompt={handleRunChatPrompt}
+              profile={profile}
+              selectedAccount={selectedAccount}
+              selectedProgress={selectedProgress}
+              selectedSnapshot={selectedSnapshot}
+            />
+          ) : null}
 
             {accountDetailId !== null ? (
               <AccountDetailView
@@ -1895,10 +1918,9 @@ export function App() {
               </SectionCard>
             ) : null}
 
-          </>
-        ) : null}
-      </main>
-    </div>
+        </>
+      ) : null}
+    </AppShell>
   );
 }
 
