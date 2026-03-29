@@ -1,4 +1,5 @@
 import { FeatureCard } from "../ui/FeatureCard";
+import { Panel } from "../ui/Panel";
 import { SectionHeader } from "../ui/SectionHeader";
 
 type FeatureItem = {
@@ -17,7 +18,7 @@ type FeatureGridProps = {
 
 export function FeatureGrid({ items }: FeatureGridProps) {
   return (
-    <section>
+    <Panel className="space-y-5" tone="soft">
       <SectionHeader
         eyebrow="Strategic Surfaces"
         subtitle="These are the highest-value Cerebro surfaces to keep close at hand as the planner gets smarter."
@@ -28,6 +29,6 @@ export function FeatureGrid({ items }: FeatureGridProps) {
           <FeatureCard key={item.title} {...item} />
         ))}
       </div>
-    </section>
+    </Panel>
   );
 }

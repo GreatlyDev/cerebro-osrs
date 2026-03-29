@@ -70,24 +70,34 @@ export function AdvisorConsole({
         title="Consult Cerebro"
       />
 
-      <div className="grid gap-4 xl:grid-cols-[16rem_minmax(0,1fr)]">
-        <div className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.18em] text-osrs-gold">Quick prompts</p>
-          <div className="grid gap-2">
-            {quickPrompts.map((prompt) => (
-              <button
-                key={prompt}
-                className="cerebro-hover rounded-[14px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 text-left text-sm text-osrs-text-soft"
-                onClick={() => onRunQuickPrompt(prompt)}
-                type="button"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
+      <div className="rounded-[20px] border border-osrs-border/70 bg-osrs-panel-2/35 p-4 shadow-insetPanel">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="mr-2 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Quick prompts</span>
+          {quickPrompts.map((prompt) => (
+            <button
+              key={prompt}
+              className="cerebro-hover rounded-full border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-2 text-left text-sm text-osrs-text-soft"
+              onClick={() => onRunQuickPrompt(prompt)}
+              type="button"
+            >
+              {prompt}
+            </button>
+          ))}
         </div>
+      </div>
 
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-4 rounded-[22px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(28,22,17,0.92),rgba(16,13,11,0.98))] p-4 shadow-insetPanel">
+          <div className="flex items-center justify-between gap-3 border-b border-osrs-border/60 pb-3">
+            <div>
+              <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Conversation feed</p>
+              <p className="mt-1 text-sm text-osrs-text-soft">Cerebro keeps the latest planning exchange centered here.</p>
+            </div>
+            <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/65 px-3 py-1 text-[0.68rem] uppercase tracking-[0.16em] text-osrs-text-soft">
+              {messages.length} messages
+            </span>
+          </div>
+
           <div className="space-y-3">
             {messages.map((message, index) => (
               <MessageBubble content={message.content} key={`${message.role}-${index}`} role={message.role} />
@@ -103,6 +113,23 @@ export function AdvisorConsole({
             <Button className="md:min-w-[11rem]" onClick={onSubmit}>
               {busy ? "Consulting..." : "Consult Advisor"}
             </Button>
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(60,46,30,0.62),rgba(24,19,15,0.96))] p-4 shadow-insetPanel">
+            <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">What this is best at</p>
+            <ul className="mt-3 space-y-2 text-sm leading-6 text-osrs-text-soft">
+              <li>- translating ranked actions into readable next steps</li>
+              <li>- calling out blockers before you waste a session</li>
+              <li>- turning sync changes into practical advice</li>
+            </ul>
+          </div>
+          <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/55 p-4 shadow-insetPanel">
+            <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current mode</p>
+            <p className="mt-3 text-sm leading-6 text-osrs-text-soft">
+              Planner-grounded responses only. The advisor is reading real account and recommendation context, not free-floating mock chat.
+            </p>
           </div>
         </div>
       </div>
