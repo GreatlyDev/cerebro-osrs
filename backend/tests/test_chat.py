@@ -3,6 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account_snapshot import AccountSnapshot
+from app.models.chat import ChatSession
 from app.services.assistant import assistant_service
 from app.services.accounts import account_service
 
@@ -16,6 +17,20 @@ async def test_create_and_list_chat_sessions(client: AsyncClient) -> None:
     assert list_response.status_code == 200
     assert list_response.json()["total"] == 1
     assert list_response.json()["items"][0]["title"] == "General Help"
+
+
+@pytest.mark.asyncio
+async def test_create_chat_session_initializes_session_state(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    create_response = await client.post("/api/chat/sessions", json={"title": "Stateful Chat"})
+
+    assert create_response.status_code == 201
+    session_id = create_response.json()["id"]
+    stored = await db_session.get(ChatSession, session_id)
+    assert stored is not None
+    assert stored.session_state == {}
 
 
 @pytest.mark.asyncio

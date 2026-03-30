@@ -41,7 +41,7 @@ class ChatService:
         user: User,
         payload: ChatSessionCreateRequest,
     ) -> ChatSessionResponse:
-        session = ChatSession(user_id=user.id, title=payload.title)
+        session = ChatSession(user_id=user.id, title=payload.title, session_state={})
         db_session.add(session)
         await db_session.commit()
         await db_session.refresh(session)
