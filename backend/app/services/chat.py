@@ -106,6 +106,14 @@ class ChatService:
         session: ChatSession,
         message: str,
     ) -> str:
+        recent_messages = await self._get_recent_messages(
+            db_session=db_session,
+            session_id=session.id,
+        )
+        resolved_message = self._resolve_follow_up_message(
+            message=message,
+            recent_messages=recent_messages,
+        )
         profile = await user_context_service.get_profile(db_session=db_session, user=user)
         latest_goal = await user_context_service.get_latest_goal(db_session=db_session, user=user)
         latest_account = await user_context_service.get_latest_account(db_session=db_session, user=user)
@@ -131,7 +139,7 @@ class ChatService:
         stat_answer = await self._build_direct_stat_answer(
             db_session=db_session,
             user=user,
-            message=message,
+            message=resolved_message,
             account=focus_account,
             latest_snapshot=latest_snapshot,
             previous_snapshot=previous_snapshot,
@@ -144,7 +152,7 @@ class ChatService:
             db_session=db_session,
             user=user,
             session=session,
-            message=message,
+            message=resolved_message,
             profile=profile,
             latest_goal=latest_goal,
             latest_account=focus_account,
@@ -154,12 +162,9 @@ class ChatService:
             AssistantChatContext(
                 session_title=session.title,
                 user_display_name=user.display_name,
-                user_message=message,
+                user_message=resolved_message,
                 structured_fallback=structured_response,
-                recent_messages=await self._get_recent_messages(
-                    db_session=db_session,
-                    session_id=session.id,
-                ),
+                recent_messages=recent_messages,
                 profile_summary=self._summarize_profile(profile),
                 account_summary=self._summarize_account(focus_account),
                 snapshot_summary=self._summarize_snapshot(latest_snapshot),
@@ -346,6 +351,103 @@ class ChatService:
             if account is not None:
                 return account
         return latest_account
+
+    def _resolve_follow_up_message(
+        self,
+        *,
+        message: str,
+        recent_messages: list[tuple[str, str]],
+    ) -> str:
+        normalized = message.lower().strip()
+        if not self._is_follow_up_message(normalized):
+            return message
+
+        previous_user_message = self._get_previous_user_message(
+            current_message=message,
+            recent_messages=recent_messages,
+        )
+        if previous_user_message is None:
+            return message
+
+        previous_normalized = previous_user_message.lower()
+        current_style = self._detect_combat_style(normalized)
+        current_destination = self._detect_destination(normalized)
+        current_quest_id = self._detect_quest_id(normalized)
+
+        if ("gear" in previous_normalized or "upgrade" in previous_normalized) and current_style is not None:
+            return f"What {current_style} gear upgrade should I get next?"
+
+        if any(token in previous_normalized for token in ("teleport", "route", "get to", "travel")):
+            if current_destination is not None:
+                return f"How do I get to {current_destination}?"
+
+        if any(
+            phrase in previous_normalized
+            for phrase in ("am i ready for", "what am i missing for", "requirements for", "ready for")
+        ):
+            if current_quest_id is not None:
+                quest = quest_service.get_quest(current_quest_id)
+                return f"What am I missing for {quest.name}?"
+
+        if any(token in previous_normalized for token in ("skill", "train")):
+            current_skill = self._detect_skill_name(
+                normalized,
+                {
+                    "attack": {},
+                    "strength": {},
+                    "defence": {},
+                    "ranged": {},
+                    "prayer": {},
+                    "magic": {},
+                    "runecraft": {},
+                    "construction": {},
+                    "hitpoints": {},
+                    "agility": {},
+                    "herblore": {},
+                    "thieving": {},
+                    "crafting": {},
+                    "fletching": {},
+                    "slayer": {},
+                    "hunter": {},
+                    "mining": {},
+                    "smithing": {},
+                    "fishing": {},
+                    "cooking": {},
+                    "firemaking": {},
+                    "woodcutting": {},
+                    "farming": {},
+                },
+            )
+            if current_skill is not None:
+                return f"What skill should I train next for {current_skill}?"
+
+        return message
+
+    def _is_follow_up_message(self, normalized_message: str) -> bool:
+        follow_up_starts = (
+            "what about",
+            "how about",
+            "and for",
+            "and what about",
+            "what about for",
+        )
+        return normalized_message.startswith(follow_up_starts)
+
+    def _get_previous_user_message(
+        self,
+        *,
+        current_message: str,
+        recent_messages: list[tuple[str, str]],
+    ) -> str | None:
+        skipped_current = False
+        for role, content in reversed(recent_messages):
+            if role != "user":
+                continue
+            if not skipped_current and content.strip() == current_message.strip():
+                skipped_current = True
+                continue
+            return content
+        return None
 
     async def _get_recent_messages(
         self,

@@ -415,6 +415,58 @@ async def test_chat_can_answer_best_gear_upgrade_question(client: AsyncClient) -
 
 
 @pytest.mark.asyncio
+async def test_chat_can_handle_route_follow_up_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "TravelFollow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"completed_quests": ["bone voyage"], "unlocked_transports": ["digsite pendant", "canifis access"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Travel Follow Up"})
+    session_id = session_response.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "How do I get to Fossil Island?"},
+    )
+    follow_up_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "And for Barrows?"},
+    )
+
+    assert first_response.status_code == 201
+    assert follow_up_response.status_code == 201
+    content = follow_up_response.json()["assistant_message"]["content"].lower()
+    assert "barrows" in content
+    assert "canifis" in content or "barrows teleport tablet" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_handle_gear_follow_up_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "GearFollow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Gear Follow Up"})
+    session_id = session_response.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What magic gear upgrade should I get next?"},
+    )
+    follow_up_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What about ranged?"},
+    )
+
+    assert first_response.status_code == 201
+    assert follow_up_response.status_code == 201
+    content = follow_up_response.json()["assistant_message"]["content"].lower()
+    assert "ranged" in content
+    assert "blowpipe" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
