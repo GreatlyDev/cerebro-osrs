@@ -1196,6 +1196,75 @@ async def test_chat_can_explain_tradeoff_for_current_recommendation(client: Asyn
 
 
 @pytest.mark.asyncio
+async def test_chat_can_sequence_the_next_few_days(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "SeqDays"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "SeqDays"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Sequence Days"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "How would you sequence this over the next few days?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "next few days" in content or "day one" in content
+    assert "after that" in content or "third lane" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_compare_xp_vs_unlock_focus(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "XpUnlock"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "XpUnlock"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "XP vs Unlock"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I prioritize if I care more about XP than unlocks?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "xp" in content
+    assert "unlock" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_lower_effort_but_useful_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "EasyUseful"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "EasyUseful"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Easy Useful"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do if I want something lower effort but still useful?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "lower effort" in content or "still useful" in content
+    assert "account moving" in content or "focus" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

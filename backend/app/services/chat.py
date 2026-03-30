@@ -1230,6 +1230,39 @@ class ChatService:
                 "what would you deprioritize",
             )
         )
+        asks_sequence_days = any(
+            phrase in normalized
+            for phrase in (
+                "next few days",
+                "over the next few days",
+                "how would you sequence this over the next few days",
+                "how should i sequence this over the next few days",
+                "sequence this over the next few days",
+            )
+        )
+        asks_xp_vs_unlocks = (
+            ("xp" in normalized or "experience" in normalized)
+            and ("unlock" in normalized or "unlocks" in normalized)
+            and any(
+                phrase in normalized
+                for phrase in (
+                    "care more about",
+                    "prioritize",
+                    "focus more on",
+                    "more important",
+                )
+            )
+        )
+        asks_lower_effort_useful = any(
+            phrase in normalized
+            for phrase in (
+                "lower effort but still useful",
+                "something lower effort but still useful",
+                "something easier but still useful",
+                "less effort but still useful",
+                "lower effort option",
+            )
+        )
         if (
             not asks_week_focus
             and not asks_fastest_goal_move
@@ -1239,6 +1272,9 @@ class ChatService:
             and not asks_today_progress
             and not asks_mixed_profit_progress
             and not asks_deprioritize
+            and not asks_sequence_days
+            and not asks_xp_vs_unlocks
+            and not asks_lower_effort_useful
         ):
             return None
 
@@ -1265,6 +1301,21 @@ class ChatService:
                 f"If you want real progress today, I'd lock in {self._action_label(top_action)} first. "
                 f"{top_action.summary}"
             )
+
+        if asks_sequence_days:
+            parts = [
+                f"Over the next few days, I'd sequence it like this: day one, {self._action_label(top_action)}."
+            ]
+            parts.append(top_action.summary)
+            if second_action is not None:
+                parts.append(
+                    f"After that, shift into {self._action_label(second_action)} so the plan keeps compounding instead of stalling."
+                )
+            if third_action is not None:
+                parts.append(
+                    f"Once those are moving, keep {self._action_label(third_action)} as the third lane to round out the week."
+                )
+            return " ".join(parts)
 
         if asks_short_session:
             quick_action = next(
@@ -1324,6 +1375,39 @@ class ChatService:
             return (
                 f"If you want both profit and progression, I'd still anchor on {self._action_label(top_action)} first. "
                 f"It's the strongest balanced move for {goal_title} right now."
+            )
+
+        if asks_xp_vs_unlocks:
+            unlock_action = next((action for action in actions if action.action_type == "quest"), None)
+            xp_action = next((action for action in actions if action.action_type == "skill"), None)
+            if xp_action is not None and unlock_action is not None:
+                if "unlock" in normalized and "xp" in normalized and "care more about xp" in normalized:
+                    return (
+                        f"If XP matters more than unlocks right now, I'd bias toward {self._action_label(xp_action)} first. "
+                        f"It gives you cleaner stat momentum immediately, while {self._action_label(unlock_action)} is still the lane I'd keep behind it for {goal_title}."
+                    )
+                return (
+                    f"If unlocks matter more than raw XP right now, I'd keep {self._action_label(unlock_action)} ahead of {self._action_label(xp_action)}. "
+                    f"It opens more account value for {goal_title}, even if the immediate XP pace looks slower."
+                )
+            fallback_action = xp_action or unlock_action or top_action
+            return (
+                f"Right now I'd still bias toward {self._action_label(fallback_action)}. "
+                f"It's the cleanest lane from your current plan whether you're optimizing for XP or unlock value."
+            )
+
+        if asks_lower_effort_useful:
+            lower_effort_action = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type in {"skill", "travel", "gear"}
+                ),
+                second_action or top_action,
+            )
+            return (
+                f"If you want something lower effort but still useful, I'd shift into {self._action_label(lower_effort_action)}. "
+                f"It keeps the account moving without demanding as much focus as the sharpest progression lane."
             )
 
         if asks_week_focus:
