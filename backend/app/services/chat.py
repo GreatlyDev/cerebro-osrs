@@ -79,11 +79,15 @@ class ChatService:
         db_session.add(user_message)
         await db_session.flush()
 
-        assistant_content = await self._generate_response(
+        assistant_content, session_state_update = await self._generate_response(
             db_session=db_session,
             user=user,
             session=session,
             message=payload.content,
+        )
+        session.session_state = self._merge_session_state(
+            existing_state=session.session_state,
+            update=session_state_update,
         )
         assistant_message = ChatMessage(
             session_id=session_id,
@@ -107,7 +111,7 @@ class ChatService:
         user: User,
         session: ChatSession,
         message: str,
-    ) -> str:
+    ) -> tuple[str, dict[str, object]]:
         recent_messages = await self._get_recent_messages(
             db_session=db_session,
             session_id=session.id,
@@ -115,6 +119,7 @@ class ChatService:
         resolved_message = self._resolve_follow_up_message(
             message=message,
             recent_messages=recent_messages,
+            session_state=session.session_state or {},
         )
         session_focus = self._infer_session_focus_from_messages(recent_messages)
         session_intent = self._infer_session_intent_from_messages(recent_messages)
@@ -149,14 +154,19 @@ class ChatService:
             latest_goal=latest_goal,
             session_focus=session_focus,
             session_intent=session_intent,
+            session_state=session.session_state or {},
             latest_snapshot=latest_snapshot,
             previous_snapshot=previous_snapshot,
             progress=progress,
         )
         if stat_answer is not None:
-            return stat_answer
+            return stat_answer, self._build_session_state_update(
+                message=resolved_message,
+                session_intent=session_intent,
+                latest_goal=latest_goal,
+            )
 
-        structured_response = await self._generate_structured_response(
+        structured_response, structured_state = await self._generate_structured_response(
             db_session=db_session,
             user=user,
             session=session,
@@ -188,7 +198,14 @@ class ChatService:
                 session_intent_summary=self._summarize_session_intent(session_intent=session_intent),
             )
         )
-        return ai_response or structured_response
+        return (ai_response or structured_response), self._merge_session_state(
+            existing_state=self._build_session_state_update(
+                message=resolved_message,
+                session_intent=session_intent,
+                latest_goal=latest_goal,
+            ),
+            update=structured_state,
+        )
 
     async def _generate_structured_response(
         self,
@@ -200,7 +217,7 @@ class ChatService:
         latest_goal: Goal | None,
         latest_account: Account | None,
         latest_snapshot: AccountSnapshot | None,
-    ) -> str:
+    ) -> tuple[str, dict[str, object]]:
         normalized = message.lower()
 
         if "skill" in normalized or "train" in normalized:
@@ -213,9 +230,15 @@ class ChatService:
             )
             top = recommendations.recommendations[0]
             return (
-                f"For {recommendations.skill}, I'd start with {top.method}. "
-                f"It fits a {recommendations.preference} preference and is a strong next step "
-                f"from your current context."
+                (
+                    f"For {recommendations.skill}, I'd start with {top.method}. "
+                    f"It fits a {recommendations.preference} preference and is a strong next step "
+                    f"from your current context."
+                ),
+                {
+                    "last_recommended_skill": recommendations.skill,
+                    "last_session_intent": "training",
+                },
             )
 
         if "gear" in normalized or "upgrade" in normalized:
@@ -231,8 +254,15 @@ class ChatService:
             )
             top = gear.recommendations[0]
             return (
-                f"A strong next upgrade is {top.item_name} for your {top.slot} slot. "
-                f"{top.upgrade_reason}"
+                (
+                    f"A strong next upgrade is {top.item_name} for your {top.slot} slot. "
+                    f"{top.upgrade_reason}"
+                ),
+                {
+                    "last_recommended_gear": top.item_name,
+                    "last_combat_style": "magic" if "magic" in normalized else "melee",
+                    "last_session_intent": "gearing",
+                },
             )
 
         if "teleport" in normalized or "travel" in normalized or "route" in normalized:
@@ -246,8 +276,14 @@ class ChatService:
                 ),
             )
             return (
-                f"For {route.destination}, I'd use {route.recommended_route.method}. "
-                f"{route.recommended_route.travel_notes}"
+                (
+                    f"For {route.destination}, I'd use {route.recommended_route.method}. "
+                    f"{route.recommended_route.travel_notes}"
+                ),
+                {
+                    "last_destination": route.destination,
+                    "last_session_intent": "travel",
+                },
             )
 
         if "quest" in normalized:
@@ -255,8 +291,14 @@ class ChatService:
                 "recipe-for-disaster" if "barrows" in normalized else "bone-voyage"
             )
             return (
-                f"{quest.name} is worth prioritizing because {quest.why_it_matters} "
-                f"Next, I'd {quest.next_steps[0].lower()}"
+                (
+                    f"{quest.name} is worth prioritizing because {quest.why_it_matters} "
+                    f"Next, I'd {quest.next_steps[0].lower()}"
+                ),
+                {
+                    "last_quest_id": quest.id,
+                    "last_session_intent": "questing",
+                },
             )
 
         if "best action" in normalized or "next best" in normalized:
@@ -272,8 +314,11 @@ class ChatService:
             top_action = next_actions.top_action
             if top_action is not None:
                 return (
-                    f"Your next best action is to {top_action.title.lower()}. "
-                    f"{top_action.summary}"
+                    (
+                        f"Your next best action is to {top_action.title.lower()}. "
+                        f"{top_action.summary}"
+                    ),
+                    self._state_from_next_action(top_action),
                 )
 
         if latest_goal is None and ("work on next" in normalized or "do next" in normalized):
@@ -289,8 +334,11 @@ class ChatService:
             top_action = next_actions.top_action
             if top_action is not None:
                 return (
-                    f"If I were steering this account, I'd start with {top_action.title.lower()}. "
-                    f"{top_action.summary}"
+                    (
+                        f"If I were steering this account, I'd start with {top_action.title.lower()}. "
+                        f"{top_action.summary}"
+                    ),
+                    self._state_from_next_action(top_action),
                 )
 
         if "goal" in normalized and latest_goal is not None:
@@ -303,7 +351,10 @@ class ChatService:
                 target_rsn=latest_goal.target_account_rsn
                 or (latest_account.rsn if latest_account else None),
             )
-            return planner_service.summarize_next_action(latest_goal, recommendations)
+            return (
+                planner_service.summarize_next_action(latest_goal, recommendations),
+                self._state_from_planner_recommendations(recommendations),
+            )
 
         if ("next" in normalized or "should i do" in normalized) and latest_goal is not None:
             recommendations = await planner_service.build_goal_recommendations(
@@ -315,17 +366,26 @@ class ChatService:
                 target_rsn=latest_goal.target_account_rsn
                 or (latest_account.rsn if latest_account else None),
             )
-            return planner_service.summarize_next_action(latest_goal, recommendations)
+            return (
+                planner_service.summarize_next_action(latest_goal, recommendations),
+                self._state_from_planner_recommendations(recommendations),
+            )
 
         if latest_snapshot is not None and profile is not None:
             return (
-                f"You're sitting around overall level {latest_snapshot.summary.get('overall_level')} "
-                f"with a {profile.play_style} play style. I can help with skills, quests, gear, teleports, or goals next."
+                (
+                    f"You're sitting around overall level {latest_snapshot.summary.get('overall_level')} "
+                    f"with a {profile.play_style} play style. I can help with skills, quests, gear, teleports, or goals next."
+                ),
+                {},
             )
 
         return (
-            f"This chat session '{session.title}' is ready. Ask me about skills, quests, gear, teleports, or goals and "
-            "I'll answer from the structured data we've built so far."
+            (
+                f"This chat session '{session.title}' is ready. Ask me about skills, quests, gear, teleports, or goals and "
+                "I'll answer from the structured data we've built so far."
+            ),
+            {},
         )
 
     async def _get_latest_snapshot(
@@ -371,6 +431,7 @@ class ChatService:
         *,
         message: str,
         recent_messages: list[tuple[str, str]],
+        session_state: dict[str, object],
     ) -> str:
         normalized = message.lower().strip()
         if not self._is_follow_up_message(normalized):
@@ -392,6 +453,7 @@ class ChatService:
         current_boss_id = boss_advisor_service.detect_boss_id(normalized)
         current_money_target = self._detect_money_target(normalized)
         previous_focus = self._infer_focus_from_message(previous_normalized)
+        session_focus = self._focus_from_session_state(session_state)
 
         if ("gear" in previous_normalized or "upgrade" in previous_normalized) and current_style is not None:
             return f"What {current_style} gear upgrade should I get next?"
@@ -450,29 +512,43 @@ class ChatService:
                 return f"What skill should I train next for {current_skill}?"
 
         if "worth it" in normalized:
-            prior_money_target = previous_focus["money_target"] or self._detect_money_target(previous_assistant_normalized)
+            prior_money_target = (
+                previous_focus["money_target"]
+                or self._detect_money_target(previous_assistant_normalized)
+                or session_focus["money_target"]
+            )
             if prior_money_target is not None:
                 return f"Is {prior_money_target} worth it as a money maker?"
-            if previous_focus["quest_id"] is not None:
-                quest = quest_service.get_quest(previous_focus["quest_id"])
+            prior_quest_id = previous_focus["quest_id"] or session_focus["quest_id"]
+            if prior_quest_id is not None:
+                quest = quest_service.get_quest(prior_quest_id)
                 return f"Is {quest.name} worth it right now?"
-            if previous_focus["boss_id"] is not None:
-                return f"Is {self._boss_label(previous_focus['boss_id'])} worth it right now?"
+            prior_boss_id = previous_focus["boss_id"] or session_focus["boss_id"]
+            if prior_boss_id is not None:
+                return f"Is {self._boss_label(prior_boss_id)} worth it right now?"
 
         if "train for that" in normalized or "train for it" in normalized:
-            if previous_focus["quest_id"] is not None:
-                quest = quest_service.get_quest(previous_focus["quest_id"])
+            prior_quest_id = previous_focus["quest_id"] or session_focus["quest_id"]
+            if prior_quest_id is not None:
+                quest = quest_service.get_quest(prior_quest_id)
                 return f"What should I train for {quest.name}?"
-            if previous_focus["boss_id"] is not None:
-                return f"What should I train for {self._boss_label(previous_focus['boss_id'])}?"
+            prior_boss_id = previous_focus["boss_id"] or session_focus["boss_id"]
+            if prior_boss_id is not None:
+                return f"What should I train for {self._boss_label(prior_boss_id)}?"
 
         if normalized in {"what else?", "what else", "anything else?", "anything else"}:
-            if previous_focus["quest_id"] is not None:
-                quest = quest_service.get_quest(previous_focus["quest_id"])
+            prior_quest_id = previous_focus["quest_id"] or session_focus["quest_id"]
+            if prior_quest_id is not None:
+                quest = quest_service.get_quest(prior_quest_id)
                 return f"What else should I do for {quest.name}?"
-            if previous_focus["boss_id"] is not None:
-                return f"What else should I do to get ready for {self._boss_label(previous_focus['boss_id'])}?"
-            prior_money_target = previous_focus["money_target"] or self._detect_money_target(previous_assistant_normalized)
+            prior_boss_id = previous_focus["boss_id"] or session_focus["boss_id"]
+            if prior_boss_id is not None:
+                return f"What else should I do to get ready for {self._boss_label(prior_boss_id)}?"
+            prior_money_target = (
+                previous_focus["money_target"]
+                or self._detect_money_target(previous_assistant_normalized)
+                or session_focus["money_target"]
+            )
             if prior_money_target is not None:
                 return f"What else should I do for profit after {prior_money_target}?"
 
@@ -677,6 +753,7 @@ class ChatService:
         latest_goal: Goal | None,
         session_focus: dict[str, str | None],
         session_intent: str | None,
+        session_state: dict[str, object],
         latest_snapshot: AccountSnapshot | None,
         previous_snapshot: AccountSnapshot | None,
         progress: AccountProgress | None,
@@ -747,6 +824,7 @@ class ChatService:
             message=message,
             latest_snapshot=latest_snapshot,
             progress=progress,
+            session_state=session_state,
         )
         if training_answer is not None:
             return training_answer
@@ -1068,6 +1146,7 @@ class ChatService:
         message: str,
         latest_snapshot: AccountSnapshot,
         progress: AccountProgress | None,
+        session_state: dict[str, object],
     ) -> str | None:
         normalized = message.lower()
         if "train for" not in normalized:
@@ -1088,6 +1167,12 @@ class ChatService:
                 return (
                     f"For {quest.name}, I'd train {str(top_gap['skill']).replace('_', ' ').title()} next. "
                     f"You're currently {top_gap['current_level']} and the structured target is {top_gap['required_level']}."
+                )
+            saved_skill = self._state_str(session_state, "last_recommended_skill")
+            if saved_skill is not None:
+                return (
+                    f"For {quest.name}, your formal stat blockers are already covered, so I'd keep pushing "
+                    f"{saved_skill.replace('_', ' ').title()} as the training lane that best supports the current plan."
                 )
             return f"For {quest.name}, your tracked stat blockers are already in a good spot, so I'd focus on quest progression or unlock cleanup next."
 
@@ -1429,6 +1514,86 @@ class ChatService:
         if not values:
             return "none"
         return ", ".join(values[:limit])
+
+    def _merge_session_state(
+        self,
+        *,
+        existing_state: dict[str, object] | None,
+        update: dict[str, object] | None,
+    ) -> dict[str, object]:
+        merged = dict(existing_state or {})
+        for key, value in (update or {}).items():
+            if value is None:
+                continue
+            merged[key] = value
+        return merged
+
+    def _build_session_state_update(
+        self,
+        *,
+        message: str,
+        session_intent: str | None,
+        latest_goal: Goal | None,
+    ) -> dict[str, object]:
+        focus = self._infer_focus_from_message(message.lower())
+        update: dict[str, object] = {
+            "last_session_intent": session_intent,
+            "last_goal_title": latest_goal.title if latest_goal is not None else None,
+        }
+        if focus["quest_id"] is not None:
+            update["last_quest_id"] = focus["quest_id"]
+        if focus["boss_id"] is not None:
+            update["last_boss_id"] = focus["boss_id"]
+        if focus["money_target"] is not None:
+            update["last_money_target"] = focus["money_target"]
+        if focus["destination"] is not None:
+            update["last_destination"] = focus["destination"]
+        if focus["combat_style"] is not None:
+            update["last_combat_style"] = focus["combat_style"]
+        return update
+
+    def _state_from_planner_recommendations(
+        self,
+        recommendations: dict[str, object],
+    ) -> dict[str, object]:
+        skill = recommendations.get("recommended_skill", {})
+        quest = recommendations.get("recommended_quest", {})
+        teleport = recommendations.get("recommended_teleport", {})
+        return {
+            "last_recommended_skill": skill.get("skill") if isinstance(skill, dict) else None,
+            "last_quest_id": quest.get("id") if isinstance(quest, dict) else None,
+            "last_destination": teleport.get("destination") if isinstance(teleport, dict) else None,
+            "last_session_intent": "progression",
+        }
+
+    def _state_from_next_action(self, top_action) -> dict[str, object]:
+        update: dict[str, object] = {"last_session_intent": "progression"}
+        if top_action.action_type == "quest":
+            target = top_action.target or {}
+            update["last_quest_id"] = target.get("quest_id")
+        elif top_action.action_type == "skill":
+            target = top_action.target or {}
+            update["last_recommended_skill"] = target.get("skill")
+        elif top_action.action_type == "travel":
+            target = top_action.target or {}
+            update["last_destination"] = target.get("destination")
+        elif top_action.action_type == "gear":
+            supporting = top_action.supporting_data or {}
+            update["last_combat_style"] = supporting.get("combat_style")
+        return update
+
+    def _focus_from_session_state(self, session_state: dict[str, object]) -> dict[str, str | None]:
+        return {
+            "quest_id": self._state_str(session_state, "last_quest_id"),
+            "boss_id": self._state_str(session_state, "last_boss_id"),
+            "money_target": self._state_str(session_state, "last_money_target"),
+            "destination": self._state_str(session_state, "last_destination"),
+            "combat_style": self._state_str(session_state, "last_combat_style"),
+        }
+
+    def _state_str(self, session_state: dict[str, object], key: str) -> str | None:
+        value = session_state.get(key)
+        return value if isinstance(value, str) else None
 
     def _detect_destination(self, normalized_message: str) -> str | None:
         aliases = {

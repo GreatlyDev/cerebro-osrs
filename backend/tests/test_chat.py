@@ -95,6 +95,34 @@ async def test_chat_can_answer_next_best_action_prompt(client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
+async def test_chat_can_use_saved_session_state_for_training_follow_up(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "StateTrain"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "StateTrain"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "State Memory"})
+    session_id = session_response.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+    follow_up_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I train for that?"},
+    )
+
+    assert first_response.status_code == 201
+    assert follow_up_response.status_code == 201
+    content = follow_up_response.json()["assistant_message"]["content"].lower()
+    assert "bone voyage" in content
+    assert "magic" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_answer_work_on_next_prompt_without_goal(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "Momentum"})
     account_id = account_response.json()["id"]
