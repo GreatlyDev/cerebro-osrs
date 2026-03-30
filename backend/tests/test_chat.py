@@ -1022,6 +1022,53 @@ async def test_chat_can_explain_sync_recommendation_stability(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_explain_what_change_matters_most(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "MattersMost"})
+    account_id = account_response.json()["id"]
+
+    db_session.add(
+        AccountSnapshot(
+            account_id=account_id,
+            source="manual",
+            sync_status="completed",
+            summary={
+                "overall_level": 180,
+                "combat_level": 70,
+                "skills": {
+                    "overall": {"level": 180},
+                    "magic": {"level": 58},
+                    "woodcutting": {"level": 50},
+                    "fishing": {"level": 45},
+                    "attack": {"level": 55},
+                },
+            },
+        )
+    )
+    await db_session.commit()
+
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "MattersMost"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Matters Most"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What changed that matters most?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "matters most" in content or "biggest change" in content
+    assert "magic" in content or "plan shifted" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

@@ -787,6 +787,19 @@ class ChatService:
         if progress_answer is not None:
             return progress_answer
 
+        salient_change_answer = await self._build_salient_change_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            profile=profile,
+            latest_goal=latest_goal,
+            account=account,
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+        )
+        if salient_change_answer is not None:
+            return salient_change_answer
+
         plan_order_answer = await self._build_plan_order_answer(
             db_session=db_session,
             user=user,
@@ -939,6 +952,95 @@ class ChatService:
                 return f"Your overall rank is {overall_rank:,}."
 
         return None
+
+    async def _build_salient_change_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        profile: Profile | None,
+        latest_goal: Goal | None,
+        account: Account | None,
+        latest_snapshot: AccountSnapshot,
+        previous_snapshot: AccountSnapshot | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what changed that matters most",
+                "what changed that matters",
+                "what matters most from the last sync",
+                "what matters most from my last sync",
+                "most important change",
+                "what changed most that matters",
+            )
+        ):
+            return None
+
+        if previous_snapshot is None:
+            return "I only have one synced snapshot so far, so I can't tell which new change matters most yet."
+
+        overall_delta, combat_delta, improved_skills = self._snapshot_delta_bits(
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+        )
+
+        if latest_goal is not None:
+            current_recommendations = await planner_service.build_goal_recommendations(
+                db_session=db_session,
+                user=user,
+                goal=latest_goal,
+                profile=profile,
+                snapshot=latest_snapshot,
+                target_rsn=latest_goal.target_account_rsn or (account.rsn if account is not None else None),
+            )
+            previous_recommendations = await planner_service.build_goal_recommendations(
+                db_session=db_session,
+                user=user,
+                goal=latest_goal,
+                profile=profile,
+                snapshot=previous_snapshot,
+                target_rsn=latest_goal.target_account_rsn or (account.rsn if account is not None else None),
+            )
+            current_focus = self._planner_focus_label(current_recommendations)
+            previous_focus = self._planner_focus_label(previous_recommendations)
+            if current_focus != previous_focus:
+                return (
+                    f"The biggest change is that your plan shifted from {previous_focus} to {current_focus}. "
+                    f"That's the most meaningful thing from the latest sync for {latest_goal.title}."
+                )
+
+            recommended_skill = str(
+                (current_recommendations.get("recommended_skill", {}) or {}).get("skill") or ""
+            ).replace("_", " ").title()
+            improved_lookup = {skill.lower(): skill for skill in improved_skills}
+            if recommended_skill and recommended_skill.lower() in improved_lookup:
+                return (
+                    f"The change that matters most is your progress in {recommended_skill}. "
+                    f"That lines up directly with the current recommendation lane for {latest_goal.title}."
+                )
+
+        if improved_skills:
+            return (
+                f"The change that matters most is your progress in {improved_skills[0]}. "
+                f"That's the clearest visible gain from the latest sync."
+            )
+
+        if combat_delta > 0:
+            return (
+                f"The change that matters most is your combat level moving by {combat_delta:+d}. "
+                "That usually opens the most immediate combat and bossing flexibility."
+            )
+
+        if overall_delta > 0:
+            return (
+                f"The change that matters most is your overall level moving by {overall_delta:+d}. "
+                "Even without a standout skill gain, that means the account is still gaining momentum."
+            )
+
+        return "Nothing jumped out as a major tracked change from the latest sync yet, so the current plan is mostly stable."
 
     async def _build_recommendation_change_answer(
         self,
