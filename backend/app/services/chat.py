@@ -827,6 +827,19 @@ class ChatService:
         if coaching_answer is not None:
             return coaching_answer
 
+        confidence_answer = await self._build_confidence_and_tradeoff_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+            session_state=session_state,
+        )
+        if confidence_answer is not None:
+            return confidence_answer
+
         change_answer = self._build_snapshot_change_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -1573,6 +1586,79 @@ class ChatService:
 
         return None
 
+    async def _build_confidence_and_tradeoff_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        asks_confidence = any(
+            phrase in normalized
+            for phrase in (
+                "how confident are you",
+                "how sure are you",
+                "are you confident",
+                "how strong is that recommendation",
+            )
+        )
+        asks_tradeoff = any(
+            phrase in normalized
+            for phrase in (
+                "what's the tradeoff",
+                "what is the tradeoff",
+                "what's the downside",
+                "what is the downside",
+                "what am i giving up",
+                "why that over",
+            )
+        )
+        if not asks_confidence and not asks_tradeoff:
+            return None
+
+        next_actions = await recommendation_service.get_next_actions(
+            db_session=db_session,
+            user=user,
+            payload=NextActionRequest(
+                account_rsn=account.rsn if account is not None else None,
+                goal_id=latest_goal.id if latest_goal is not None else None,
+                limit=4,
+            ),
+        )
+        actions = next_actions.actions
+        if not actions:
+            return None
+
+        current_action = self._find_action_from_session_state(actions, session_state) or next_actions.top_action
+        if current_action is None:
+            return None
+        alternate_action = next(
+            (action for action in actions if not self._actions_match(action, current_action)),
+            None,
+        )
+        goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+
+        if asks_confidence:
+            return self._confidence_summary(
+                action=current_action,
+                alternate_action=alternate_action,
+                goal_title=goal_title,
+            )
+
+        return self._tradeoff_summary(
+            action=current_action,
+            alternate_action=alternate_action,
+            goal_title=goal_title,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+        )
+
     def _build_account_focus_answer(
         self,
         *,
@@ -2071,6 +2157,103 @@ class ChatService:
             blocker_preview = ", ".join(blockers[:2])
             return f"It has the stronger priority in your current plan, even with blockers like {blocker_preview}."
         return "It has the stronger priority in your current plan and is the cleaner next push from your synced context."
+
+    def _confidence_summary(
+        self,
+        *,
+        action: NextActionRecommendation,
+        alternate_action: NextActionRecommendation | None,
+        goal_title: str,
+    ) -> str:
+        blocker_count = len(action.blockers or [])
+        score_gap = action.score - alternate_action.score if alternate_action is not None else 12
+
+        if score_gap >= 12 and blocker_count == 0:
+            confidence = "high"
+            reason = (
+                f"{self._action_label(action).capitalize()} is clearly ahead of the rest of the board for {goal_title}."
+            )
+        elif score_gap >= 6 and blocker_count <= 1:
+            confidence = "pretty solid"
+            reason = (
+                f"{self._action_label(action).capitalize()} still leads the current plan, but the lane behind it is close enough that I'd keep it in view."
+            )
+        else:
+            confidence = "measured"
+            reason = (
+                f"{self._action_label(action).capitalize()} is still the best call right now, but it is not massively ahead of the alternatives yet."
+            )
+
+        blocker_note = (
+            f" The main thing keeping me cautious is {', '.join((action.blockers or [])[:2])}."
+            if blocker_count > 0
+            else " There are no major blockers attached to it right now."
+        )
+        alternate_note = (
+            f" The closest alternate is {self._action_label(alternate_action)}."
+            if alternate_action is not None
+            else ""
+        )
+        return f"My confidence is {confidence}. {reason}{blocker_note}{alternate_note}"
+
+    def _tradeoff_summary(
+        self,
+        *,
+        action: NextActionRecommendation,
+        alternate_action: NextActionRecommendation | None,
+        goal_title: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+    ) -> str:
+        if alternate_action is None:
+            return (
+                f"The main tradeoff is focus versus flexibility. {self._action_label(action).capitalize()} is the only clear live lane, "
+                f"so the cost is spending less time on side upgrades until {goal_title} moves forward."
+            )
+
+        primary_label = self._action_label(action)
+        alternate_label = self._action_label(alternate_action)
+        reason = self._ordering_reason(action)
+
+        if action.action_type == "quest":
+            quest_id = str((action.target or {}).get("quest_id") or "")
+            blocker_count = self._quest_blocker_count(
+                quest_id=quest_id,
+                latest_snapshot=latest_snapshot,
+                progress=progress,
+            ) if quest_id else len(action.blockers or [])
+            blocker_note = (
+                " It does ask you to clear a few blockers first."
+                if blocker_count > 0
+                else " It is fairly clean to act on immediately."
+            )
+            return (
+                f"The tradeoff is direct progression versus optional side value. {primary_label.capitalize()} pushes {goal_title} more directly than "
+                f"{alternate_label}, but it can be a little more demanding upfront.{blocker_note} {reason}"
+            )
+
+        if action.action_type == "skill":
+            return (
+                f"The tradeoff is momentum versus variety. {primary_label.capitalize()} is the cleanest account-growth lane right now, "
+                f"while {alternate_label} is the thing I'd hold in reserve if you want to change pace. {reason}"
+            )
+
+        if action.action_type == "gear":
+            return (
+                f"The tradeoff is power now versus broader flexibility. {primary_label.capitalize()} improves your lane faster, "
+                f"but {alternate_label} may stay attractive if you want a more rounded plan. {reason}"
+            )
+
+        if action.action_type == "travel":
+            return (
+                f"The tradeoff is convenience versus immediate payoff. {primary_label.capitalize()} reduces future friction, "
+                f"while {alternate_label} may do more right now if you only care about the next short push. {reason}"
+            )
+
+        return (
+            f"The tradeoff is that {primary_label} is the sharper move for {goal_title}, while {alternate_label} is the safer alternate lane. "
+            f"{reason}"
+        )
 
     def _quest_blocker_count(
         self,

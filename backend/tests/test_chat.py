@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -1135,6 +1137,62 @@ async def test_chat_can_answer_what_to_deprioritize_this_week(client: AsyncClien
     content = response.json()["assistant_message"]["content"].lower()
     assert "deprioritize" in content
     assert "quest cape" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_explain_confidence_in_current_recommendation(client: AsyncClient) -> None:
+    rsn = f"Conf{uuid4().hex[:6]}"
+    account_response = await client.post("/api/accounts", json={"rsn": rsn})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": rsn},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Confidence"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "How confident are you in that?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "confidence" in content
+    assert "closest alternate" in content or "alternate" in content or "blocker" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_explain_tradeoff_for_current_recommendation(client: AsyncClient) -> None:
+    rsn = f"Trade{uuid4().hex[:6]}"
+    account_response = await client.post("/api/accounts", json={"rsn": rsn})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": rsn},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Tradeoff"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What's the tradeoff?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "tradeoff" in content
+    assert "quest cape" in content or "progression" in content
 
 
 @pytest.mark.asyncio
