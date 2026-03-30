@@ -791,12 +791,12 @@ export function App() {
       const reply = await api.sendChatMessage(session.id, prompt);
       setChatReply(reply.assistant_message.content);
       setChatHistory((current) => [
+        ...current,
         {
           prompt,
           reply: reply.assistant_message.content,
           sessionId: session.id,
         },
-        ...current,
       ]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to send chat prompt.");

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
@@ -31,6 +32,7 @@ export function ChatView({
   setSelectedChatSessionId,
   setChatPrompt,
 }: ChatViewProps) {
+  const conversationEndRef = useRef<HTMLDivElement | null>(null);
   const visibleHistory =
     selectedChatSessionId === null
       ? chatHistory
@@ -42,6 +44,10 @@ export function ChatView({
     "What skill should I train next?",
     "What changed since my last sync?",
   ];
+
+  useEffect(() => {
+    conversationEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [selectedChatSessionId, visibleHistory.length]);
 
   return (
     <div className="space-y-6">
@@ -100,7 +106,7 @@ export function ChatView({
             title="Conversation"
             subtitle="This is where the planner turns structured account intelligence into readable advice."
           />
-          <div className="space-y-3">
+          <div className="max-h-[70vh] min-h-[24rem] space-y-3 overflow-y-auto pr-1">
             {visibleHistory.length > 0 ? (
               visibleHistory.map((exchange) => (
                 <div className="space-y-3" key={`${exchange.sessionId}-${exchange.prompt}`}>
@@ -119,6 +125,7 @@ export function ChatView({
                 {chatReply || "No session history yet. Start with a quick prompt and Cerebro will begin building conversation context here."}
               </div>
             )}
+            <div ref={conversationEndRef} />
           </div>
         </Panel>
 
