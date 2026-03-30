@@ -47,6 +47,7 @@ export function ChatView({
       ? chatHistory
       : chatHistory.filter((exchange) => exchange.sessionId === selectedChatSessionId);
   const quickPrompts = buildQuickPrompts(sessionState, selectedAccountRsn);
+  const advisorCapabilities = buildAdvisorCapabilities(sessionState);
 
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -207,6 +208,26 @@ export function ChatView({
         </Panel>
       </div>
 
+      <div className="grid gap-4 xl:grid-cols-3">
+        {advisorCapabilities.map((capability) => (
+          <Panel className="space-y-3" key={capability.title}>
+            <SectionHeader eyebrow={capability.eyebrow} title={capability.title} subtitle={capability.description} />
+            <div className="grid gap-2">
+              {capability.prompts.map((prompt) => (
+                <button
+                  className="cerebro-hover rounded-[14px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 text-left text-sm text-osrs-text-soft"
+                  key={prompt}
+                  onClick={() => onRunChatPrompt(prompt)}
+                  type="button"
+                >
+                  {prompt}
+                </button>
+              ))}
+            </div>
+          </Panel>
+        ))}
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-4">
         <Panel className="space-y-2">
           <SectionHeader eyebrow="Thread account" title={threadAccountLabel} />
@@ -306,6 +327,60 @@ function buildQuickPrompts(
   }
 
   return deduped.slice(0, 6);
+}
+
+function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
+  eyebrow: string;
+  title: string;
+  description: string;
+  prompts: string[];
+}> {
+  const questId = readStateString(state, "last_quest_id");
+  const bossId = readStateString(state, "last_boss_id");
+  const skill = readStateString(state, "last_recommended_skill");
+  const moneyTarget = readStateString(state, "last_money_target");
+
+  const focusPrompt = questId
+    ? `How would you sequence ${humanizeLabel(questId)} over the next few days?`
+    : bossId
+      ? `How would you sequence prep for ${humanizeLabel(bossId)} over the next few days?`
+      : "How would you sequence this over the next few days?";
+
+  const tradeoffPrompt = skill
+    ? `What should I prioritize if I care more about XP than unlocks?`
+    : moneyTarget
+      ? `What should I do if I want both profit and progression?`
+      : "What's the tradeoff?";
+
+  return [
+    {
+      eyebrow: "Planning coach",
+      title: "Ask for sequencing",
+      description: "Use Cerebro like a planner when you want a few days of direction instead of one isolated answer.",
+      prompts: [
+        focusPrompt,
+        "What should I do today if I want real progress?",
+      ],
+    },
+    {
+      eyebrow: "Tradeoff lens",
+      title: "Ask for decisions",
+      description: "These prompts are best when you want Cerebro to narrow choices and explain what you give up.",
+      prompts: [
+        "How confident are you in that?",
+        tradeoffPrompt,
+      ],
+    },
+    {
+      eyebrow: "Low-friction play",
+      title: "Ask for lighter options",
+      description: "Good for evenings when you still want useful momentum without committing to the hardest lane.",
+      prompts: [
+        "What should I do if I want something lower effort but still useful?",
+        "I want AFK progress tonight. What should I do?",
+      ],
+    },
+  ];
 }
 
 function readStateString(state: Record<string, unknown>, key: string): string | null {
