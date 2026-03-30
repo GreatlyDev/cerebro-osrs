@@ -789,6 +789,58 @@ async def test_chat_can_compare_current_quest_order_against_another_quest(client
 
 
 @pytest.mark.asyncio
+async def test_chat_can_compare_goal_alignment_against_money_maker(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "GoalCompare"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "GoalCompare"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Goal Compare"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What am I missing for Bone Voyage?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Would that help my goal more than karambwans?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "quest cape" in content
+    assert "bone voyage" in content
+    assert "karambwans" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_compare_profit_vs_questing_route(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "ProfitQuest"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "ProfitQuest"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Preference Route"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What is the better route if I care more about profit than questing?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "profit" in content
+    assert "questing" in content
+    assert "karambwans" in content or "money maker" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

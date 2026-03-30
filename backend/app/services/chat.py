@@ -792,6 +792,7 @@ class ChatService:
             user=user,
             message=message,
             account=account,
+            profile=profile,
             latest_goal=latest_goal,
             latest_snapshot=latest_snapshot,
             progress=progress,
@@ -922,6 +923,7 @@ class ChatService:
         user: User,
         message: str,
         account: Account | None,
+        profile: Profile | None,
         latest_goal: Goal | None,
         latest_snapshot: AccountSnapshot,
         progress: AccountProgress | None,
@@ -940,7 +942,19 @@ class ChatService:
             )
         )
         asks_order_comparison = "should i do that before" in normalized or "should i do that after" in normalized
-        if not asks_what_comes_after and not asks_order_comparison:
+        asks_goal_comparison = any(
+            phrase in normalized
+            for phrase in (
+                "help my goal more than",
+                "better for my goal than",
+                "more for my goal than",
+                "advance my goal more than",
+            )
+        )
+        asks_preference_route = (
+            "care more about" in normalized and "profit" in normalized and "quest" in normalized
+        )
+        if not asks_what_comes_after and not asks_order_comparison and not asks_goal_comparison and not asks_preference_route:
             return None
 
         next_actions = await recommendation_service.get_next_actions(
@@ -954,6 +968,31 @@ class ChatService:
         )
         actions = next_actions.actions
         current_action = self._find_action_from_session_state(actions, session_state)
+        comparison_focus = self._infer_focus_from_message(normalized)
+        comparison_action = self._find_action_from_focus(actions, comparison_focus)
+
+        if asks_preference_route:
+            quest_action = next((action for action in actions if action.action_type == "quest"), None)
+            money_options = money_maker_service.get_best_options(
+                skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                unlocked_transports=progress.unlocked_transports if progress else None,
+                completed_quests=progress.completed_quests if progress else None,
+                prefers_profitable_methods=profile.prefers_profitable_methods if profile is not None else False,
+            )
+            top_money_maker = money_options[0] if money_options else None
+            if quest_action is not None and top_money_maker is not None:
+                goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+                if "profit than quest" in normalized:
+                    return (
+                        f"If profit matters more than questing right now, I'd route you into {top_money_maker['name']} "
+                        f"before {self._action_label(quest_action)}. It pays off faster, while {self._action_label(quest_action)} "
+                        f"still does more to move {goal_title} forward once you're ready to switch lanes."
+                    )
+                return (
+                    f"If questing matters more than profit right now, I'd keep {self._action_label(quest_action)} ahead of "
+                    f"{top_money_maker['name']}. {self._action_label(quest_action).capitalize()} pushes {goal_title} forward "
+                    f"more directly, then {top_money_maker['name']} can slot in as a profit reset."
+                )
 
         if asks_what_comes_after:
             if current_action is None:
@@ -979,9 +1018,35 @@ class ChatService:
                 f"{next_action.summary}"
             )
 
-        comparison_focus = self._infer_focus_from_message(normalized)
-        comparison_action = self._find_action_from_focus(actions, comparison_focus)
         ask_do_that_before = "should i do that before" in normalized
+
+        if asks_goal_comparison:
+            goal_title = latest_goal.title if latest_goal is not None else "your current plan"
+            if current_action is not None and comparison_action is not None:
+                current_better = current_action.score >= comparison_action.score
+                preferred = current_action if current_better else comparison_action
+                alternate = comparison_action if current_better else current_action
+                return (
+                    f"For {goal_title}, {self._action_label(preferred)} helps more than {self._action_label(alternate)} right now. "
+                    f"{self._ordering_reason(preferred)}"
+                )
+
+            current_quest_id = self._state_str(session_state, "last_quest_id")
+            comparison_quest_id = comparison_focus.get("quest_id")
+            comparison_money_target = comparison_focus.get("money_target")
+            current_money_target = self._state_str(session_state, "last_money_target")
+            if current_quest_id is not None and comparison_money_target is not None:
+                current_quest = quest_service.get_quest(current_quest_id)
+                return (
+                    f"For {goal_title}, {current_quest.name} helps more than {comparison_money_target.title()} right now. "
+                    f"It pushes the account plan forward directly, while {comparison_money_target} is better treated as profit support."
+                )
+            if current_money_target is not None and comparison_quest_id is not None:
+                comparison_quest = quest_service.get_quest(comparison_quest_id)
+                return (
+                    f"For {goal_title}, {comparison_quest.name} helps more than {current_money_target.title()} right now. "
+                    f"It advances your tracked progression more directly, then {current_money_target} can fund the next steps."
+                )
 
         if current_action is not None and comparison_action is not None:
             current_first = current_action.score >= comparison_action.score
