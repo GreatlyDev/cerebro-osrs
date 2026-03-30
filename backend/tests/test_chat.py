@@ -530,6 +530,79 @@ async def test_chat_can_handle_money_maker_follow_up_question(client: AsyncClien
 
 
 @pytest.mark.asyncio
+async def test_chat_can_handle_training_follow_up_for_boss(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "BossFollow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Boss Follow Up"})
+    session_id = session_response.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Am I ready for Fight Caves?"},
+    )
+    follow_up_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I train for that?"},
+    )
+
+    assert first_response.status_code == 201
+    assert follow_up_response.status_code == 201
+    content = follow_up_response.json()["assistant_message"]["content"].lower()
+    assert "fight caves" in content
+    assert "ranged" in content or "prayer" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_handle_worth_it_follow_up_for_money_maker(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "WorthMoney"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch("/api/profile", json={"prefers_profitable_methods": True})
+    session_response = await client.post("/api/chat/sessions", json={"title": "Worth It Money"})
+    session_id = session_response.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What money maker should I do right now?"},
+    )
+    follow_up_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Is that worth it?"},
+    )
+
+    assert first_response.status_code == 201
+    assert follow_up_response.status_code == 201
+    content = follow_up_response.json()["assistant_message"]["content"].lower()
+    assert "worth" in content
+    assert "karambwans" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_handle_worth_it_follow_up_for_quest(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "WorthQuest"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Worth It Quest"})
+    session_id = session_response.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What am I missing for Bone Voyage?"},
+    )
+    follow_up_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Is that worth it?"},
+    )
+
+    assert first_response.status_code == 201
+    assert follow_up_response.status_code == 201
+    content = follow_up_response.json()["assistant_message"]["content"].lower()
+    assert "bone voyage" in content
+    assert "worth it" in content or "worth prioritizing" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

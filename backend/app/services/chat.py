@@ -371,13 +371,16 @@ class ChatService:
         )
         if previous_user_message is None:
             return message
+        previous_assistant_message = self._get_previous_assistant_message(recent_messages=recent_messages)
 
         previous_normalized = previous_user_message.lower()
+        previous_assistant_normalized = previous_assistant_message.lower() if previous_assistant_message else ""
         current_style = self._detect_combat_style(normalized)
         current_destination = self._detect_destination(normalized)
         current_quest_id = self._detect_quest_id(normalized)
         current_boss_id = boss_advisor_service.detect_boss_id(normalized)
         current_money_target = self._detect_money_target(normalized)
+        previous_focus = self._infer_focus_from_message(previous_normalized)
 
         if ("gear" in previous_normalized or "upgrade" in previous_normalized) and current_style is not None:
             return f"What {current_style} gear upgrade should I get next?"
@@ -435,6 +438,23 @@ class ChatService:
             if current_skill is not None:
                 return f"What skill should I train next for {current_skill}?"
 
+        if "worth it" in normalized:
+            prior_money_target = previous_focus["money_target"] or self._detect_money_target(previous_assistant_normalized)
+            if prior_money_target is not None:
+                return f"Is {prior_money_target} worth it as a money maker?"
+            if previous_focus["quest_id"] is not None:
+                quest = quest_service.get_quest(previous_focus["quest_id"])
+                return f"Is {quest.name} worth it right now?"
+            if previous_focus["boss_id"] is not None:
+                return f"Is {self._boss_label(previous_focus['boss_id'])} worth it right now?"
+
+        if "train for that" in normalized or "train for it" in normalized:
+            if previous_focus["quest_id"] is not None:
+                quest = quest_service.get_quest(previous_focus["quest_id"])
+                return f"What should I train for {quest.name}?"
+            if previous_focus["boss_id"] is not None:
+                return f"What should I train for {self._boss_label(previous_focus['boss_id'])}?"
+
         return message
 
     def _is_follow_up_message(self, normalized_message: str) -> bool:
@@ -444,6 +464,10 @@ class ChatService:
             "and for",
             "and what about",
             "what about for",
+            "is that",
+            "is it",
+            "what should i train",
+            "what do i train",
         )
         return normalized_message.startswith(follow_up_starts)
 
@@ -461,6 +485,16 @@ class ChatService:
                 skipped_current = True
                 continue
             return content
+        return None
+
+    def _get_previous_assistant_message(
+        self,
+        *,
+        recent_messages: list[tuple[str, str]],
+    ) -> str | None:
+        for role, content in reversed(recent_messages):
+            if role == "assistant":
+                return content
         return None
 
     async def _get_recent_messages(
@@ -672,6 +706,23 @@ class ChatService:
         )
         if money_maker_answer is not None:
             return money_maker_answer
+
+        training_answer = self._build_target_training_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+        )
+        if training_answer is not None:
+            return training_answer
+
+        value_answer = self._build_value_judgment_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+            profile=profile,
+        )
+        if value_answer is not None:
+            return value_answer
 
         teleport_answer = await self._build_teleport_answer(
             db_session=db_session,
@@ -917,6 +968,13 @@ class ChatService:
         if target is not None:
             matching = next((option for option in options if target in option["name"].lower()), None)
             if matching is not None:
+                if "worth it" in normalized:
+                    if matching["missing_requirements"]:
+                        return (
+                            f"{matching['name']} is worth keeping in mind, but not as your immediate play until you clear "
+                            f"{', '.join(matching['missing_requirements'][:4])}. {matching['why']}"
+                        )
+                    return f"Yes, {matching['name']} is worth doing right now. {matching['summary']} {matching['why']}"
                 if matching["missing_requirements"]:
                     return (
                         f"{matching['name']} is a good target, but you're still missing "
@@ -931,6 +989,117 @@ class ChatService:
                 f"You're still missing {', '.join(top['missing_requirements'][:4])}. {top['why']}"
             )
         return f"Your best tracked money maker right now is {top['name']}. {top['summary']} {top['why']}"
+
+    def _build_target_training_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if "train for" not in normalized:
+            return None
+
+        quest_id = self._detect_quest_id(normalized)
+        if quest_id is not None:
+            quest = quest_service.get_quest(quest_id)
+            readiness = quest_service.evaluate_readiness(
+                quest_id=quest_id,
+                skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                completed_quests=progress.completed_quests if progress else None,
+                unlocked_transports=progress.unlocked_transports if progress else None,
+            )
+            missing_skills = readiness.get("missing_skills", [])
+            if missing_skills:
+                top_gap = missing_skills[0]
+                return (
+                    f"For {quest.name}, I'd train {str(top_gap['skill']).replace('_', ' ').title()} next. "
+                    f"You're currently {top_gap['current_level']} and the structured target is {top_gap['required_level']}."
+                )
+            return f"For {quest.name}, your tracked stat blockers are already in a good spot, so I'd focus on quest progression or unlock cleanup next."
+
+        boss_id = boss_advisor_service.detect_boss_id(normalized)
+        if boss_id is not None:
+            readiness = boss_advisor_service.evaluate_readiness(
+                boss_id=boss_id,
+                skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                unlocked_transports=progress.unlocked_transports if progress else None,
+                completed_quests=progress.completed_quests if progress else None,
+            )
+            missing_skills = readiness["missing_skills"]
+            if missing_skills:
+                top_gap = missing_skills[0]
+                return (
+                    f"For {readiness['label']}, I'd train {str(top_gap['skill']).replace('_', ' ').title()} next. "
+                    f"You're currently {top_gap['current_level']} and a safer target is {top_gap['required_level']}."
+                )
+            return f"For {readiness['label']}, your tracked stat requirements are in a good spot already, so I'd tighten gear, supplies, and route prep next."
+
+        return None
+
+    def _build_value_judgment_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+        profile: Profile | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if "worth it" not in normalized:
+            return None
+
+        quest_id = self._detect_quest_id(normalized)
+        if quest_id is not None:
+            quest = quest_service.get_quest(quest_id)
+            readiness = quest_service.evaluate_readiness(
+                quest_id=quest_id,
+                skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                completed_quests=progress.completed_quests if progress else None,
+                unlocked_transports=progress.unlocked_transports if progress else None,
+            )
+            blockers = (
+                len(readiness.get("missing_skills", []))
+                + len(readiness.get("missing_quests", []))
+                + len(readiness.get("missing_other_requirements", []))
+            )
+            if blockers <= 1:
+                return f"Yes, {quest.name} is worth prioritizing right now. {quest.why_it_matters}"
+            return f"{quest.name} is still worth it, but I'd clear a few blockers first. {quest.why_it_matters}"
+
+        boss_id = boss_advisor_service.detect_boss_id(normalized)
+        if boss_id is not None:
+            readiness = boss_advisor_service.evaluate_readiness(
+                boss_id=boss_id,
+                skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                unlocked_transports=progress.unlocked_transports if progress else None,
+                completed_quests=progress.completed_quests if progress else None,
+            )
+            blockers = len(readiness["missing_skills"]) + len(readiness["missing_unlocks"])
+            if blockers <= 1:
+                return f"Yes, {readiness['label']} looks worth pushing toward right now. {readiness['notes']}"
+            return f"{readiness['label']} is worth keeping on the roadmap, but I'd close your main blockers first. {readiness['notes']}"
+
+        money_target = self._detect_money_target(normalized)
+        if money_target is not None:
+            options = money_maker_service.get_best_options(
+                skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                unlocked_transports=progress.unlocked_transports if progress else None,
+                completed_quests=progress.completed_quests if progress else None,
+                prefers_profitable_methods=profile.prefers_profitable_methods if profile is not None else False,
+            )
+            match = next((option for option in options if money_target in option["name"].lower()), None)
+            if match is None:
+                return None
+            if match["missing_requirements"]:
+                return (
+                    f"{match['name']} is worth keeping in mind, but not as your immediate play until you clear "
+                    f"{', '.join(match['missing_requirements'][:4])}. {match['why']}"
+                )
+            return f"Yes, {match['name']} is worth doing right now. {match['summary']} {match['why']}"
+
+        return None
 
     async def _build_teleport_answer(
         self,
@@ -1247,6 +1416,13 @@ class ChatService:
             if alias in normalized_message:
                 return target
         return None
+
+    def _infer_focus_from_message(self, normalized_message: str) -> dict[str, str | None]:
+        return {
+            "quest_id": self._detect_quest_id(normalized_message),
+            "boss_id": boss_advisor_service.detect_boss_id(normalized_message),
+            "money_target": self._detect_money_target(normalized_message),
+        }
 
     def _boss_label(self, boss_id: str) -> str:
         readiness = boss_advisor_service.evaluate_readiness(
