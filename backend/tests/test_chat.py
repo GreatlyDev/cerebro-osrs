@@ -330,6 +330,47 @@ async def test_chat_can_answer_changes_since_last_sync_question(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_quest_readiness_blockers_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "QuestReady"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Quest Readiness"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What am I missing for Bone Voyage?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "bone voyage" in content
+    assert "100 museum kudos" in content
+    assert "digsite progress" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_when_account_is_ready_for_quest(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "ReadyNow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"unlocked_transports": ["100 museum kudos", "digsite progress"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Quest Ready Now"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "Am I ready for Bone Voyage?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "good spot" in content
+    assert "bone voyage" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

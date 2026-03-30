@@ -20,7 +20,7 @@ from app.schemas.chat import (
 )
 from app.services.gear import gear_service
 from app.services.planner import planner_service
-from app.services.quests import quest_service
+from app.services.quests import QUEST_CATALOG, quest_service
 from app.services.recommendations import recommendation_service
 from app.services.skills import skill_service
 from app.services.teleports import teleport_service
@@ -527,6 +527,14 @@ class ChatService:
         if change_answer is not None:
             return change_answer
 
+        readiness_answer = self._build_quest_readiness_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+        )
+        if readiness_answer is not None:
+            return readiness_answer
+
         top_skills_answer = self._build_top_skills_answer(message=message, latest_snapshot=latest_snapshot)
         if top_skills_answer is not None:
             return top_skills_answer
@@ -630,6 +638,58 @@ class ChatService:
             return None
 
         return f"Your top skills right now are {', '.join(formatted)}."
+
+    def _build_quest_readiness_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in ("am i ready for", "what am i missing for", "requirements for", "ready for")
+        ):
+            return None
+
+        quest_id = self._detect_quest_id(normalized)
+        if quest_id is None:
+            return None
+
+        quest = quest_service.get_quest(quest_id)
+        readiness = quest_service.evaluate_readiness(
+            quest_id=quest_id,
+            skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+            completed_quests=progress.completed_quests if progress else None,
+            unlocked_transports=progress.unlocked_transports if progress else None,
+        )
+
+        missing_skills = readiness.get("missing_skills", [])
+        missing_quests = readiness.get("missing_quests", [])
+        missing_other = readiness.get("missing_other_requirements", [])
+
+        if not missing_skills and not missing_quests and not missing_other:
+            return (
+                f"You're in a good spot for {quest.name}. "
+                f"Your currently tracked stats and unlocks cover the structured blockers I know about."
+            )
+
+        parts: list[str] = [f"For {quest.name}, you're still missing a few things."]
+        if missing_skills:
+            skill_bits = [
+                f"{gap['skill'].replace('_', ' ').title()} {gap['current_level']}->{gap['required_level']}"
+                for gap in missing_skills[:4]
+                if isinstance(gap, dict)
+            ]
+            if skill_bits:
+                parts.append(f"Skill gaps: {', '.join(skill_bits)}.")
+        if missing_quests:
+            parts.append(f"Quest blockers: {', '.join(missing_quests[:4])}.")
+        if missing_other:
+            parts.append(f"Other blockers: {', '.join(missing_other[:4])}.")
+
+        return " ".join(parts)
 
     def _build_low_skills_answer(
         self,
@@ -815,6 +875,28 @@ class ChatService:
         if not values:
             return "none"
         return ", ".join(values[:limit])
+
+    def _detect_quest_id(self, normalized_message: str) -> str | None:
+        for quest_id, quest in QUEST_CATALOG.items():
+            if quest_id in normalized_message:
+                return quest_id
+            if quest.name.lower() in normalized_message:
+                return quest_id
+
+        aliases = {
+            "rfd": "recipe-for-disaster",
+            "barrows gloves": "recipe-for-disaster",
+            "bone voyage": "bone-voyage",
+            "fairytale ii": "fairytale-ii",
+            "fairytale 2": "fairytale-ii",
+            "monkey madness ii": "monkey-madness-ii",
+            "monkey madness 2": "monkey-madness-ii",
+            "waterfall quest": "waterfall-quest",
+        }
+        for alias, quest_id in aliases.items():
+            if alias in normalized_message:
+                return quest_id
+        return None
 
 
 chat_service = ChatService()
