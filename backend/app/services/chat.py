@@ -117,6 +117,7 @@ class ChatService:
             recent_messages=recent_messages,
         )
         session_focus = self._infer_session_focus_from_messages(recent_messages)
+        session_intent = self._infer_session_intent_from_messages(recent_messages)
         profile = await user_context_service.get_profile(db_session=db_session, user=user)
         latest_goal = await user_context_service.get_latest_goal(db_session=db_session, user=user)
         latest_account = await user_context_service.get_latest_account(db_session=db_session, user=user)
@@ -147,6 +148,7 @@ class ChatService:
             profile=profile,
             latest_goal=latest_goal,
             session_focus=session_focus,
+            session_intent=session_intent,
             latest_snapshot=latest_snapshot,
             previous_snapshot=previous_snapshot,
             progress=progress,
@@ -183,6 +185,7 @@ class ChatService:
                     latest_goal=latest_goal,
                     account=focus_account,
                 ),
+                session_intent_summary=self._summarize_session_intent(session_intent=session_intent),
             )
         )
         return ai_response or structured_response
@@ -463,6 +466,16 @@ class ChatService:
             if previous_focus["boss_id"] is not None:
                 return f"What should I train for {self._boss_label(previous_focus['boss_id'])}?"
 
+        if normalized in {"what else?", "what else", "anything else?", "anything else"}:
+            if previous_focus["quest_id"] is not None:
+                quest = quest_service.get_quest(previous_focus["quest_id"])
+                return f"What else should I do for {quest.name}?"
+            if previous_focus["boss_id"] is not None:
+                return f"What else should I do to get ready for {self._boss_label(previous_focus['boss_id'])}?"
+            prior_money_target = previous_focus["money_target"] or self._detect_money_target(previous_assistant_normalized)
+            if prior_money_target is not None:
+                return f"What else should I do for profit after {prior_money_target}?"
+
         return message
 
     def _is_follow_up_message(self, normalized_message: str) -> bool:
@@ -476,6 +489,8 @@ class ChatService:
             "is it",
             "what should i train",
             "what do i train",
+            "what else",
+            "anything else",
         )
         return normalized_message.startswith(follow_up_starts)
 
@@ -661,6 +676,7 @@ class ChatService:
         profile: Profile | None,
         latest_goal: Goal | None,
         session_focus: dict[str, str | None],
+        session_intent: str | None,
         latest_snapshot: AccountSnapshot | None,
         previous_snapshot: AccountSnapshot | None,
         progress: AccountProgress | None,
@@ -674,6 +690,7 @@ class ChatService:
             account=account,
             latest_goal=latest_goal,
             session_focus=session_focus,
+            session_intent=session_intent,
         )
         if focus_answer is not None:
             return focus_answer
@@ -834,6 +851,7 @@ class ChatService:
         account: Account | None,
         latest_goal: Goal | None,
         session_focus: dict[str, str | None],
+        session_intent: str | None,
     ) -> str | None:
         normalized = message.lower()
         if not any(
@@ -845,15 +863,22 @@ class ChatService:
                 "what's the plan",
                 "whats the plan",
                 "remind me what we're doing",
+                "what should be the priority",
+                "what's the priority",
+                "whats the priority",
+                "what is the priority",
             )
         ):
             return None
 
-        return self._summarize_session_focus(
+        focus_summary = self._summarize_session_focus(
             session_focus=session_focus,
             latest_goal=latest_goal,
             account=account,
         )
+        if "priority" in normalized and session_intent is not None:
+            return f"{focus_summary} Right now, the session priority is {self._humanize_session_intent(session_intent)}."
+        return focus_summary
 
     def _build_top_skills_answer(
         self,
@@ -974,7 +999,7 @@ class ChatService:
         if not missing_skills and not missing_unlocks:
             return f"You're in a good spot for {label}. {readiness['notes']}"
 
-        parts = [f"For {label}, you're not fully ready yet."]
+        parts = [f"To get ready for {label}, there are still a few blockers to clear."]
         if missing_skills:
             parts.append(
                 "Skill gaps: "
@@ -1491,6 +1516,31 @@ class ChatService:
             "combat_style": None,
         }
 
+    def _infer_session_intent_from_messages(
+        self,
+        recent_messages: list[tuple[str, str]],
+    ) -> str | None:
+        generic_intent: str | None = None
+        for role, content in reversed(recent_messages):
+            if role != "user":
+                continue
+            normalized = content.lower()
+            if any(token in normalized for token in ("money", "money maker", "profit", "gp")):
+                return "profit"
+            if any(token in normalized for token in ("teleport", "route", "travel", "get to")):
+                return "travel"
+            if any(token in normalized for token in ("boss", "jad", "fight caves", "demonic gorillas")):
+                return "bossing"
+            if any(token in normalized for token in ("quest", "ready for", "missing for", "requirements for")):
+                return "questing"
+            if any(token in normalized for token in ("gear", "upgrade")):
+                return "gearing"
+            if any(token in normalized for token in ("skill", "train")):
+                return "training"
+            if any(token in normalized for token in ("best action", "what next", "work on next", "should i do next")):
+                generic_intent = "progression"
+        return generic_intent
+
     def _summarize_session_focus(
         self,
         *,
@@ -1518,6 +1568,27 @@ class ChatService:
         if not parts:
             return "We do not have a strong session focus yet, so I'd anchor on your latest goal or best next action."
         return " ".join(parts)
+
+    def _summarize_session_intent(
+        self,
+        *,
+        session_intent: str | None,
+    ) -> str | None:
+        if session_intent is None:
+            return None
+        return f"The current conversation intent is {self._humanize_session_intent(session_intent)}."
+
+    def _humanize_session_intent(self, session_intent: str) -> str:
+        labels = {
+            "profit": "making money",
+            "travel": "routing and travel setup",
+            "bossing": "boss readiness",
+            "questing": "quest progression",
+            "gearing": "gear upgrades",
+            "training": "skill training",
+            "progression": "overall account progression",
+        }
+        return labels.get(session_intent, session_intent)
 
     def _boss_label(self, boss_id: str) -> str:
         readiness = boss_advisor_service.evaluate_readiness(

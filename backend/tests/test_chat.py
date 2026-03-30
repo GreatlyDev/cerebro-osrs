@@ -663,6 +663,86 @@ async def test_ai_context_receives_session_focus_summary(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_priority_question_from_session_intent(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "IntentNow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch("/api/profile", json={"prefers_profitable_methods": True})
+    session_response = await client.post("/api/chat/sessions", json={"title": "Intent Priority"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What money maker should I do right now?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should be the priority here?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "priority" in content
+    assert "making money" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_handle_what_else_follow_up_for_boss(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "ElseBoss"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Else Boss"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Am I ready for Fight Caves?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What else?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "fight caves" in content
+    assert "get ready" in content or "ready for" in content
+
+
+@pytest.mark.asyncio
+async def test_ai_context_receives_session_intent_summary(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["session_intent_summary"] = context.session_intent_summary
+        return "Captured intent summary."
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+
+    account_response = await client.post("/api/accounts", json={"rsn": "IntentAI"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch("/api/profile", json={"prefers_profitable_methods": True})
+    session_response = await client.post("/api/chat/sessions", json={"title": "Intent AI"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What money maker should I do right now?"},
+    )
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+
+    assert captured["session_intent_summary"] is not None
+    assert "making money" in str(captured["session_intent_summary"]).lower()
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
