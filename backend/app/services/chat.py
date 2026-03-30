@@ -806,6 +806,7 @@ class ChatService:
             user=user,
             message=message,
             account=account,
+            profile=profile,
             latest_goal=latest_goal,
         )
         if coaching_answer is not None:
@@ -933,6 +934,7 @@ class ChatService:
         user: User,
         message: str,
         account: Account | None,
+        profile: Profile | None,
         latest_goal: Goal | None,
     ) -> str | None:
         normalized = message.lower()
@@ -964,7 +966,34 @@ class ChatService:
                 "what should i stop worrying about",
             )
         )
-        if not asks_week_focus and not asks_fastest_goal_move and not asks_ignore_now:
+        asks_short_session = any(
+            phrase in normalized
+            for phrase in (
+                "only have 30 minutes",
+                "only have 20 minutes",
+                "only have 15 minutes",
+                "short session",
+                "quick session",
+                "limited time",
+            )
+        )
+        asks_afk_progress = any(
+            phrase in normalized
+            for phrase in (
+                "want afk progress",
+                "want afk",
+                "prefer afk",
+                "low attention progress",
+                "something afk",
+            )
+        )
+        if (
+            not asks_week_focus
+            and not asks_fastest_goal_move
+            and not asks_ignore_now
+            and not asks_short_session
+            and not asks_afk_progress
+        ):
             return None
 
         next_actions = await recommendation_service.get_next_actions(
@@ -984,6 +1013,47 @@ class ChatService:
         second_action = actions[1] if len(actions) > 1 else None
         third_action = actions[2] if len(actions) > 2 else None
         goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+
+        if asks_short_session:
+            quick_action = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type in {"skill", "travel", "gear"}
+                ),
+                top_action,
+            )
+            return (
+                f"If you've only got a short session, I'd keep it tight and do {self._action_label(quick_action)}. "
+                f"{quick_action.summary}"
+            )
+
+        if asks_afk_progress:
+            afk_skill_action = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "skill"
+                ),
+                None,
+            )
+            if afk_skill_action is not None:
+                recommended_method = str(
+                    (afk_skill_action.supporting_data or {}).get("recommended_method") or "an AFK method"
+                )
+                afk_hint = (
+                    "That already lines up with your saved AFK preference."
+                    if profile is not None and profile.prefers_afk_methods
+                    else "That's the cleanest low-attention lane from your current plan."
+                )
+                return (
+                    f"For AFK progress, I'd lean into {self._action_label(afk_skill_action)} with {recommended_method}. "
+                    f"{afk_hint}"
+                )
+            return (
+                f"For AFK progress, I'd stay on {self._action_label(top_action)} in the lowest-friction way you can. "
+                f"{top_action.summary}"
+            )
 
         if asks_week_focus:
             parts = [

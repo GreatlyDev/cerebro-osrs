@@ -910,6 +910,53 @@ async def test_chat_can_say_what_to_ignore_for_now(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_chat_can_handle_short_session_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "ShortTime"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "ShortTime"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Short Session"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "I only have 30 minutes. What should I do?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "short session" in content
+    assert "do " in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_handle_afk_progress_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "AfkTime"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch("/api/profile", json={"prefers_afk_methods": True})
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "AfkTime"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "AFK Session"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "I want AFK progress tonight. What should I do?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "afk" in content
+    assert "magic" in content or "high alchemy" in content or "afk preference" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
