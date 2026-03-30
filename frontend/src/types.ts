@@ -141,6 +141,7 @@ export type NextActionResponse = {
 export type ChatSession = {
   id: number;
   title: string;
+  session_state: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 };

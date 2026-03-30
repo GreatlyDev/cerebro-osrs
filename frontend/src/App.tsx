@@ -789,6 +789,8 @@ export function App() {
       }
       setSelectedChatSessionId(session.id);
       const reply = await api.sendChatMessage(session.id, prompt);
+      const sessionsResponse = await api.listChatSessions();
+      setChatSessions(sessionsResponse.items);
       setChatReply(reply.assistant_message.content);
       setChatHistory((current) => [
         ...current,

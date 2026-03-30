@@ -33,6 +33,12 @@ export function ChatView({
   setChatPrompt,
 }: ChatViewProps) {
   const conversationEndRef = useRef<HTMLDivElement | null>(null);
+  const selectedSession =
+    chatSessions.find((session) => session.id === selectedChatSessionId) ?? chatSessions[0] ?? null;
+  const sessionState = selectedSession?.session_state ?? {};
+  const focusLabel = describeSessionFocus(sessionState);
+  const intentLabel = describeSessionIntent(sessionState);
+  const goalLabel = readStateString(sessionState, "last_goal_title") ?? "No active goal in thread yet";
   const visibleHistory =
     selectedChatSessionId === null
       ? chatHistory
@@ -55,12 +61,26 @@ export function ChatView({
         chips={[
           { label: "Active account", value: selectedAccountRsn ?? "None selected" },
           { label: "Open sessions", value: String(chatSessions.length) },
-          { label: "Workspace mode", value: "Live advisor" },
+          { label: "Thread focus", value: focusLabel },
         ]}
         description="Use the advisor chamber when you want Cerebro to translate synced account context, planner momentum, and ranked actions into grounded OSRS guidance."
         eyebrow="Advisor Chamber"
         title="Ask Cerebro from the center of the workspace"
       >
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
+            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current focus</p>
+            <p className="font-display text-lg text-osrs-text">{focusLabel}</p>
+          </div>
+          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
+            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current priority</p>
+            <p className="font-display text-lg text-osrs-text">{intentLabel}</p>
+          </div>
+          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
+            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Goal in thread</p>
+            <p className="font-display text-lg text-osrs-text">{goalLabel}</p>
+          </div>
+        </div>
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
           <input
             className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
@@ -161,4 +181,74 @@ export function ChatView({
       </div>
     </div>
   );
+}
+
+function readStateString(state: Record<string, unknown>, key: string): string | null {
+  const value = state[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+function humanizeLabel(value: string): string {
+  return value
+    .replace(/-/g, " ")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+}
+
+function describeSessionFocus(state: Record<string, unknown>): string {
+  const questId = readStateString(state, "last_quest_id");
+  if (questId) {
+    return humanizeLabel(questId);
+  }
+
+  const bossId = readStateString(state, "last_boss_id");
+  if (bossId) {
+    return humanizeLabel(bossId);
+  }
+
+  const moneyTarget = readStateString(state, "last_money_target");
+  if (moneyTarget) {
+    return humanizeLabel(moneyTarget);
+  }
+
+  const destination = readStateString(state, "last_destination");
+  if (destination) {
+    return `${humanizeLabel(destination)} route`;
+  }
+
+  const skill = readStateString(state, "last_recommended_skill");
+  if (skill) {
+    return `${humanizeLabel(skill)} training`;
+  }
+
+  const gear = readStateString(state, "last_recommended_gear");
+  if (gear) {
+    return gear;
+  }
+
+  const combatStyle = readStateString(state, "last_combat_style");
+  if (combatStyle) {
+    return `${humanizeLabel(combatStyle)} upgrades`;
+  }
+
+  return "No thread focus yet";
+}
+
+function describeSessionIntent(state: Record<string, unknown>): string {
+  const intent = readStateString(state, "last_session_intent");
+  if (!intent) {
+    return "General guidance";
+  }
+
+  const labels: Record<string, string> = {
+    profit: "Making money",
+    travel: "Travel setup",
+    bossing: "Boss readiness",
+    questing: "Quest progression",
+    gearing: "Gear upgrades",
+    training: "Skill training",
+    progression: "Overall progression",
+  };
+
+  return labels[intent] ?? humanizeLabel(intent);
 }
