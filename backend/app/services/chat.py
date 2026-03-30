@@ -870,6 +870,14 @@ class ChatService:
         if readiness_answer is not None:
             return readiness_answer
 
+        quest_chain_answer = self._build_quest_chain_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+        )
+        if quest_chain_answer is not None:
+            return quest_chain_answer
+
         boss_answer = self._build_boss_readiness_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -894,6 +902,15 @@ class ChatService:
         )
         if money_maker_answer is not None:
             return money_maker_answer
+
+        money_comparison_answer = self._build_money_maker_comparison_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+            profile=profile,
+        )
+        if money_comparison_answer is not None:
+            return money_comparison_answer
 
         training_answer = self._build_target_training_answer(
             message=message,
@@ -1316,6 +1333,18 @@ class ChatService:
                 "lower effort option",
             )
         )
+        asks_weekend_target = (
+            "weekend" in normalized
+            and any(
+                phrase in normalized
+                for phrase in (
+                    "if i want",
+                    "if i care about",
+                    "what should i push",
+                    "what should i work on",
+                )
+            )
+        )
         if (
             not asks_week_focus
             and not asks_fastest_goal_move
@@ -1330,6 +1359,7 @@ class ChatService:
             and not asks_sequence_days
             and not asks_xp_vs_unlocks
             and not asks_lower_effort_useful
+            and not asks_weekend_target
         ):
             return None
 
@@ -1385,6 +1415,26 @@ class ChatService:
                     f"If you still have time after that, {self._action_label(third_action)} is the cleanest third priority."
                 )
             return " ".join(parts)
+
+        if asks_weekend_target:
+            goal_title = latest_goal.title if latest_goal is not None else "your current account plan"
+            if any(token in normalized for token in ("money", "profit", "gp")):
+                profit_options = money_maker_service.get_best_options(
+                    skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                    unlocked_transports=progress.unlocked_transports if progress else None,
+                    completed_quests=progress.completed_quests if progress else None,
+                    prefers_profitable_methods=True,
+                )
+                top_profit = profit_options[0] if profit_options else None
+                if top_profit is not None:
+                    return (
+                        f"If you want better money by this weekend, I'd push {top_profit['name']} into a usable state first. "
+                        f"{top_profit['why']} Then keep {self._action_label(top_action)} behind it so {goal_title} still moves."
+                    )
+            return (
+                f"If you want a meaningful weekend push, I'd still center it on {self._action_label(top_action)}. "
+                f"{top_action.summary}"
+            )
 
         if asks_sequence_days:
             parts = [
@@ -1974,6 +2024,62 @@ class ChatService:
 
         return " ".join(parts)
 
+    def _build_quest_chain_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "prerequisite",
+                "prerequisites",
+                "quest chain",
+                "comes before",
+                "before recipe for disaster",
+                "before monkey madness ii",
+            )
+        ):
+            return None
+
+        quest_id = self._detect_quest_id(normalized)
+        if quest_id is None:
+            return None
+
+        quest = quest_service.get_quest(quest_id)
+        readiness = quest_service.evaluate_readiness(
+            quest_id=quest_id,
+            skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+            completed_quests=progress.completed_quests if progress else None,
+            unlocked_transports=progress.unlocked_transports if progress else None,
+        )
+        missing_quests = readiness.get("missing_quests", [])
+        missing_skills = readiness.get("missing_skills", [])
+
+        if not missing_quests:
+            if missing_skills:
+                top_gap = missing_skills[0]
+                return (
+                    f"For {quest.name}, the quest chain is already in a decent spot. "
+                    f"The next blocker is really {str(top_gap['skill']).replace('_', ' ').title()} "
+                    f"{top_gap['current_level']}->{top_gap['required_level']}."
+                )
+            return f"For {quest.name}, the prerequisite quest chain is already covered in your tracked progress."
+
+        first_quest = missing_quests[0]
+        if len(missing_quests) == 1:
+            return (
+                f"The main quest-chain blocker before {quest.name} is {first_quest}. "
+                f"Clear that first, then recheck the remaining stat and utility blockers."
+            )
+        return (
+            f"Before {quest.name}, I'd start with {first_quest}. "
+            f"After that, the next quest-chain blockers are {', '.join(missing_quests[1:4])}."
+        )
+
     def _build_boss_readiness_answer(
         self,
         *,
@@ -2027,6 +2133,20 @@ class ChatService:
         profile: Profile | None,
     ) -> str | None:
         normalized = message.lower()
+        if any(
+            phrase in normalized
+            for phrase in (
+                "low attention money maker",
+                "lower attention money maker",
+                "money maker with low attention",
+                "afk money maker",
+                "lowest unlock burden",
+                "lower unlock burden",
+                "least unlock burden",
+                "fewest unlocks",
+            )
+        ):
+            return None
         if not any(token in normalized for token in ("money maker", "make money", "profit", "gp")):
             return None
 
@@ -2064,6 +2184,64 @@ class ChatService:
                 f"You're still missing {', '.join(top['missing_requirements'][:4])}. {top['why']}"
             )
         return f"Your best tracked money maker right now is {top['name']}. {top['summary']} {top['why']}"
+
+    def _build_money_maker_comparison_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+        profile: Profile | None,
+    ) -> str | None:
+        normalized = message.lower()
+        asks_low_attention = any(
+            phrase in normalized
+            for phrase in (
+                "low attention money maker",
+                "lower attention money maker",
+                "money maker with low attention",
+                "afk money maker",
+            )
+        )
+        asks_unlock_burden = any(
+            phrase in normalized
+            for phrase in (
+                "lowest unlock burden",
+                "lower unlock burden",
+                "least unlock burden",
+                "fewest unlocks",
+            )
+        )
+        if not asks_low_attention and not asks_unlock_burden:
+            return None
+
+        options = money_maker_service.get_best_options(
+            skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+            unlocked_transports=progress.unlocked_transports if progress else None,
+            completed_quests=progress.completed_quests if progress else None,
+            prefers_profitable_methods=profile.prefers_profitable_methods if profile is not None else False,
+        )
+        if not options:
+            return None
+
+        if asks_low_attention:
+            low_attention = next(
+                (option for option in options if option["name"] in {"Birdhouse runs", "Karambwans"}),
+                options[0],
+            )
+            return (
+                f"If you want a lower-attention money maker, I'd lean into {low_attention['name']}. "
+                f"{low_attention['summary']} {low_attention['why']}"
+            )
+
+        lowest_burden = min(
+            options,
+            key=lambda option: (len(option["missing_requirements"]), -int(option["score"])),
+        )
+        return (
+            f"The money maker with the lightest unlock burden right now is {lowest_burden['name']}. "
+            f"It only asks for {len(lowest_burden['missing_requirements'])} missing requirement(s), which makes it easier to bring online quickly."
+        )
 
     def _build_boss_prep_answer(
         self,

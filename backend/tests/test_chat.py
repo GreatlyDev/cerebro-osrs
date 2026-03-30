@@ -1398,6 +1398,90 @@ async def test_chat_can_answer_unlock_chain_priority_question(client: AsyncClien
 
 
 @pytest.mark.asyncio
+async def test_chat_can_explain_quest_chain_blockers(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "QuestChain"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"completed_quests": ["big chompy bird hunting"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Quest Chain"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What quest chain comes before Recipe for Disaster?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "recipe for disaster" in content
+    assert "desert treasure" in content or "horror from the deep" in content or "monkey madness i" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_low_attention_money_maker_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "LowMoney"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Low Attention Money"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What low attention money maker should I do?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "money maker" in content or "birdhouse" in content or "karambwans" in content
+    assert "attention" in content or "afk" in content or "low-attention" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_lowest_unlock_burden_money_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "UnlockBurden"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Unlock Burden Money"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Which money maker has the lowest unlock burden?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "unlock burden" in content or "missing requirement" in content
+    assert "money maker" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_weekend_money_target_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "WeekendGP"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "WeekendGP"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Weekend GP"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I push if I want better money by this weekend?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "weekend" in content
+    assert "money" in content or "profit" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

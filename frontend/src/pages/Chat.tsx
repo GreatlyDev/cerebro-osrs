@@ -361,6 +361,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         focusPrompt,
         "What should I do today if I want real progress?",
         "What should I do this weekend?",
+        "What should I push if I want better money by this weekend?",
       ],
     },
     {
@@ -372,6 +373,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         tradeoffPrompt,
         "What unlock should I push next?",
         "Which unlock chain should I prioritize?",
+        "Which money maker has the lowest unlock burden?",
       ],
     },
     {
@@ -383,6 +385,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         "I want AFK progress tonight. What should I do?",
         "Should I train Slayer or Fishing?",
         "What should I prep for Barrows?",
+        "What low attention money maker should I do?",
       ],
     },
   ];
