@@ -603,6 +603,66 @@ async def test_chat_can_handle_worth_it_follow_up_for_quest(client: AsyncClient)
 
 
 @pytest.mark.asyncio
+async def test_chat_can_summarize_current_focus(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "FocusNow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "FocusNow"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Focus Summary"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Am I ready for Fight Caves?"},
+    )
+    focus_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What are we focused on?"},
+    )
+
+    assert focus_response.status_code == 201
+    content = focus_response.json()["assistant_message"]["content"].lower()
+    assert "quest cape" in content
+    assert "fight caves" in content
+    assert "focusnow" in content
+
+
+@pytest.mark.asyncio
+async def test_ai_context_receives_session_focus_summary(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["session_focus_summary"] = context.session_focus_summary
+        return "Captured focus summary."
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+
+    account_response = await client.post("/api/accounts", json={"rsn": "FocusAI"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Focus AI"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "How do I get to Fossil Island?"},
+    )
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+
+    assert captured["session_focus_summary"] is not None
+    assert "fossil island" in str(captured["session_focus_summary"]).lower()
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

@@ -116,6 +116,7 @@ class ChatService:
             message=message,
             recent_messages=recent_messages,
         )
+        session_focus = self._infer_session_focus_from_messages(recent_messages)
         profile = await user_context_service.get_profile(db_session=db_session, user=user)
         latest_goal = await user_context_service.get_latest_goal(db_session=db_session, user=user)
         latest_account = await user_context_service.get_latest_account(db_session=db_session, user=user)
@@ -144,6 +145,8 @@ class ChatService:
             message=resolved_message,
             account=focus_account,
             profile=profile,
+            latest_goal=latest_goal,
+            session_focus=session_focus,
             latest_snapshot=latest_snapshot,
             previous_snapshot=previous_snapshot,
             progress=progress,
@@ -175,6 +178,11 @@ class ChatService:
                 progress_summary=self._summarize_progress(progress),
                 snapshot_delta_summary=self._summarize_snapshot_delta(latest_snapshot, previous_snapshot),
                 goal_summary=self._summarize_goal(latest_goal),
+                session_focus_summary=self._summarize_session_focus(
+                    session_focus=session_focus,
+                    latest_goal=latest_goal,
+                    account=focus_account,
+                ),
             )
         )
         return ai_response or structured_response
@@ -651,6 +659,8 @@ class ChatService:
         message: str,
         account: Account | None,
         profile: Profile | None,
+        latest_goal: Goal | None,
+        session_focus: dict[str, str | None],
         latest_snapshot: AccountSnapshot | None,
         previous_snapshot: AccountSnapshot | None,
         progress: AccountProgress | None,
@@ -658,6 +668,15 @@ class ChatService:
         account_answer = self._build_account_focus_answer(message=message, account=account)
         if account_answer is not None:
             return account_answer
+
+        focus_answer = self._build_focus_summary_answer(
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+            session_focus=session_focus,
+        )
+        if focus_answer is not None:
+            return focus_answer
 
         if latest_snapshot is None:
             if progress is not None:
@@ -807,6 +826,34 @@ class ChatService:
             return f"I'm currently using {account.rsn} as your account context."
 
         return None
+
+    def _build_focus_summary_answer(
+        self,
+        *,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+        session_focus: dict[str, str | None],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what are we focused on",
+                "what are we working on",
+                "what am i working toward",
+                "what's the plan",
+                "whats the plan",
+                "remind me what we're doing",
+            )
+        ):
+            return None
+
+        return self._summarize_session_focus(
+            session_focus=session_focus,
+            latest_goal=latest_goal,
+            account=account,
+        )
 
     def _build_top_skills_answer(
         self,
@@ -1422,7 +1469,55 @@ class ChatService:
             "quest_id": self._detect_quest_id(normalized_message),
             "boss_id": boss_advisor_service.detect_boss_id(normalized_message),
             "money_target": self._detect_money_target(normalized_message),
+            "destination": self._detect_destination(normalized_message),
+            "combat_style": self._detect_combat_style(normalized_message),
         }
+
+    def _infer_session_focus_from_messages(
+        self,
+        recent_messages: list[tuple[str, str]],
+    ) -> dict[str, str | None]:
+        for role, content in reversed(recent_messages):
+            if role != "user":
+                continue
+            focus = self._infer_focus_from_message(content.lower())
+            if any(value is not None for value in focus.values()):
+                return focus
+        return {
+            "quest_id": None,
+            "boss_id": None,
+            "money_target": None,
+            "destination": None,
+            "combat_style": None,
+        }
+
+    def _summarize_session_focus(
+        self,
+        *,
+        session_focus: dict[str, str | None],
+        latest_goal: Goal | None,
+        account: Account | None,
+    ) -> str:
+        parts: list[str] = []
+        if latest_goal is not None:
+            parts.append(f"Your main tracked goal is {latest_goal.title}.")
+        if account is not None:
+            parts.append(f"The current account context is {account.rsn}.")
+        if session_focus.get("quest_id") is not None:
+            quest = quest_service.get_quest(session_focus["quest_id"])
+            parts.append(f"This conversation is currently centered on {quest.name}.")
+        elif session_focus.get("boss_id") is not None:
+            parts.append(f"This conversation is currently centered on {self._boss_label(session_focus['boss_id'])}.")
+        elif session_focus.get("money_target") is not None:
+            parts.append(f"This conversation is currently centered on {session_focus['money_target']}.")
+        elif session_focus.get("destination") is not None:
+            parts.append(f"This conversation is currently centered on travel for {session_focus['destination']}.")
+        elif session_focus.get("combat_style") is not None:
+            parts.append(f"This conversation is currently centered on {session_focus['combat_style']} upgrades.")
+
+        if not parts:
+            return "We do not have a strong session focus yet, so I'd anchor on your latest goal or best next action."
+        return " ".join(parts)
 
     def _boss_label(self, boss_id: str) -> str:
         readiness = boss_advisor_service.evaluate_readiness(

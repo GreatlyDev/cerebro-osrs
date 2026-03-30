@@ -20,6 +20,7 @@ class AssistantChatContext:
     progress_summary: str | None = None
     snapshot_delta_summary: str | None = None
     goal_summary: str | None = None
+    session_focus_summary: str | None = None
 
 
 class AssistantService:
@@ -69,6 +70,7 @@ class AssistantService:
             f"Progress context: {context.progress_summary or 'No tracked progress state yet.'}",
             f"Recent sync delta: {context.snapshot_delta_summary or 'No snapshot delta available yet.'}",
             f"Goal context: {context.goal_summary or 'No active goal summary yet.'}",
+            f"Session focus: {context.session_focus_summary or 'No strong session focus inferred yet.'}",
             f"Recent chat history:\n{recent_history}",
             f"Structured fallback answer:\n{context.structured_fallback}",
             f"Latest player message:\n{context.user_message}",
