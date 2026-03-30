@@ -360,6 +360,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       prompts: [
         focusPrompt,
         "What should I do today if I want real progress?",
+        "What should I do this weekend?",
       ],
     },
     {
@@ -369,6 +370,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       prompts: [
         "How confident are you in that?",
         tradeoffPrompt,
+        "What unlock should I push next?",
       ],
     },
     {
@@ -378,6 +380,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       prompts: [
         "What should I do if I want something lower effort but still useful?",
         "I want AFK progress tonight. What should I do?",
+        "Should I train Slayer or Fishing?",
       ],
     },
   ];

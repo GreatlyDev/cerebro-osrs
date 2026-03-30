@@ -782,6 +782,7 @@ class ChatService:
         skills = summary.get("skills")
         if not isinstance(skills, dict):
             skills = {}
+        comparison_skill_names = self._detect_skill_names(normalized, skills)
 
         progress_answer = self._build_progress_answer(message=message, progress=progress)
         if progress_answer is not None:
@@ -895,6 +896,25 @@ class ChatService:
         if training_answer is not None:
             return training_answer
 
+        skill_comparison_answer = self._build_skill_comparison_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            session_state=session_state,
+        )
+        if skill_comparison_answer is not None:
+            return skill_comparison_answer
+
+        unlock_answer = await self._build_unlock_priority_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+            progress=progress,
+        )
+        if unlock_answer is not None:
+            return unlock_answer
+
         value_answer = self._build_value_judgment_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -934,7 +954,7 @@ class ChatService:
         metric = self._detect_stat_metric(normalized)
         skill_name = self._detect_skill_name(normalized, skills)
 
-        if skill_name is not None:
+        if skill_name is not None and len(comparison_skill_names) < 2:
             skill_data = skills.get(skill_name)
             if isinstance(skill_data, dict):
                 label = skill_name.replace("_", " ").title()
@@ -1230,6 +1250,24 @@ class ChatService:
                 "what would you deprioritize",
             )
         )
+        asks_tonight = any(
+            phrase in normalized
+            for phrase in (
+                "what should i do tonight",
+                "what do i do tonight",
+                "what should i focus on tonight",
+                "what should i work on tonight",
+            )
+        )
+        asks_weekend = any(
+            phrase in normalized
+            for phrase in (
+                "what should i do this weekend",
+                "what do i do this weekend",
+                "what should i focus on this weekend",
+                "what should i work on this weekend",
+            )
+        )
         asks_sequence_days = any(
             phrase in normalized
             for phrase in (
@@ -1272,6 +1310,8 @@ class ChatService:
             and not asks_today_progress
             and not asks_mixed_profit_progress
             and not asks_deprioritize
+            and not asks_tonight
+            and not asks_weekend
             and not asks_sequence_days
             and not asks_xp_vs_unlocks
             and not asks_lower_effort_useful
@@ -1301,6 +1341,35 @@ class ChatService:
                 f"If you want real progress today, I'd lock in {self._action_label(top_action)} first. "
                 f"{top_action.summary}"
             )
+
+        if asks_tonight:
+            tonight_action = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type in {"skill", "travel", "gear"}
+                ),
+                second_action or top_action,
+            )
+            return (
+                f"For tonight, I'd keep it practical and do {self._action_label(tonight_action)}. "
+                f"It keeps the account moving without asking for a full long-session commitment."
+            )
+
+        if asks_weekend:
+            parts = [
+                f"For this weekend, I'd build around {self._action_label(top_action)} as the main push."
+            ]
+            parts.append(top_action.summary)
+            if second_action is not None:
+                parts.append(
+                    f"Once that is underway, let {self._action_label(second_action)} be the follow-up lane so the weekend adds up to real account movement."
+                )
+            if third_action is not None:
+                parts.append(
+                    f"If you still have time after that, {self._action_label(third_action)} is the cleanest third priority."
+                )
+            return " ".join(parts)
 
         if asks_sequence_days:
             parts = [
@@ -2036,6 +2105,139 @@ class ChatService:
 
         return None
 
+    def _build_skill_comparison_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if " or " not in normalized and " vs " not in normalized and "versus" not in normalized:
+            return None
+
+        skills = latest_snapshot.summary.get("skills")
+        if not isinstance(skills, dict):
+            return None
+
+        mentioned_skills = self._detect_skill_names(normalized, skills)
+        if len(mentioned_skills) < 2:
+            return None
+
+        left_skill, right_skill = mentioned_skills[:2]
+        left_data = skills.get(left_skill)
+        right_data = skills.get(right_skill)
+        left_level = left_data.get("level") if isinstance(left_data, dict) else None
+        right_level = right_data.get("level") if isinstance(right_data, dict) else None
+
+        saved_skill = self._state_str(session_state, "last_recommended_skill")
+        preferred_skill: str
+        alternate_skill: str
+        reason: str
+
+        if not isinstance(left_level, int) and not isinstance(right_level, int):
+            return (
+                f"Between {left_skill.replace('_', ' ').title()} and {right_skill.replace('_', ' ').title()}, "
+                f"I'd need a cleaner synced snapshot before I make a strong call. Ask me again after a fresh sync and I can compare them properly."
+            )
+
+        if not isinstance(left_level, int):
+            return (
+                f"I can see {right_skill.replace('_', ' ').title()} clearly in your synced stats, but {left_skill.replace('_', ' ').title()} "
+                f"isn't coming through cleanly in this snapshot yet. For now I'd train {right_skill.replace('_', ' ').title()} first, "
+                f"then compare again after the next sync."
+            )
+
+        if not isinstance(right_level, int):
+            return (
+                f"I can see {left_skill.replace('_', ' ').title()} clearly in your synced stats, but {right_skill.replace('_', ' ').title()} "
+                f"isn't coming through cleanly in this snapshot yet. For now I'd train {left_skill.replace('_', ' ').title()} first, "
+                f"then compare again after the next sync."
+            )
+
+        if saved_skill in {left_skill, right_skill}:
+            preferred_skill = saved_skill
+            alternate_skill = right_skill if preferred_skill == left_skill else left_skill
+            reason = "It's already the live training lane in your current thread."
+        elif left_level < right_level:
+            preferred_skill = left_skill
+            alternate_skill = right_skill
+            reason = "It is the lower of the two right now, so it is the cleaner catch-up lane for broader account balance."
+        elif right_level < left_level:
+            preferred_skill = right_skill
+            alternate_skill = left_skill
+            reason = "It is the lower of the two right now, so it is the cleaner catch-up lane for broader account balance."
+        else:
+            preferred_skill = left_skill
+            alternate_skill = right_skill
+            reason = "Both are close, but I'd still start with the first lane you raised and keep the other right behind it."
+
+        preferred_level = left_level if preferred_skill == left_skill else right_level
+        alternate_level = right_level if preferred_skill == left_skill else left_level
+        return (
+            f"Between {preferred_skill.replace('_', ' ').title()} and {alternate_skill.replace('_', ' ').title()}, "
+            f"I'd train {preferred_skill.replace('_', ' ').title()} first. "
+            f"You're currently {preferred_level} there versus {alternate_level} in {alternate_skill.replace('_', ' ').title()}. "
+            f"{reason}"
+        )
+
+    async def _build_unlock_priority_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what unlock should i push next",
+                "what should i unlock next",
+                "what unlock should i work toward",
+                "what unlock should i go for next",
+            )
+        ):
+            return None
+
+        next_actions = await recommendation_service.get_next_actions(
+            db_session=db_session,
+            user=user,
+            payload=NextActionRequest(
+                account_rsn=account.rsn if account is not None else None,
+                goal_id=latest_goal.id if latest_goal is not None else None,
+                limit=4,
+            ),
+        )
+        actions = next_actions.actions
+        unlock_action = next(
+            (action for action in actions if action.action_type in {"quest", "travel"}),
+            next_actions.top_action,
+        )
+        if unlock_action is None:
+            return None
+
+        if unlock_action.action_type == "quest":
+            goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+            return (
+                f"The next unlock I'd push is {self._action_label(unlock_action)}. "
+                f"It opens more value for {goal_title} than the rest of the board right now."
+            )
+
+        if unlock_action.action_type == "travel":
+            return (
+                f"The next unlock I'd push is {self._action_label(unlock_action)}. "
+                f"It reduces future friction across the rest of your account routes."
+            )
+
+        if progress is not None and progress.active_unlocks:
+            return f"Your strongest tracked unlock chain right now is {progress.active_unlocks[0]}."
+
+        return f"I'd still anchor on {self._action_label(unlock_action)} as the most useful unlock lane right now."
+
     def _build_value_judgment_answer(
         self,
         *,
@@ -2627,6 +2829,60 @@ class ChatService:
                 return skill_name
 
         return None
+
+    def _detect_skill_names(
+        self,
+        normalized_message: str,
+        skills: dict[str, Any],
+    ) -> list[str]:
+        canonical_skills = [
+            "attack",
+            "defence",
+            "strength",
+            "hitpoints",
+            "ranged",
+            "prayer",
+            "magic",
+            "cooking",
+            "woodcutting",
+            "fletching",
+            "fishing",
+            "firemaking",
+            "crafting",
+            "smithing",
+            "mining",
+            "herblore",
+            "agility",
+            "thieving",
+            "slayer",
+            "farming",
+            "runecraft",
+            "hunter",
+            "construction",
+        ]
+        aliases = {
+            "hp": "hitpoints",
+            "hits": "hitpoints",
+            "range": "ranged",
+            "rc": "runecraft",
+            "wc": "woodcutting",
+            "con": "construction",
+            "def": "defence",
+            "pray": "prayer",
+        }
+        found: list[str] = []
+
+        for alias, canonical in aliases.items():
+            if alias in normalized_message and canonical not in found:
+                found.append(canonical)
+
+        for skill_name in canonical_skills:
+            if skill_name == "overall":
+                continue
+            if skill_name in normalized_message and skill_name not in found:
+                found.append(skill_name)
+
+        return found
 
     def _detect_stat_metric(self, normalized_message: str) -> str:
         if "xp" in normalized_message or "experience" in normalized_message:

@@ -1265,6 +1265,95 @@ async def test_chat_can_answer_lower_effort_but_useful_question(client: AsyncCli
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_what_to_do_tonight(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "Tonight1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Tonight1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Tonight Plan"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do tonight?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "tonight" in content
+    assert "account moving" in content or "full long-session" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_what_to_do_this_weekend(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "Weekend1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Weekend1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Weekend Plan"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do this weekend?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "weekend" in content
+    assert "follow-up lane" in content or "third priority" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_what_unlock_to_push_next(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "Unlock1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Unlock1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Unlock Push"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "unlock" in content
+    assert "bone voyage" in content or "route" in content or "opens more value" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_compare_two_skills(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "SkillCmp"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Skill Compare"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Should I train slayer or fishing?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "slayer" in content
+    assert "fishing" in content
+    assert "train" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
