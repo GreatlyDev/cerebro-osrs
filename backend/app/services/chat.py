@@ -878,6 +878,14 @@ class ChatService:
         if boss_answer is not None:
             return boss_answer
 
+        boss_prep_answer = self._build_boss_prep_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+        )
+        if boss_prep_answer is not None:
+            return boss_prep_answer
+
         money_maker_answer = self._build_money_maker_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -914,6 +922,13 @@ class ChatService:
         )
         if unlock_answer is not None:
             return unlock_answer
+
+        unlock_chain_answer = self._build_unlock_chain_priority_answer(
+            message=message,
+            progress=progress,
+        )
+        if unlock_chain_answer is not None:
+            return unlock_chain_answer
 
         value_answer = self._build_value_judgment_answer(
             message=message,
@@ -2050,6 +2065,56 @@ class ChatService:
             )
         return f"Your best tracked money maker right now is {top['name']}. {top['summary']} {top['why']}"
 
+    def _build_boss_prep_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what should i prep for",
+                "what do i prep for",
+                "how should i prep for",
+                "what should i bring for",
+                "what should i prepare for",
+            )
+        ):
+            return None
+
+        boss_id = boss_advisor_service.detect_boss_id(normalized)
+        if boss_id is None:
+            return None
+
+        readiness = boss_advisor_service.evaluate_readiness(
+            boss_id=boss_id,
+            skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+            unlocked_transports=progress.unlocked_transports if progress else None,
+            completed_quests=progress.completed_quests if progress else None,
+        )
+
+        parts = [f"For {readiness['label']}, I'd prep three things first."]
+        if readiness["missing_skills"]:
+            top_gap = readiness["missing_skills"][0]
+            parts.append(
+                f"First, close the main stat gap in {str(top_gap['skill']).replace('_', ' ').title()} from {top_gap['current_level']} toward {top_gap['required_level']}."
+            )
+        else:
+            parts.append("First, your tracked stats are already in a workable range, so don't stall on raw levels.")
+
+        if readiness["missing_unlocks"]:
+            parts.append(
+                f"Second, unlock {', '.join(str(item) for item in readiness['missing_unlocks'][:3])} so the route and access feel clean."
+            )
+        else:
+            parts.append("Second, make sure the route, banking rhythm, and access feel comfortable before you commit to runs.")
+
+        parts.append(f"Third, tighten your gear, supplies, and prayer plan. {readiness['notes']}")
+        return " ".join(parts)
+
     def _build_target_training_answer(
         self,
         *,
@@ -2237,6 +2302,37 @@ class ChatService:
             return f"Your strongest tracked unlock chain right now is {progress.active_unlocks[0]}."
 
         return f"I'd still anchor on {self._action_label(unlock_action)} as the most useful unlock lane right now."
+
+    def _build_unlock_chain_priority_answer(
+        self,
+        *,
+        message: str,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "which unlock chain should i prioritize",
+                "what unlock chain should i prioritize",
+                "which active unlock should i prioritize",
+                "what active unlock should i prioritize",
+            )
+        ):
+            return None
+
+        if progress is None or not progress.active_unlocks:
+            return "You do not have any active unlock chains tracked yet, so I'd start by adding the biggest account goal you care about first."
+
+        primary = progress.active_unlocks[0]
+        if len(progress.active_unlocks) == 1:
+            return f"I'd prioritize {primary} first. It's the clearest active unlock chain in your workspace right now."
+
+        secondary = progress.active_unlocks[1]
+        return (
+            f"I'd prioritize {primary} before {secondary}. "
+            f"{primary} is the strongest unlock lane currently tracked, and {secondary} can stay right behind it."
+        )
 
     def _build_value_judgment_answer(
         self,

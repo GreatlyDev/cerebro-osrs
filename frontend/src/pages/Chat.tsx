@@ -371,6 +371,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         "How confident are you in that?",
         tradeoffPrompt,
         "What unlock should I push next?",
+        "Which unlock chain should I prioritize?",
       ],
     },
     {
@@ -381,6 +382,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         "What should I do if I want something lower effort but still useful?",
         "I want AFK progress tonight. What should I do?",
         "Should I train Slayer or Fishing?",
+        "What should I prep for Barrows?",
       ],
     },
   ];

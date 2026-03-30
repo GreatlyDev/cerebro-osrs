@@ -1354,6 +1354,50 @@ async def test_chat_can_compare_two_skills(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_boss_prep_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "BossPrep"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Boss Prep"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I prep for Barrows?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "barrows" in content
+    assert "prep" in content or "prepare" in content
+    assert "gear" in content or "route" in content or "unlock" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_unlock_chain_priority_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "UnlockChain"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["quest cape", "barrows gloves"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Unlock Chain"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Which unlock chain should I prioritize?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "quest cape" in content
+    assert "barrows gloves" in content
+    assert "prioritize" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
