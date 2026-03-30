@@ -371,6 +371,50 @@ async def test_chat_can_answer_when_account_is_ready_for_quest(client: AsyncClie
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_best_route_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "TravelNow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"completed_quests": ["bone voyage"], "unlocked_transports": ["digsite pendant"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Travel Advice"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "How do I get to Fossil Island?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "fossil island" in content
+    assert "digsite pendant" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_best_gear_upgrade_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "MagicGear"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"owned_gear": ["Ahrim's robes"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Gear Advice"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What magic gear upgrade should I get next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "magic" in content
+    assert "toxic trident" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

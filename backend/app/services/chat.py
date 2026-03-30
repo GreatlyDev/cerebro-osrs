@@ -128,7 +128,9 @@ class ChatService:
             db_session=db_session,
             account=focus_account,
         )
-        stat_answer = self._build_direct_stat_answer(
+        stat_answer = await self._build_direct_stat_answer(
+            db_session=db_session,
+            user=user,
             message=message,
             account=focus_account,
             latest_snapshot=latest_snapshot,
@@ -491,9 +493,11 @@ class ChatService:
 
         return ", ".join(parts) if parts else None
 
-    def _build_direct_stat_answer(
+    async def _build_direct_stat_answer(
         self,
         *,
+        db_session: AsyncSession,
+        user: User,
         message: str,
         account: Account | None,
         latest_snapshot: AccountSnapshot | None,
@@ -534,6 +538,25 @@ class ChatService:
         )
         if readiness_answer is not None:
             return readiness_answer
+
+        teleport_answer = await self._build_teleport_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+        )
+        if teleport_answer is not None:
+            return teleport_answer
+
+        gear_answer = await self._build_gear_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            progress=progress,
+        )
+        if gear_answer is not None:
+            return gear_answer
 
         top_skills_answer = self._build_top_skills_answer(message=message, latest_snapshot=latest_snapshot)
         if top_skills_answer is not None:
@@ -690,6 +713,78 @@ class ChatService:
             parts.append(f"Other blockers: {', '.join(missing_other[:4])}.")
 
         return " ".join(parts)
+
+    async def _build_teleport_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(token in normalized for token in ("teleport", "route", "get to", "travel")):
+            return None
+
+        destination = self._detect_destination(normalized)
+        if destination is None:
+            return None
+
+        route = await teleport_service.get_route(
+            db_session=db_session,
+            user=user,
+            payload=TeleportRouteRequest(
+                destination=destination,
+                account_rsn=account.rsn if account is not None else None,
+                preference=None,
+            ),
+        )
+
+        locked_routes = route.context.get("locked_routes", [])
+        locked_note = ""
+        if isinstance(locked_routes, list) and locked_routes:
+            locked_note = f" Locked alternatives right now include {', '.join(str(item) for item in locked_routes[:2])}."
+
+        return (
+            f"For {route.destination.title()}, your best tracked route right now is {route.recommended_route.method}. "
+            f"{route.recommended_route.travel_notes}{locked_note}"
+        )
+
+    async def _build_gear_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if "gear" not in normalized and "upgrade" not in normalized:
+            return None
+
+        combat_style = self._detect_combat_style(normalized)
+        if combat_style is None:
+            return None
+
+        gear_response = await gear_service.get_recommendations(
+            db_session=db_session,
+            user=user,
+            payload=GearRecommendationRequest(
+                combat_style=combat_style,
+                budget_tier="midgame",
+                current_gear=progress.owned_gear if progress is not None else [],
+                account_rsn=account.rsn if account is not None else None,
+            ),
+        )
+        if not gear_response.recommendations:
+            return None
+
+        top = gear_response.recommendations[0]
+        return (
+            f"For {combat_style}, your best tracked next upgrade is {top.item_name} for your {top.slot} slot. "
+            f"{top.upgrade_reason}"
+        )
 
     def _build_low_skills_answer(
         self,
@@ -875,6 +970,29 @@ class ChatService:
         if not values:
             return "none"
         return ", ".join(values[:limit])
+
+    def _detect_destination(self, normalized_message: str) -> str | None:
+        aliases = {
+            "fossil island": "fossil island",
+            "barrows": "barrows",
+            "wintertodt": "wintertodt",
+            "fairy ring": "fairy ring network",
+            "fairy rings": "fairy ring network",
+        }
+        for alias, destination in aliases.items():
+            if alias in normalized_message:
+                return destination
+        return None
+
+    def _detect_combat_style(self, normalized_message: str) -> str | None:
+        if "magic" in normalized_message or "mage" in normalized_message:
+            return "magic"
+        if "melee" in normalized_message:
+            return "melee"
+        if "ranged" in normalized_message or "range" in normalized_message:
+            return "ranged"
+        return None
+
 
     def _detect_quest_id(self, normalized_message: str) -> str | None:
         for quest_id, quest in QUEST_CATALOG.items():
