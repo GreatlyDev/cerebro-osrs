@@ -738,6 +738,57 @@ async def test_chat_can_handle_what_else_follow_up_for_boss(client: AsyncClient)
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_what_comes_after_that_from_saved_plan(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "AfterThat"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "AfterThat"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "After That"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What comes after that?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "after" in content
+    assert "magic" in content or "bone voyage" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_compare_current_quest_order_against_another_quest(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "QuestOrder"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Quest Order"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What am I missing for Bone Voyage?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Should I do that before Recipe for Disaster?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "bone voyage" in content
+    assert "recipe for disaster" in content
+    assert "before" in content or "flip that order" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

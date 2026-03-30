@@ -30,7 +30,7 @@ from app.services.account_context import account_context_service
 from app.services.user_context import user_context_service
 from app.services.assistant import AssistantChatContext, assistant_service
 from app.schemas.gear import GearRecommendationRequest
-from app.schemas.recommendation import NextActionRequest
+from app.schemas.recommendation import NextActionRecommendation, NextActionRequest
 from app.schemas.teleport import TeleportRouteRequest
 
 
@@ -787,6 +787,19 @@ class ChatService:
         if progress_answer is not None:
             return progress_answer
 
+        plan_order_answer = await self._build_plan_order_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+            session_state=session_state,
+        )
+        if plan_order_answer is not None:
+            return plan_order_answer
+
         change_answer = self._build_snapshot_change_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -899,6 +912,145 @@ class ChatService:
             overall_rank = summary.get("overall_rank")
             if isinstance(overall_rank, int):
                 return f"Your overall rank is {overall_rank:,}."
+
+        return None
+
+    async def _build_plan_order_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        asks_what_comes_after = any(
+            phrase in normalized
+            for phrase in (
+                "what comes after that",
+                "what comes next after that",
+                "what comes after it",
+                "what should i do after that",
+                "what should i do after it",
+                "what after that",
+            )
+        )
+        asks_order_comparison = "should i do that before" in normalized or "should i do that after" in normalized
+        if not asks_what_comes_after and not asks_order_comparison:
+            return None
+
+        next_actions = await recommendation_service.get_next_actions(
+            db_session=db_session,
+            user=user,
+            payload=NextActionRequest(
+                account_rsn=account.rsn if account is not None else None,
+                goal_id=latest_goal.id if latest_goal is not None else None,
+                limit=4,
+            ),
+        )
+        actions = next_actions.actions
+        current_action = self._find_action_from_session_state(actions, session_state)
+
+        if asks_what_comes_after:
+            if current_action is None:
+                current_action = next_actions.top_action
+            if current_action is None:
+                return None
+
+            next_action = next(
+                (
+                    action
+                    for action in actions
+                    if not self._actions_match(action, current_action)
+                ),
+                None,
+            )
+            if next_action is None:
+                return (
+                    f"After {self._action_label(current_action)}, I'd stay on that lane a little longer. "
+                    f"{current_action.summary}"
+                )
+            return (
+                f"After {self._action_label(current_action)}, I'd move into {next_action.title.lower()}. "
+                f"{next_action.summary}"
+            )
+
+        comparison_focus = self._infer_focus_from_message(normalized)
+        comparison_action = self._find_action_from_focus(actions, comparison_focus)
+        ask_do_that_before = "should i do that before" in normalized
+
+        if current_action is not None and comparison_action is not None:
+            current_first = current_action.score >= comparison_action.score
+            preferred_first = current_action if current_first else comparison_action
+            preferred_second = comparison_action if current_first else current_action
+            reason = self._ordering_reason(preferred_first)
+
+            if ask_do_that_before:
+                if current_first:
+                    return (
+                        f"Yes, I'd do {self._action_label(current_action)} before {self._action_label(comparison_action)}. "
+                        f"{reason}"
+                    )
+                return (
+                    f"I'd flip that order and do {self._action_label(comparison_action)} before "
+                    f"{self._action_label(current_action)}. {reason}"
+                )
+
+            if current_first:
+                return (
+                    f"I'd do {self._action_label(comparison_action)} after {self._action_label(current_action)}. "
+                    f"{reason}"
+                )
+            return (
+                f"Yes, {self._action_label(current_action)} makes more sense after "
+                f"{self._action_label(comparison_action)}. {reason}"
+            )
+
+        current_quest_id = self._state_str(session_state, "last_quest_id")
+        comparison_quest_id = comparison_focus.get("quest_id")
+        if current_quest_id is not None and comparison_quest_id is not None and current_quest_id != comparison_quest_id:
+            current_quest = quest_service.get_quest(current_quest_id)
+            comparison_quest = quest_service.get_quest(comparison_quest_id)
+            current_blockers = self._quest_blocker_count(
+                quest_id=current_quest_id,
+                latest_snapshot=latest_snapshot,
+                progress=progress,
+            )
+            comparison_blockers = self._quest_blocker_count(
+                quest_id=comparison_quest_id,
+                latest_snapshot=latest_snapshot,
+                progress=progress,
+            )
+            current_first = current_blockers <= comparison_blockers
+            if current_blockers == comparison_blockers and latest_goal is not None:
+                current_first = current_quest.name.lower() in latest_goal.title.lower()
+            reason = (
+                f"{current_quest.name} has fewer immediate structured blockers in your current account state."
+                if current_first
+                else f"{comparison_quest.name} has fewer immediate structured blockers in your current account state."
+            )
+
+            if ask_do_that_before:
+                if current_first:
+                    return f"Yes, I'd do {current_quest.name} before {comparison_quest.name}. {reason}"
+                return f"I'd flip that order and do {comparison_quest.name} before {current_quest.name}. {reason}"
+
+            if current_first:
+                return f"I'd do {comparison_quest.name} after {current_quest.name}. {reason}"
+            return f"Yes, {current_quest.name} makes more sense after {comparison_quest.name}. {reason}"
+
+        comparison_money_target = comparison_focus.get("money_target")
+        if current_quest_id is not None and comparison_money_target is not None:
+            current_quest = quest_service.get_quest(current_quest_id)
+            goal_title = latest_goal.title if latest_goal is not None else "your progression plan"
+            return (
+                f"I'd do {current_quest.name} before {comparison_money_target.title()} if the main lane is {goal_title}. "
+                f"It pushes the account plan forward more directly, then {comparison_money_target} can slot in as a profit step."
+            )
 
         return None
 
@@ -1257,6 +1409,168 @@ class ChatService:
             return f"Yes, {match['name']} is worth doing right now. {match['summary']} {match['why']}"
 
         return None
+
+    def _find_action_from_session_state(
+        self,
+        actions: list[NextActionRecommendation],
+        session_state: dict[str, object],
+    ) -> NextActionRecommendation | None:
+        quest_id = self._state_str(session_state, "last_quest_id")
+        if quest_id is not None:
+            match = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "quest" and str((action.target or {}).get("quest_id")) == quest_id
+                ),
+                None,
+            )
+            if match is not None:
+                return match
+
+        saved_skill = self._state_str(session_state, "last_recommended_skill")
+        if saved_skill is not None:
+            match = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "skill" and str((action.target or {}).get("skill")) == saved_skill
+                ),
+                None,
+            )
+            if match is not None:
+                return match
+
+        destination = self._state_str(session_state, "last_destination")
+        if destination is not None:
+            match = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "travel"
+                    and str((action.target or {}).get("destination")) == destination
+                ),
+                None,
+            )
+            if match is not None:
+                return match
+
+        combat_style = self._state_str(session_state, "last_combat_style")
+        if combat_style is not None:
+            match = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "gear"
+                    and str((action.supporting_data or {}).get("combat_style")) == combat_style
+                ),
+                None,
+            )
+            if match is not None:
+                return match
+
+        return None
+
+    def _find_action_from_focus(
+        self,
+        actions: list[NextActionRecommendation],
+        focus: dict[str, str | None],
+    ) -> NextActionRecommendation | None:
+        quest_id = focus.get("quest_id")
+        if quest_id is not None:
+            match = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "quest" and str((action.target or {}).get("quest_id")) == quest_id
+                ),
+                None,
+            )
+            if match is not None:
+                return match
+
+        destination = focus.get("destination")
+        if destination is not None:
+            match = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "travel"
+                    and str((action.target or {}).get("destination")) == destination
+                ),
+                None,
+            )
+            if match is not None:
+                return match
+
+        combat_style = focus.get("combat_style")
+        if combat_style is not None:
+            match = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type == "gear"
+                    and str((action.supporting_data or {}).get("combat_style")) == combat_style
+                ),
+                None,
+            )
+            if match is not None:
+                return match
+
+        return None
+
+    def _actions_match(
+        self,
+        left: NextActionRecommendation,
+        right: NextActionRecommendation,
+    ) -> bool:
+        return left.action_type == right.action_type and left.target == right.target
+
+    def _action_label(self, action: NextActionRecommendation) -> str:
+        target = action.target or {}
+        if action.action_type == "quest":
+            quest_id = target.get("quest_id")
+            if isinstance(quest_id, str):
+                return quest_service.get_quest(quest_id).name
+        if action.action_type == "skill":
+            skill = target.get("skill")
+            if isinstance(skill, str):
+                return f"training {skill.replace('_', ' ').title()}"
+        if action.action_type == "travel":
+            destination = target.get("destination")
+            if isinstance(destination, str):
+                return f"the {destination.title()} route setup"
+        if action.action_type == "gear":
+            item_name = target.get("item_name")
+            if isinstance(item_name, str):
+                return item_name
+        return action.title
+
+    def _ordering_reason(self, action: NextActionRecommendation) -> str:
+        blockers = action.blockers or []
+        if blockers:
+            blocker_preview = ", ".join(blockers[:2])
+            return f"It has the stronger priority in your current plan, even with blockers like {blocker_preview}."
+        return "It has the stronger priority in your current plan and is the cleaner next push from your synced context."
+
+    def _quest_blocker_count(
+        self,
+        *,
+        quest_id: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+    ) -> int:
+        readiness = quest_service.evaluate_readiness(
+            quest_id=quest_id,
+            skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+            completed_quests=progress.completed_quests if progress else None,
+            unlocked_transports=progress.unlocked_transports if progress else None,
+        )
+        return (
+            len(readiness.get("missing_skills", []))
+            + len(readiness.get("missing_quests", []))
+            + len(readiness.get("missing_other_requirements", []))
+        )
 
     async def _build_teleport_answer(
         self,
