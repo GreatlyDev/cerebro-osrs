@@ -41,6 +41,7 @@ export function ChatView({
   const goalLabel = readStateString(sessionState, "last_goal_title") ?? "No active goal in thread yet";
   const threadAccountLabel =
     readStateString(sessionState, "last_account_rsn") ?? selectedAccountRsn ?? "No account anchored yet";
+  const threadNextMove = describeThreadNextMove(sessionState);
   const visibleHistory =
     selectedChatSessionId === null
       ? chatHistory
@@ -206,7 +207,7 @@ export function ChatView({
         </Panel>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 xl:grid-cols-4">
         <Panel className="space-y-2">
           <SectionHeader eyebrow="Thread account" title={threadAccountLabel} />
           <p className="text-sm leading-6 text-osrs-text-soft">
@@ -224,6 +225,10 @@ export function ChatView({
           <p className="text-sm leading-6 text-osrs-text-soft">
             Cerebro is using this planning intent to shape comparisons, follow-ups, and what it deprioritizes.
           </p>
+        </Panel>
+        <Panel className="space-y-2">
+          <SectionHeader eyebrow="Best next move" title={threadNextMove.title} />
+          <p className="text-sm leading-6 text-osrs-text-soft">{threadNextMove.body}</p>
         </Panel>
       </div>
     </div>
@@ -422,6 +427,83 @@ function describeSessionPreview(state: Record<string, unknown>): string {
   }
 
   return "A flexible planning thread without a strongly established lane yet.";
+}
+
+function describeThreadNextMove(state: Record<string, unknown>): { title: string; body: string } {
+  const questId = readStateString(state, "last_quest_id");
+  if (questId) {
+    const questLabel = humanizeLabel(questId);
+    return {
+      title: `Push ${questLabel}`,
+      body: `Stay on ${questLabel} and use Cerebro to close the last blockers, requirements, or unlocks around it.`,
+    };
+  }
+
+  const bossId = readStateString(state, "last_boss_id");
+  if (bossId) {
+    const bossLabel = humanizeLabel(bossId);
+    return {
+      title: `Prep for ${bossLabel}`,
+      body: `Use this thread to tighten the skills, gear, and route setup that would make ${bossLabel} feel actually ready.`,
+    };
+  }
+
+  const moneyTarget = readStateString(state, "last_money_target");
+  if (moneyTarget) {
+    const targetLabel = humanizeLabel(moneyTarget);
+    return {
+      title: `Run ${targetLabel}`,
+      body: `Keep this lane centered on ${targetLabel} until Cerebro sees a better tradeoff between profit and progression.`,
+    };
+  }
+
+  const destination = readStateString(state, "last_destination");
+  if (destination) {
+    const destinationLabel = humanizeLabel(destination);
+    return {
+      title: `Unlock the ${destinationLabel} route`,
+      body: `Use the conversation to strip out friction and get the cleanest route to ${destinationLabel} online.`,
+    };
+  }
+
+  const skill = readStateString(state, "last_recommended_skill");
+  if (skill) {
+    const skillLabel = humanizeLabel(skill);
+    return {
+      title: `Train ${skillLabel}`,
+      body: `This thread is already leaning toward ${skillLabel}, so the highest-value move is to keep refining the training path instead of changing lanes.`,
+    };
+  }
+
+  const gear = readStateString(state, "last_recommended_gear");
+  if (gear) {
+    return {
+      title: `Push ${gear}`,
+      body: `Cerebro sees ${gear} as the live upgrade lane, so the next move is to keep narrowing the path toward it.`,
+    };
+  }
+
+  const combatStyle = readStateString(state, "last_combat_style");
+  if (combatStyle) {
+    const styleLabel = humanizeLabel(combatStyle);
+    return {
+      title: `${styleLabel} upgrades first`,
+      body: `The conversation is already centered on ${styleLabel}, so Cerebro will get more useful if you keep pressure on that gear lane.`,
+    };
+  }
+
+  const goal = readStateString(state, "last_goal_title");
+  if (goal) {
+    return {
+      title: `Advance ${goal}`,
+      body: `Your goal is already anchored, so the next useful move is to ask Cerebro for the fastest route, biggest blocker, or today's best push toward it.`,
+    };
+  }
+
+  return {
+    title: "Anchor the first strong lane",
+    body: "Start with a concrete question about your next action, a goal, or a specific unlock so Cerebro can turn this into a real planning thread.",
+  };
 }
 
 function getIntentBadgeClass(state: Record<string, unknown>): string {
