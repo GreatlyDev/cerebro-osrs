@@ -39,17 +39,13 @@ export function ChatView({
   const focusLabel = describeSessionFocus(sessionState);
   const intentLabel = describeSessionIntent(sessionState);
   const goalLabel = readStateString(sessionState, "last_goal_title") ?? "No active goal in thread yet";
+  const threadAccountLabel =
+    readStateString(sessionState, "last_account_rsn") ?? selectedAccountRsn ?? "No account anchored yet";
   const visibleHistory =
     selectedChatSessionId === null
       ? chatHistory
       : chatHistory.filter((exchange) => exchange.sessionId === selectedChatSessionId);
-
-  const quickPrompts = [
-    "What's my next best action?",
-    "Which quest should I do for barrows gloves?",
-    "What skill should I train next?",
-    "What changed since my last sync?",
-  ];
+  const quickPrompts = buildQuickPrompts(sessionState, selectedAccountRsn);
 
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -104,7 +100,12 @@ export function ChatView({
         <Panel className="space-y-3">
           <SectionHeader
             eyebrow="Quick prompts"
-            title="Start from a known question"
+            title={selectedSession ? "Keep the thread moving" : "Start from a known question"}
+            subtitle={
+              selectedSession
+                ? "These prompts shift with the current session so Cerebro can keep building on the same planning lane."
+                : "Use a strong starter question and Cerebro will begin building a grounded thread from there."
+            }
           />
           <div className="grid gap-2">
             {quickPrompts.map((prompt) => (
@@ -171,6 +172,19 @@ export function ChatView({
                 type="button"
               >
                 <strong className="block font-display text-base text-osrs-text">{session.title}</strong>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-gold-soft">
+                    {describeSessionFocus(session.session_state)}
+                  </span>
+                  <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-text-soft">
+                    {describeSessionIntent(session.session_state)}
+                  </span>
+                </div>
+                {readStateString(session.session_state, "last_goal_title") ? (
+                  <p className="mt-2 text-xs leading-5 text-osrs-text-soft">
+                    Goal: {readStateString(session.session_state, "last_goal_title")}
+                  </p>
+                ) : null}
                 <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-osrs-text-soft">
                   Updated {new Date(session.updated_at).toLocaleString()}
                 </span>
@@ -179,8 +193,102 @@ export function ChatView({
           </div>
         </Panel>
       </div>
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Panel className="space-y-2">
+          <SectionHeader eyebrow="Thread account" title={threadAccountLabel} />
+          <p className="text-sm leading-6 text-osrs-text-soft">
+            Cerebro anchors direct stat, gear, route, and sync questions against this account when possible.
+          </p>
+        </Panel>
+        <Panel className="space-y-2">
+          <SectionHeader eyebrow="Current lane" title={focusLabel} />
+          <p className="text-sm leading-6 text-osrs-text-soft">
+            This is the main subject Cerebro thinks the current thread is orbiting right now.
+          </p>
+        </Panel>
+        <Panel className="space-y-2">
+          <SectionHeader eyebrow="Current priority" title={intentLabel} />
+          <p className="text-sm leading-6 text-osrs-text-soft">
+            Cerebro is using this planning intent to shape comparisons, follow-ups, and what it deprioritizes.
+          </p>
+        </Panel>
+      </div>
     </div>
   );
+}
+
+function buildQuickPrompts(
+  state: Record<string, unknown>,
+  selectedAccountRsn: string | null,
+): string[] {
+  const prompts: string[] = [];
+  const goalTitle = readStateString(state, "last_goal_title");
+  const questId = readStateString(state, "last_quest_id");
+  const bossId = readStateString(state, "last_boss_id");
+  const moneyTarget = readStateString(state, "last_money_target");
+  const destination = readStateString(state, "last_destination");
+  const skill = readStateString(state, "last_recommended_skill");
+  const gear = readStateString(state, "last_recommended_gear");
+  const combatStyle = readStateString(state, "last_combat_style");
+  const accountLabel = readStateString(state, "last_account_rsn") ?? selectedAccountRsn;
+
+  if (goalTitle) {
+    prompts.push(`What would move me closest to ${goalTitle} fastest?`);
+  }
+
+  if (questId) {
+    const questLabel = humanizeLabel(questId);
+    prompts.push(`What am I still missing for ${questLabel}?`);
+    prompts.push(`What comes after ${questLabel}?`);
+  }
+
+  if (bossId) {
+    prompts.push(`Am I actually ready for ${humanizeLabel(bossId)}?`);
+  }
+
+  if (moneyTarget) {
+    prompts.push(`Is ${humanizeLabel(moneyTarget)} still my best money maker?`);
+  }
+
+  if (destination) {
+    prompts.push(`What is the best route to ${humanizeLabel(destination)} right now?`);
+  }
+
+  if (skill) {
+    prompts.push(`How should I train ${humanizeLabel(skill)} next?`);
+  }
+
+  if (gear) {
+    prompts.push(`What should come after ${gear}?`);
+  }
+
+  if (combatStyle) {
+    prompts.push(`What ${humanizeLabel(combatStyle)} upgrade should I push next?`);
+  }
+
+  if (accountLabel) {
+    prompts.push(`What changed that matters most for ${accountLabel}?`);
+  } else {
+    prompts.push("What changed that matters most after sync?");
+  }
+
+  prompts.push("What should I do today if I want real progress?");
+  prompts.push("What should I do if I want both profit and progression?");
+
+  const deduped: string[] = [];
+  const seen = new Set<string>();
+
+  for (const prompt of prompts) {
+    const normalized = prompt.trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    deduped.push(prompt);
+  }
+
+  return deduped.slice(0, 6);
 }
 
 function readStateString(state: Record<string, unknown>, key: string): string | null {
