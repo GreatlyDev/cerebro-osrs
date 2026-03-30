@@ -467,6 +467,69 @@ async def test_chat_can_handle_gear_follow_up_question(client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_boss_readiness_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "BossCheck"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Boss Readiness"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "Am I ready for Fight Caves?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "fight caves" in content
+    assert "ranged" in content
+    assert "prayer" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_money_maker_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "MoneyNow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch("/api/profile", json={"prefers_profitable_methods": True})
+    session_response = await client.post("/api/chat/sessions", json={"title": "Money Advice"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What money maker should I do right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "money maker" in content
+    assert "karambwans" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_handle_money_maker_follow_up_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "MoneyFollow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch("/api/profile", json={"prefers_profitable_methods": True})
+    session_response = await client.post("/api/chat/sessions", json={"title": "Money Follow Up"})
+    session_id = session_response.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What money maker should I do right now?"},
+    )
+    follow_up_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What about Barrows?"},
+    )
+
+    assert first_response.status_code == 201
+    assert follow_up_response.status_code == 201
+    content = follow_up_response.json()["assistant_message"]["content"].lower()
+    assert "barrows" in content
+    assert "money maker" in content or "good target" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
