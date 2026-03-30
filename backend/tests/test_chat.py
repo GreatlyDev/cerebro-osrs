@@ -1,6 +1,8 @@
 import pytest
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.account_snapshot import AccountSnapshot
 from app.services.assistant import assistant_service
 from app.services.accounts import account_service
 
@@ -954,6 +956,54 @@ async def test_chat_can_handle_afk_progress_question(client: AsyncClient) -> Non
     content = response.json()["assistant_message"]["content"].lower()
     assert "afk" in content
     assert "magic" in content or "high alchemy" in content or "afk preference" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_explain_sync_recommendation_stability(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "SyncExplain"})
+    account_id = account_response.json()["id"]
+
+    db_session.add(
+        AccountSnapshot(
+            account_id=account_id,
+            source="manual",
+            sync_status="completed",
+            summary={
+                "overall_level": 180,
+                "combat_level": 70,
+                "skills": {
+                    "overall": {"level": 180},
+                    "magic": {"level": 60},
+                    "woodcutting": {"level": 50},
+                    "fishing": {"level": 45},
+                    "attack": {"level": 55},
+                },
+            },
+        )
+    )
+    await db_session.commit()
+
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "SyncExplain"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Sync Explain"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Did my recommendation change after sync?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "sync" in content
+    assert "still leaning" in content or "recommendation shifted" in content
+    assert "overall" in content
 
 
 @pytest.mark.asyncio

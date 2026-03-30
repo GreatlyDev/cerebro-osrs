@@ -820,6 +820,19 @@ class ChatService:
         if change_answer is not None:
             return change_answer
 
+        recommendation_change_answer = await self._build_recommendation_change_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            profile=profile,
+            latest_goal=latest_goal,
+            account=account,
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+        )
+        if recommendation_change_answer is not None:
+            return recommendation_change_answer
+
         readiness_answer = self._build_quest_readiness_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -926,6 +939,91 @@ class ChatService:
                 return f"Your overall rank is {overall_rank:,}."
 
         return None
+
+    async def _build_recommendation_change_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        profile: Profile | None,
+        latest_goal: Goal | None,
+        account: Account | None,
+        latest_snapshot: AccountSnapshot,
+        previous_snapshot: AccountSnapshot | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "why did my recommendation change",
+                "why did the recommendation change",
+                "why did that change after sync",
+                "did my recommendation change after sync",
+                "did the recommendation change after sync",
+            )
+        ):
+            return None
+
+        if previous_snapshot is None:
+            return "I only have one synced snapshot so far, so I can't tell whether the recommendation changed after a sync yet."
+
+        overall_delta, combat_delta, improved_skills = self._snapshot_delta_bits(
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+        )
+
+        if latest_goal is None:
+            next_actions = await recommendation_service.get_next_actions(
+                db_session=db_session,
+                user=user,
+                payload=NextActionRequest(
+                    account_rsn=account.rsn if account is not None else None,
+                    goal_id=None,
+                    limit=3,
+                ),
+            )
+            top_action = next_actions.top_action
+            if top_action is None:
+                return None
+            return (
+                f"Your synced recommendation is still centered on {self._action_label(top_action)}. "
+                f"The latest sync showed overall {overall_delta:+d}, combat {combat_delta:+d}, "
+                f"and visible gains in {self._preview_list(improved_skills) if improved_skills else 'none'}, "
+                f"but not enough of a shift to move the top lane yet."
+            )
+
+        current_recommendations = await planner_service.build_goal_recommendations(
+            db_session=db_session,
+            user=user,
+            goal=latest_goal,
+            profile=profile,
+            snapshot=latest_snapshot,
+            target_rsn=latest_goal.target_account_rsn or (account.rsn if account is not None else None),
+        )
+        previous_recommendations = await planner_service.build_goal_recommendations(
+            db_session=db_session,
+            user=user,
+            goal=latest_goal,
+            profile=profile,
+            snapshot=previous_snapshot,
+            target_rsn=latest_goal.target_account_rsn or (account.rsn if account is not None else None),
+        )
+
+        current_focus = self._planner_focus_label(current_recommendations)
+        previous_focus = self._planner_focus_label(previous_recommendations)
+        if current_focus != previous_focus:
+            return (
+                f"Yes, the recommendation shifted after the latest sync. Before, I was leaning toward {previous_focus}. "
+                f"Now I'm leaning toward {current_focus}. The main synced changes were overall {overall_delta:+d}, "
+                f"combat {combat_delta:+d}, and visible gains in {self._preview_list(improved_skills) if improved_skills else 'none'}."
+            )
+
+        return (
+            f"The main recommendation didn't materially change after the latest sync. I'm still leaning toward {current_focus}. "
+            f"The new snapshot showed overall {overall_delta:+d}, combat {combat_delta:+d}, and visible gains in "
+            f"{self._preview_list(improved_skills) if improved_skills else 'none'}, but the same core blockers and opportunities still lead the plan."
+        )
 
     async def _build_coaching_answer(
         self,
@@ -2024,6 +2122,37 @@ class ChatService:
             if isinstance(latest_level, int) and isinstance(previous_level, int) and latest_level > previous_level:
                 improved.append(skill_name.replace("_", " ").title())
         return improved
+
+    def _snapshot_delta_bits(
+        self,
+        *,
+        latest_snapshot: AccountSnapshot,
+        previous_snapshot: AccountSnapshot,
+    ) -> tuple[int, int, list[str]]:
+        latest_summary = latest_snapshot.summary or {}
+        previous_summary = previous_snapshot.summary or {}
+        overall_delta = int(latest_summary.get("overall_level", 0) or 0) - int(
+            previous_summary.get("overall_level", 0) or 0
+        )
+        combat_delta = int(latest_summary.get("combat_level", 0) or 0) - int(
+            previous_summary.get("combat_level", 0) or 0
+        )
+        improved_skills = self._collect_improved_skills(latest_snapshot, previous_snapshot)
+        return overall_delta, combat_delta, improved_skills
+
+    def _planner_focus_label(self, recommendations: dict[str, object]) -> str:
+        skill = recommendations.get("recommended_skill", {})
+        quest = recommendations.get("recommended_quest", {})
+        skill_name = str(skill.get("skill", "")).replace("_", " ").title() if isinstance(skill, dict) else ""
+        method = str(skill.get("method", "")) if isinstance(skill, dict) else ""
+        quest_name = str(quest.get("name", "")) if isinstance(quest, dict) else ""
+        if skill_name and method and quest_name:
+            return f"{skill_name} with {method}, then {quest_name}"
+        if skill_name and method:
+            return f"{skill_name} with {method}"
+        if quest_name:
+            return quest_name
+        return "the same core progression lane"
 
     def _detect_skill_name(
         self,
