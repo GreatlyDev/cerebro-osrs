@@ -821,6 +821,8 @@ class ChatService:
             account=account,
             profile=profile,
             latest_goal=latest_goal,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
         )
         if coaching_answer is not None:
             return coaching_answer
@@ -1136,6 +1138,8 @@ class ChatService:
         account: Account | None,
         profile: Profile | None,
         latest_goal: Goal | None,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
     ) -> str | None:
         normalized = message.lower()
         asks_week_focus = any(
@@ -1187,12 +1191,41 @@ class ChatService:
                 "something afk",
             )
         )
+        asks_today_progress = any(
+            phrase in normalized
+            for phrase in (
+                "what should i do today if i want real progress",
+                "what should i do today",
+                "what do i do today for progress",
+                "what should i focus on today",
+            )
+        )
+        asks_mixed_profit_progress = any(
+            phrase in normalized
+            for phrase in (
+                "profit and progression",
+                "both profit and progression",
+                "money and progression",
+                "gp and progression",
+            )
+        )
+        asks_deprioritize = any(
+            phrase in normalized
+            for phrase in (
+                "what would you deprioritize this week",
+                "what should i deprioritize this week",
+                "what would you deprioritize",
+            )
+        )
         if (
             not asks_week_focus
             and not asks_fastest_goal_move
             and not asks_ignore_now
             and not asks_short_session
             and not asks_afk_progress
+            and not asks_today_progress
+            and not asks_mixed_profit_progress
+            and not asks_deprioritize
         ):
             return None
 
@@ -1213,6 +1246,12 @@ class ChatService:
         second_action = actions[1] if len(actions) > 1 else None
         third_action = actions[2] if len(actions) > 2 else None
         goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+
+        if asks_today_progress:
+            return (
+                f"If you want real progress today, I'd lock in {self._action_label(top_action)} first. "
+                f"{top_action.summary}"
+            )
 
         if asks_short_session:
             quick_action = next(
@@ -1255,6 +1294,25 @@ class ChatService:
                 f"{top_action.summary}"
             )
 
+        if asks_mixed_profit_progress:
+            profit_option = money_maker_service.get_best_options(
+                skills=latest_snapshot.summary.get("skills") if latest_snapshot.summary else None,
+                unlocked_transports=progress.unlocked_transports if progress else None,
+                completed_quests=progress.completed_quests if progress else None,
+                prefers_profitable_methods=True,
+            )
+            top_profit = profit_option[0] if profit_option else None
+            if top_profit is not None and second_action is not None:
+                return (
+                    f"If you want both profit and progression, I'd split the lane: start with {self._action_label(top_action)} "
+                    f"for account progress, then use {top_profit['name']} as the money reset. "
+                    f"That keeps {goal_title} moving without dropping profit entirely."
+                )
+            return (
+                f"If you want both profit and progression, I'd still anchor on {self._action_label(top_action)} first. "
+                f"It's the strongest balanced move for {goal_title} right now."
+            )
+
         if asks_week_focus:
             parts = [
                 f"For this week, I'd center the account on {self._action_label(top_action)}."
@@ -1265,6 +1323,25 @@ class ChatService:
                     f"Right behind that, keep {self._action_label(second_action)} in view as the follow-up lane."
                 )
             return " ".join(parts)
+
+        if asks_deprioritize:
+            deprioritized = next(
+                (
+                    action
+                    for action in reversed(actions)
+                    if action.priority == "low" or action.score <= max(58, top_action.score - 18)
+                ),
+                third_action or second_action,
+            )
+            if deprioritized is None or self._actions_match(deprioritized, top_action):
+                return (
+                    f"This week, I wouldn't deprioritize the main lane yet. "
+                    f"{self._action_label(top_action).capitalize()} is still the strongest push for {goal_title}."
+                )
+            return (
+                f"This week, I'd deprioritize {self._action_label(deprioritized)}. "
+                f"It matters less immediately than {self._action_label(top_action)} for {goal_title}."
+            )
 
         if asks_fastest_goal_move:
             return (
