@@ -164,6 +164,7 @@ class ChatService:
                 message=resolved_message,
                 session_intent=session_intent,
                 latest_goal=latest_goal,
+                account=focus_account,
             )
 
         structured_response, structured_state = await self._generate_structured_response(
@@ -203,6 +204,7 @@ class ChatService:
                 message=resolved_message,
                 session_intent=session_intent,
                 latest_goal=latest_goal,
+                account=focus_account,
             ),
             update=structured_state,
         )
@@ -351,9 +353,24 @@ class ChatService:
                 target_rsn=latest_goal.target_account_rsn
                 or (latest_account.rsn if latest_account else None),
             )
+            next_actions = await recommendation_service.get_next_actions(
+                db_session=db_session,
+                user=user,
+                payload=NextActionRequest(
+                    account_rsn=latest_account.rsn if latest_account else None,
+                    goal_id=latest_goal.id,
+                    limit=1,
+                ),
+            )
+            state_update = self._state_from_planner_recommendations(recommendations)
+            if next_actions.top_action is not None:
+                state_update = self._merge_session_state(
+                    existing_state=state_update,
+                    update=self._state_from_next_action(next_actions.top_action),
+                )
             return (
                 planner_service.summarize_next_action(latest_goal, recommendations),
-                self._state_from_planner_recommendations(recommendations),
+                state_update,
             )
 
         if ("next" in normalized or "should i do" in normalized) and latest_goal is not None:
@@ -366,9 +383,24 @@ class ChatService:
                 target_rsn=latest_goal.target_account_rsn
                 or (latest_account.rsn if latest_account else None),
             )
+            next_actions = await recommendation_service.get_next_actions(
+                db_session=db_session,
+                user=user,
+                payload=NextActionRequest(
+                    account_rsn=latest_account.rsn if latest_account else None,
+                    goal_id=latest_goal.id,
+                    limit=1,
+                ),
+            )
+            state_update = self._state_from_planner_recommendations(recommendations)
+            if next_actions.top_action is not None:
+                state_update = self._merge_session_state(
+                    existing_state=state_update,
+                    update=self._state_from_next_action(next_actions.top_action),
+                )
             return (
                 planner_service.summarize_next_action(latest_goal, recommendations),
-                self._state_from_planner_recommendations(recommendations),
+                state_update,
             )
 
         if latest_snapshot is not None and profile is not None:
@@ -827,6 +859,17 @@ class ChatService:
         )
         if coaching_answer is not None:
             return coaching_answer
+
+        blocker_answer = await self._build_blocker_priority_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+            session_state=session_state,
+        )
+        if blocker_answer is not None:
+            return blocker_answer
 
         confidence_answer = await self._build_confidence_and_tradeoff_answer(
             db_session=db_session,
@@ -1947,6 +1990,59 @@ class ChatService:
             goal_title=goal_title,
             latest_snapshot=latest_snapshot,
             progress=progress,
+        )
+
+    async def _build_blocker_priority_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "which blocker should i clear first",
+                "what blocker should i clear first",
+                "what blocker should i fix first",
+                "which blocker should i fix first",
+                "what should i clear first",
+                "what should i unblock first",
+            )
+        ):
+            return None
+
+        next_actions = await recommendation_service.get_next_actions(
+            db_session=db_session,
+            user=user,
+            payload=NextActionRequest(
+                account_rsn=account.rsn if account is not None else None,
+                goal_id=latest_goal.id if latest_goal is not None else None,
+                limit=4,
+            ),
+        )
+        actions = next_actions.actions
+        if not actions:
+            return None
+
+        current_action = self._find_action_from_session_state(actions, session_state) or next_actions.top_action
+        if current_action is None:
+            return None
+
+        blockers = current_action.blockers or []
+        if blockers:
+            return (
+                f"If I were clearing one blocker first, I'd start with {blockers[0]}. "
+                f"That is the cleanest thing holding back {self._action_label(current_action)} right now."
+            )
+
+        return (
+            f"There isn't a single hard blocker I would clear first right now. "
+            f"{self._action_label(current_action).capitalize()} is already fairly actionable from your current account state."
         )
 
     async def _build_why_now_answer(
@@ -3421,12 +3517,15 @@ class ChatService:
         message: str,
         session_intent: str | None,
         latest_goal: Goal | None,
+        account: Account | None,
     ) -> dict[str, object]:
         focus = self._infer_focus_from_message(message.lower())
         update: dict[str, object] = {
             "last_session_intent": session_intent,
             "last_goal_title": latest_goal.title if latest_goal is not None else None,
         }
+        if account is not None:
+            update["last_account_rsn"] = account.rsn
         if focus["quest_id"] is not None:
             update["last_quest_id"] = focus["quest_id"]
         if focus["boss_id"] is not None:
@@ -3454,7 +3553,11 @@ class ChatService:
         }
 
     def _state_from_next_action(self, top_action) -> dict[str, object]:
-        update: dict[str, object] = {"last_session_intent": "progression"}
+        update: dict[str, object] = {
+            "last_session_intent": "progression",
+            "last_blockers": (top_action.blockers or [])[:3],
+            "last_priority_label": top_action.priority,
+        }
         if top_action.action_type == "quest":
             target = top_action.target or {}
             update["last_quest_id"] = target.get("quest_id")

@@ -42,6 +42,7 @@ export function ChatView({
   const threadAccountLabel =
     readStateString(sessionState, "last_account_rsn") ?? selectedAccountRsn ?? "No account anchored yet";
   const threadNextMove = describeThreadNextMove(sessionState);
+  const threadBlockers = readStateStringArray(sessionState, "last_blockers");
   const visibleHistory =
     selectedChatSessionId === null
       ? chatHistory
@@ -228,7 +229,7 @@ export function ChatView({
         ))}
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-4">
+      <div className="grid gap-4 xl:grid-cols-5">
         <Panel className="space-y-2">
           <SectionHeader eyebrow="Thread account" title={threadAccountLabel} />
           <p className="text-sm leading-6 text-osrs-text-soft">
@@ -250,6 +251,28 @@ export function ChatView({
         <Panel className="space-y-2">
           <SectionHeader eyebrow="Best next move" title={threadNextMove.title} />
           <p className="text-sm leading-6 text-osrs-text-soft">{threadNextMove.body}</p>
+        </Panel>
+        <Panel className="space-y-2">
+          <SectionHeader
+            eyebrow="Current blockers"
+            title={threadBlockers.length > 0 ? threadBlockers[0] : "No hard blockers tracked"}
+          />
+          <div className="space-y-2">
+            {threadBlockers.length > 0 ? (
+              threadBlockers.map((blocker) => (
+                <div
+                  className="rounded-[12px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-2 text-sm text-osrs-text-soft"
+                  key={blocker}
+                >
+                  {blocker}
+                </div>
+              ))
+            ) : (
+              <p className="text-sm leading-6 text-osrs-text-soft">
+                The current lane looks actionable. Ask Cerebro which blocker to clear first when a tighter route needs cleanup.
+              </p>
+            )}
+          </div>
         </Panel>
       </div>
     </div>
@@ -374,6 +397,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         "Why now instead of later?",
         tradeoffPrompt,
         "What are my three biggest blockers right now?",
+        "Which blocker should I clear first?",
         "What unlock should I push next?",
         "Which unlock chain should I prioritize?",
         "Which money maker has the lowest unlock burden?",
@@ -399,6 +423,14 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
 function readStateString(state: Record<string, unknown>, key: string): string | null {
   const value = state[key];
   return typeof value === "string" && value.trim() ? value : null;
+}
+
+function readStateStringArray(state: Record<string, unknown>, key: string): string[] {
+  const value = state[key];
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
 }
 
 function humanizeLabel(value: string): string {

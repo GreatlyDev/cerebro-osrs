@@ -1444,6 +1444,33 @@ async def test_chat_can_answer_biggest_blockers_question(client: AsyncClient) ->
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_which_blocker_to_clear_first(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "ClearBlock"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "ClearBlock"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Clear First"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Which blocker should I clear first?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "clearing one blocker first" in content or "clear first" in content
+    assert "holding back" in content or "actionable" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_explain_quest_chain_blockers(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "QuestChain"})
     account_id = account_response.json()["id"]
