@@ -1311,6 +1311,29 @@ async def test_chat_can_answer_what_to_do_this_weekend(client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_what_should_be_done_by_sunday(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "Sunday1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Sunday1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Sunday Plan"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I have done by Sunday?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "by sunday" in content
+    assert "underway" in content or "stretch target" in content or "in motion" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_answer_what_unlock_to_push_next(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "Unlock1"})
     account_id = account_response.json()["id"]
@@ -1395,6 +1418,29 @@ async def test_chat_can_answer_unlock_chain_priority_question(client: AsyncClien
     assert "quest cape" in content
     assert "barrows gloves" in content
     assert "prioritize" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_biggest_blockers_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "Blockers1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Blockers1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Biggest Blockers"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What are my three biggest blockers right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "biggest blockers" in content
+    assert "quest cape" in content or "blocker" in content or "holding back" in content
 
 
 @pytest.mark.asyncio
@@ -1529,6 +1575,29 @@ async def test_chat_can_answer_utility_unlock_question(client: AsyncClient) -> N
     content = response.json()["assistant_message"]["content"].lower()
     assert "utility unlock" in content
     assert "bone voyage" in content or "route" in content or "broader account value" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_diary_style_utility_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "DiaryUtil"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "DiaryUtil"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Diary Utility"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What diary-style utility unlock should I care about next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "diary-style utility" in content
+    assert "bone voyage" in content or "route" in content or "utility unlock" in content
 
 
 @pytest.mark.asyncio

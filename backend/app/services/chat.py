@@ -1303,6 +1303,18 @@ class ChatService:
                 "what would you deprioritize",
             )
         )
+        asks_biggest_blockers = any(
+            phrase in normalized
+            for phrase in (
+                "what are my biggest blockers",
+                "what are the biggest blockers",
+                "what are my three biggest blockers",
+                "what are the three biggest blockers",
+                "what's blocking me most",
+                "whats blocking me most",
+                "what is blocking me most",
+            )
+        )
         asks_tonight = any(
             phrase in normalized
             for phrase in (
@@ -1319,6 +1331,16 @@ class ChatService:
                 "what do i do this weekend",
                 "what should i focus on this weekend",
                 "what should i work on this weekend",
+            )
+        )
+        asks_sunday_milestone = any(
+            phrase in normalized
+            for phrase in (
+                "what should i have done by sunday",
+                "what should i get done by sunday",
+                "what do i need done by sunday",
+                "what should be done by sunday",
+                "what should i aim to finish by sunday",
             )
         )
         asks_sequence_days = any(
@@ -1375,8 +1397,10 @@ class ChatService:
             and not asks_today_progress
             and not asks_mixed_profit_progress
             and not asks_deprioritize
+            and not asks_biggest_blockers
             and not asks_tonight
             and not asks_weekend
+            and not asks_sunday_milestone
             and not asks_sequence_days
             and not asks_xp_vs_unlocks
             and not asks_lower_effort_useful
@@ -1401,6 +1425,18 @@ class ChatService:
         second_action = actions[1] if len(actions) > 1 else None
         third_action = actions[2] if len(actions) > 2 else None
         goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+
+        if asks_biggest_blockers:
+            blocker_summary = self._summarize_biggest_blockers(
+                actions=actions,
+                latest_goal=latest_goal,
+            )
+            if blocker_summary is not None:
+                return blocker_summary
+            return (
+                f"You do not have three hard blockers standing out right now. "
+                f"The cleaner story is that {self._action_label(top_action)} is already actionable for {goal_title}."
+            )
 
         if asks_today_progress:
             return (
@@ -1434,6 +1470,21 @@ class ChatService:
             if third_action is not None:
                 parts.append(
                     f"If you still have time after that, {self._action_label(third_action)} is the cleanest third priority."
+                )
+            return " ".join(parts)
+
+        if asks_sunday_milestone:
+            parts = [
+                f"By Sunday, I'd want {self._action_label(top_action)} either completed or meaningfully underway."
+            ]
+            parts.append(top_action.summary)
+            if second_action is not None:
+                parts.append(
+                    f"After that, the next thing I'd want in motion is {self._action_label(second_action)}."
+                )
+            if third_action is not None:
+                parts.append(
+                    f"If you get through the main two lanes, let {self._action_label(third_action)} be the stretch target before the weekend closes."
                 )
             return " ".join(parts)
 
@@ -2005,6 +2056,43 @@ class ChatService:
         if "priority" in normalized and session_intent is not None:
             return f"{focus_summary} Right now, the session priority is {self._humanize_session_intent(session_intent)}."
         return focus_summary
+
+    def _summarize_biggest_blockers(
+        self,
+        *,
+        actions: list[NextActionRecommendation],
+        latest_goal: Goal | None,
+    ) -> str | None:
+        blockers: list[str] = []
+        seen: set[str] = set()
+
+        for action in actions:
+            for blocker in action.blockers or []:
+                normalized = blocker.strip().lower()
+                if not normalized or normalized in seen:
+                    continue
+                seen.add(normalized)
+                blockers.append(blocker)
+                if len(blockers) == 3:
+                    break
+            if len(blockers) == 3:
+                break
+
+        if not blockers:
+            return None
+
+        goal_title = latest_goal.title if latest_goal is not None else "your current progression lane"
+        if len(blockers) == 1:
+            blocker_phrase = blockers[0]
+        elif len(blockers) == 2:
+            blocker_phrase = f"{blockers[0]} and {blockers[1]}"
+        else:
+            blocker_phrase = f"{blockers[0]}, {blockers[1]}, and {blockers[2]}"
+
+        return (
+            f"Your biggest blockers right now are {blocker_phrase}. "
+            f"Those are the main pieces holding back {goal_title} from moving more cleanly."
+        )
 
     def _build_top_skills_answer(
         self,
@@ -2602,6 +2690,10 @@ class ChatService:
                 "travel unlock",
                 "mobility unlock",
                 "quality of life unlock",
+                "diary-style unlock",
+                "diary style unlock",
+                "diary-style utility",
+                "diary style utility",
             )
         ):
             return None
@@ -2630,14 +2722,19 @@ class ChatService:
         if utility_action is None:
             return None
 
+        leading_clause = (
+            "If you're thinking in diary-style utility, the next thing I'd push is"
+            if "diary" in normalized
+            else "The utility unlock I'd push next is"
+        )
         if utility_action.action_type == "travel":
             return (
-                f"The utility unlock I'd push next is {self._action_label(utility_action)}. "
+                f"{leading_clause} {self._action_label(utility_action)}. "
                 f"It reduces friction across future quest, skilling, and gear routes."
             )
 
         return (
-            f"The utility unlock I'd push next is {self._action_label(utility_action)}. "
+            f"{leading_clause} {self._action_label(utility_action)}. "
             f"It opens broader account value than a narrow stat gain right now."
         )
 
