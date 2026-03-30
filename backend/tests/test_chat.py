@@ -841,6 +841,75 @@ async def test_chat_can_compare_profit_vs_questing_route(client: AsyncClient) ->
 
 
 @pytest.mark.asyncio
+async def test_chat_can_summarize_weekly_focus(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "WeekFocus"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "WeekFocus"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Weekly Focus"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I focus on this week?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "this week" in content
+    assert "bone voyage" in content or "magic" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_fastest_move_toward_goal(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "FastGoal"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "FastGoal"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Fast Goal"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What would move me closest to my goal fastest?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "quest cape" in content
+    assert "fastest" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_say_what_to_ignore_for_now(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "IgnoreNow"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "IgnoreNow"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Ignore Now"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I ignore for now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "ignore" in content or "stop worrying" in content
+    assert "quest cape" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

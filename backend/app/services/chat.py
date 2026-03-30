@@ -801,6 +801,16 @@ class ChatService:
         if plan_order_answer is not None:
             return plan_order_answer
 
+        coaching_answer = await self._build_coaching_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+        )
+        if coaching_answer is not None:
+            return coaching_answer
+
         change_answer = self._build_snapshot_change_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -913,6 +923,103 @@ class ChatService:
             overall_rank = summary.get("overall_rank")
             if isinstance(overall_rank, int):
                 return f"Your overall rank is {overall_rank:,}."
+
+        return None
+
+    async def _build_coaching_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+    ) -> str | None:
+        normalized = message.lower()
+        asks_week_focus = any(
+            phrase in normalized
+            for phrase in (
+                "focus on this week",
+                "focus on this week?",
+                "what should i focus on this week",
+                "what do i focus on this week",
+                "what should be my focus this week",
+            )
+        )
+        asks_fastest_goal_move = any(
+            phrase in normalized
+            for phrase in (
+                "move me closest to my goal fastest",
+                "move me closest to my goal",
+                "get me to my goal fastest",
+                "fastest way toward my goal",
+            )
+        )
+        asks_ignore_now = any(
+            phrase in normalized
+            for phrase in (
+                "ignore for now",
+                "what should i ignore for now",
+                "what can i ignore for now",
+                "what should i stop worrying about",
+            )
+        )
+        if not asks_week_focus and not asks_fastest_goal_move and not asks_ignore_now:
+            return None
+
+        next_actions = await recommendation_service.get_next_actions(
+            db_session=db_session,
+            user=user,
+            payload=NextActionRequest(
+                account_rsn=account.rsn if account is not None else None,
+                goal_id=latest_goal.id if latest_goal is not None else None,
+                limit=4,
+            ),
+        )
+        actions = next_actions.actions
+        if not actions:
+            return None
+
+        top_action = actions[0]
+        second_action = actions[1] if len(actions) > 1 else None
+        third_action = actions[2] if len(actions) > 2 else None
+        goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+
+        if asks_week_focus:
+            parts = [
+                f"For this week, I'd center the account on {self._action_label(top_action)}."
+            ]
+            parts.append(top_action.summary)
+            if second_action is not None:
+                parts.append(
+                    f"Right behind that, keep {self._action_label(second_action)} in view as the follow-up lane."
+                )
+            return " ".join(parts)
+
+        if asks_fastest_goal_move:
+            return (
+                f"The fastest move toward {goal_title} right now is {self._action_label(top_action)}. "
+                f"{top_action.summary}"
+            )
+
+        if asks_ignore_now:
+            low_priority = next(
+                (
+                    action
+                    for action in reversed(actions)
+                    if action.priority == "low" or action.score <= max(55, top_action.score - 20)
+                ),
+                third_action or second_action,
+            )
+            if low_priority is None or self._actions_match(low_priority, top_action):
+                return (
+                    f"I wouldn't ignore the current top lane yet. {self._action_label(top_action).capitalize()} "
+                    f"is still the thing I'd protect first for {goal_title}."
+                )
+            return (
+                f"For now, I'd stop worrying about {self._action_label(low_priority)}. "
+                f"It matters less immediately than {self._action_label(top_action)} for {goal_title}."
+            )
 
         return None
 
