@@ -841,6 +841,17 @@ class ChatService:
         if confidence_answer is not None:
             return confidence_answer
 
+        why_now_answer = await self._build_why_now_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+            session_state=session_state,
+        )
+        if why_now_answer is not None:
+            return why_now_answer
+
         change_answer = self._build_snapshot_change_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -946,6 +957,16 @@ class ChatService:
         )
         if unlock_chain_answer is not None:
             return unlock_chain_answer
+
+        utility_unlock_answer = await self._build_utility_unlock_answer(
+            db_session=db_session,
+            user=user,
+            message=message,
+            account=account,
+            latest_goal=latest_goal,
+        )
+        if utility_unlock_answer is not None:
+            return utility_unlock_answer
 
         value_answer = self._build_value_judgment_answer(
             message=message,
@@ -1877,6 +1898,58 @@ class ChatService:
             progress=progress,
         )
 
+    async def _build_why_now_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "why now instead of later",
+                "why now and not later",
+                "why should i do this now",
+                "why this now instead of later",
+            )
+        ):
+            return None
+
+        next_actions = await recommendation_service.get_next_actions(
+            db_session=db_session,
+            user=user,
+            payload=NextActionRequest(
+                account_rsn=account.rsn if account is not None else None,
+                goal_id=latest_goal.id if latest_goal is not None else None,
+                limit=4,
+            ),
+        )
+        actions = next_actions.actions
+        if not actions:
+            return None
+        current_action = self._find_action_from_session_state(actions, session_state) or next_actions.top_action
+        if current_action is None:
+            return None
+        alternate_action = next(
+            (action for action in actions if not self._actions_match(action, current_action)),
+            None,
+        )
+        goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
+        if alternate_action is None:
+            return (
+                f"Because {self._action_label(current_action)} is the one lane that clearly moves {goal_title} right now. "
+                f"{current_action.summary}"
+            )
+        return (
+            f"Because {self._action_label(current_action)} creates more immediate value for {goal_title} than {self._action_label(alternate_action)}. "
+            f"{self._ordering_reason(current_action)}"
+        )
+
     def _build_account_focus_answer(
         self,
         *,
@@ -2510,6 +2583,62 @@ class ChatService:
         return (
             f"I'd prioritize {primary} before {secondary}. "
             f"{primary} is the strongest unlock lane currently tracked, and {secondary} can stay right behind it."
+        )
+
+    async def _build_utility_unlock_answer(
+        self,
+        *,
+        db_session: AsyncSession,
+        user: User,
+        message: str,
+        account: Account | None,
+        latest_goal: Goal | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "utility unlock",
+                "travel unlock",
+                "mobility unlock",
+                "quality of life unlock",
+            )
+        ):
+            return None
+
+        next_actions = await recommendation_service.get_next_actions(
+            db_session=db_session,
+            user=user,
+            payload=NextActionRequest(
+                account_rsn=account.rsn if account is not None else None,
+                goal_id=latest_goal.id if latest_goal is not None else None,
+                limit=4,
+            ),
+        )
+        actions = next_actions.actions
+        if not actions:
+            return None
+
+        utility_action = next(
+            (
+                action
+                for action in actions
+                if action.action_type in {"travel", "quest"}
+            ),
+            next_actions.top_action,
+        )
+        if utility_action is None:
+            return None
+
+        if utility_action.action_type == "travel":
+            return (
+                f"The utility unlock I'd push next is {self._action_label(utility_action)}. "
+                f"It reduces friction across future quest, skilling, and gear routes."
+            )
+
+        return (
+            f"The utility unlock I'd push next is {self._action_label(utility_action)}. "
+            f"It opens broader account value than a narrow stat gain right now."
         )
 
     def _build_value_judgment_answer(

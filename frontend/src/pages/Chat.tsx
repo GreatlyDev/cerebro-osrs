@@ -370,6 +370,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       description: "These prompts are best when you want Cerebro to narrow choices and explain what you give up.",
       prompts: [
         "How confident are you in that?",
+        "Why now instead of later?",
         tradeoffPrompt,
         "What unlock should I push next?",
         "Which unlock chain should I prioritize?",
@@ -386,6 +387,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         "Should I train Slayer or Fishing?",
         "What should I prep for Barrows?",
         "What low attention money maker should I do?",
+        "What utility unlock should I push next?",
       ],
     },
   ];

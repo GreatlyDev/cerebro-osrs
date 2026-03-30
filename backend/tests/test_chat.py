@@ -1482,6 +1482,56 @@ async def test_chat_can_answer_weekend_money_target_question(client: AsyncClient
 
 
 @pytest.mark.asyncio
+async def test_chat_can_explain_why_now_instead_of_later(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "WhyNow1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "WhyNow1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Why Now"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Why now instead of later?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "because" in content
+    assert "quest cape" in content or "current progression plan" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_utility_unlock_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "Utility1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "Utility1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Utility Unlock"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What utility unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "utility unlock" in content
+    assert "bone voyage" in content or "route" in content or "broader account value" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
