@@ -171,15 +171,27 @@ export function ChatView({
                 onClick={() => setSelectedChatSessionId(session.id)}
                 type="button"
               >
-                <strong className="block font-display text-base text-osrs-text">{session.title}</strong>
+                <div className="flex items-start justify-between gap-3">
+                  <strong className="block font-display text-base text-osrs-text">{session.title}</strong>
+                  <span
+                    className={`rounded-full border px-2.5 py-1 text-[0.62rem] uppercase tracking-[0.16em] ${getIntentBadgeClass(
+                      session.session_state,
+                    )}`}
+                  >
+                    {describeSessionIntent(session.session_state)}
+                  </span>
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-gold-soft">
                     {describeSessionFocus(session.session_state)}
                   </span>
                   <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-text-soft">
-                    {describeSessionIntent(session.session_state)}
+                    {describeSessionMode(session.session_state)}
                   </span>
                 </div>
+                <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
+                  {describeSessionPreview(session.session_state)}
+                </p>
                 {readStateString(session.session_state, "last_goal_title") ? (
                   <p className="mt-2 text-xs leading-5 text-osrs-text-soft">
                     Goal: {readStateString(session.session_state, "last_goal_title")}
@@ -359,4 +371,78 @@ function describeSessionIntent(state: Record<string, unknown>): string {
   };
 
   return labels[intent] ?? humanizeLabel(intent);
+}
+
+function describeSessionMode(state: Record<string, unknown>): string {
+  if (readStateString(state, "last_goal_title")) {
+    return "Goal-led";
+  }
+
+  if (readStateString(state, "last_account_rsn")) {
+    return "Account-led";
+  }
+
+  return "Open thread";
+}
+
+function describeSessionPreview(state: Record<string, unknown>): string {
+  const questId = readStateString(state, "last_quest_id");
+  if (questId) {
+    return `Currently circling ${humanizeLabel(questId)} and the requirements around it.`;
+  }
+
+  const bossId = readStateString(state, "last_boss_id");
+  if (bossId) {
+    return `This thread is evaluating readiness and next steps for ${humanizeLabel(bossId)}.`;
+  }
+
+  const moneyTarget = readStateString(state, "last_money_target");
+  if (moneyTarget) {
+    return `Cerebro is weighing ${humanizeLabel(moneyTarget)} against your broader progression.`;
+  }
+
+  const destination = readStateString(state, "last_destination");
+  if (destination) {
+    return `Travel planning is anchored around the best route to ${humanizeLabel(destination)}.`;
+  }
+
+  const skill = readStateString(state, "last_recommended_skill");
+  if (skill) {
+    return `The current lane is training ${humanizeLabel(skill)} in a way that fits your account.`;
+  }
+
+  const goal = readStateString(state, "last_goal_title");
+  if (goal) {
+    return `This session is staying aligned to ${goal} as the active destination.`;
+  }
+
+  const account = readStateString(state, "last_account_rsn");
+  if (account) {
+    return `This thread is grounded in ${account}'s synced account context and planning state.`;
+  }
+
+  return "A flexible planning thread without a strongly established lane yet.";
+}
+
+function getIntentBadgeClass(state: Record<string, unknown>): string {
+  const intent = readStateString(state, "last_session_intent");
+
+  switch (intent) {
+    case "profit":
+      return "border-emerald-600/50 bg-emerald-950/40 text-emerald-200";
+    case "questing":
+      return "border-amber-600/50 bg-amber-950/40 text-amber-100";
+    case "bossing":
+      return "border-rose-700/50 bg-rose-950/40 text-rose-100";
+    case "training":
+      return "border-sky-700/50 bg-sky-950/40 text-sky-100";
+    case "gearing":
+      return "border-violet-700/50 bg-violet-950/40 text-violet-100";
+    case "travel":
+      return "border-cyan-700/50 bg-cyan-950/40 text-cyan-100";
+    case "progression":
+      return "border-osrs-border-light/70 bg-[rgba(200,164,90,0.12)] text-osrs-gold-soft";
+    default:
+      return "border-osrs-border/80 bg-osrs-bg-soft/70 text-osrs-text-soft";
+  }
 }
