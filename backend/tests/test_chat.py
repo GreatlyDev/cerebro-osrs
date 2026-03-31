@@ -1471,6 +1471,51 @@ async def test_chat_can_answer_which_blocker_to_clear_first(client: AsyncClient)
 
 
 @pytest.mark.asyncio
+async def test_chat_can_answer_what_would_unblock_me_fastest(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "FastUnblock"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "FastUnblock"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Fast Unblock"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What would unblock me fastest?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "fastest unblock" in content or "fastest way to free up progress" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_what_small_win_to_lock_in_next(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "SmallWin1"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "SmallWin1"},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Small Win"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What small win should I lock in next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "small win" in content
+    assert "momentum" in content or "commitment" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_explain_quest_chain_blockers(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "QuestChain"})
     account_id = account_response.json()["id"]

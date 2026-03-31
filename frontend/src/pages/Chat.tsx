@@ -383,6 +383,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       prompts: [
         focusPrompt,
         "What should I do today if I want real progress?",
+        "What would unblock me fastest?",
         "What should I do this weekend?",
         "What should I have done by Sunday?",
         "What should I push if I want better money by this weekend?",
@@ -398,6 +399,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
         tradeoffPrompt,
         "What are my three biggest blockers right now?",
         "Which blocker should I clear first?",
+        "What small win should I lock in next?",
         "What unlock should I push next?",
         "Which unlock chain should I prioritize?",
         "Which money maker has the lowest unlock burden?",

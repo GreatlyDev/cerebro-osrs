@@ -1431,6 +1431,27 @@ class ChatService:
                 )
             )
         )
+        asks_fast_unblock = any(
+            phrase in normalized
+            for phrase in (
+                "what would unblock me fastest",
+                "what would unblock me the fastest",
+                "what would unblock this fastest",
+                "what's the fastest unblock",
+                "whats the fastest unblock",
+                "what is the fastest unblock",
+            )
+        )
+        asks_small_win = any(
+            phrase in normalized
+            for phrase in (
+                "what small win should i lock in next",
+                "what small win should i take next",
+                "what small win should i go for next",
+                "what's the next small win",
+                "whats the next small win",
+            )
+        )
         if (
             not asks_week_focus
             and not asks_fastest_goal_move
@@ -1448,6 +1469,8 @@ class ChatService:
             and not asks_xp_vs_unlocks
             and not asks_lower_effort_useful
             and not asks_weekend_target
+            and not asks_fast_unblock
+            and not asks_small_win
         ):
             return None
 
@@ -1549,6 +1572,39 @@ class ChatService:
             return (
                 f"If you want a meaningful weekend push, I'd still center it on {self._action_label(top_action)}. "
                 f"{top_action.summary}"
+            )
+
+        if asks_fast_unblock:
+            blocker_action = next((action for action in actions if action.blockers), top_action)
+            blockers = blocker_action.blockers or []
+            if blockers:
+                return (
+                    f"The fastest unblock is to clear {blockers[0]} first. "
+                    f"That opens the path for {self._action_label(blocker_action)} more cleanly than switching lanes right now."
+                )
+            return (
+                f"There isn't a separate unblock step I would chase first. "
+                f"The fastest way to free up progress is to just start {self._action_label(blocker_action)} now."
+            )
+
+        if asks_small_win:
+            small_win_action = next(
+                (
+                    action
+                    for action in actions
+                    if action.action_type in {"skill", "travel", "gear"}
+                ),
+                second_action or top_action,
+            )
+            blockers = small_win_action.blockers or []
+            if blockers:
+                return (
+                    f"The cleanest small win is to knock out {blockers[0]} and keep {self._action_label(small_win_action)} moving. "
+                    f"That gives you a real bit of momentum without needing a full deep push."
+                )
+            return (
+                f"The cleanest small win is {self._action_label(small_win_action)}. "
+                f"It gives you useful momentum without asking for the biggest commitment in the plan."
             )
 
         if asks_sequence_days:
