@@ -1298,6 +1298,7 @@ export function App() {
                 accountGoals={goals.filter((goal) => goal.target_account_rsn === selectedAccount?.rsn)}
                 busyAction={busyAction}
                 nextActions={nextActions}
+                onAskAdvisor={() => navigateToView("ask-cerebro")}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToGoals={() => navigateToView("goals")}
@@ -1394,6 +1395,7 @@ export function App() {
             {activeView === "recommendations" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <RecommendationsView
                 nextActions={nextActions}
+                onGoToAdvisor={() => navigateToView("ask-cerebro")}
                 onOpenNextAction={handleOpenNextAction}
                 onGoToGoals={() => navigateToView("goals")}
                 selectedAccountRsn={selectedAccountRsn}
@@ -1482,6 +1484,7 @@ export function App() {
               <ProfileView
                 accounts={accounts}
                 busyAction={busyAction}
+                onGoToAdvisor={() => navigateToView("ask-cerebro")}
                 onSaveProfile={handleSaveProfile}
                 profile={profile}
                 profileDraft={profileDraft}

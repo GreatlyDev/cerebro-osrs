@@ -18,6 +18,7 @@ type ProfileDraft = {
 type ProfileViewProps = {
   accounts: Account[];
   busyAction: string | null;
+  onGoToAdvisor: () => void;
   onSaveProfile: () => void;
   profile: Profile | null;
   profileDraft: ProfileDraft;
@@ -28,6 +29,7 @@ type ProfileViewProps = {
 export function ProfileView({
   accounts,
   busyAction,
+  onGoToAdvisor,
   onSaveProfile,
   profile,
   profileDraft,
@@ -37,13 +39,18 @@ export function ProfileView({
   return (
     <div className="space-y-6">
       <PageHero
-        action={<Button onClick={onSaveProfile}>{busyAction === "profile" ? "Saving..." : "Save profile"}</Button>}
+        action={
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={onGoToAdvisor} variant="secondary">Ask Cerebro</Button>
+            <Button onClick={onSaveProfile}>{busyAction === "profile" ? "Saving..." : "Save profile"}</Button>
+          </div>
+        }
         chips={[
           { label: "Primary RSN", value: profileDraft.primary_account_rsn || "Not set" },
           { label: "Goal focus", value: profileDraft.goals_focus },
           { label: "Play style", value: profileDraft.play_style },
         ]}
-        description="These settings shape recommendation tone, default routing, and which account the rest of the workspace should naturally orient around."
+        description="These settings shape recommendation tone, default routing, and which account the rest of the workspace should naturally orient around. They inform Cerebro's advice, but they should not trap the assistant inside one planning style."
         eyebrow="Profile"
         title="Set the planning baseline for your workspace"
       />

@@ -6,6 +6,7 @@ import type { NextAction, NextActionResponse } from "../types";
 type RecommendationsPageProps = {
   nextActions: NextActionResponse | null;
   selectedAccountRsn: string | null;
+  onGoToAdvisor: () => void;
   onGoToGoals: () => void;
   onOpenNextAction: (action: NextAction) => void;
 };
@@ -147,6 +148,7 @@ function SupportingData({ action }: { action: NextAction }) {
 export function RecommendationsView({
   nextActions,
   selectedAccountRsn,
+  onGoToAdvisor,
   onGoToGoals,
   onOpenNextAction,
 }: RecommendationsPageProps) {
@@ -155,13 +157,18 @@ export function RecommendationsView({
   return (
     <div className="space-y-6">
       <PageHero
-        action={<Button onClick={onGoToGoals} variant="secondary">Open Goal Planner</Button>}
+        action={
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={onGoToAdvisor} variant="secondary">Ask Cerebro</Button>
+            <Button onClick={onGoToGoals} variant="secondary">Open Goal Planner</Button>
+          </div>
+        }
         chips={[
           { label: "Active account", value: selectedAccountRsn ?? "None selected" },
-          { label: "Goal anchor", value: nextActions?.goal_title ?? "Not anchored" },
+          { label: "Goal anchor", value: nextActions?.goal_title ?? "Optional" },
           { label: "Ranked actions", value: String(actions.length) },
         ]}
-        description="This board is Cerebro's ranked action room: a premium readout of what matters next, why it matters, and which surface each recommendation wants to open."
+        description="This board is Cerebro's ranked action room: a premium readout of what matters next, why it matters, and which surface each recommendation wants to open. Goals can sharpen the stack, but the board should still help when you're simply exploring the account."
         eyebrow="Recommendation Board"
         title="See the next actions the planner is actually backing"
       />
@@ -169,7 +176,7 @@ export function RecommendationsView({
       {actions.length === 0 ? (
         <Panel>
           <p className="text-sm leading-7 text-osrs-text-soft">
-            Link an account and create a real goal to turn this board into a ranked progression room.
+            Link an account to turn this board into a ranked progression room. Add a goal when you want a stronger planning anchor, not because the workspace is unusable without one.
           </p>
         </Panel>
       ) : (

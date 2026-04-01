@@ -17,6 +17,7 @@ type AccountDetailProps = {
   accountGoals: Goal[];
   busyAction: string | null;
   nextActions: NextActionResponse | null;
+  onAskAdvisor: () => void;
   onBackToDashboard: () => void;
   onGeneratePlan: (goal: Goal) => void;
   onGoToGoals: () => void;
@@ -66,6 +67,7 @@ export function AccountDetailView(props: AccountDetailProps) {
     accountGoals,
     busyAction,
     nextActions,
+    onAskAdvisor,
     onBackToDashboard,
     onGeneratePlan,
     onGoToGoals,
@@ -100,6 +102,9 @@ export function AccountDetailView(props: AccountDetailProps) {
       <PageHero
         action={
           <div className="flex flex-wrap gap-3">
+            <Button onClick={onAskAdvisor} variant="secondary">
+              Ask Cerebro
+            </Button>
             <Button onClick={() => onSetPrimaryAccount(selectedAccount)} variant="secondary">
               {busyAction === `primary-${selectedAccount.id}` ? "Saving..." : "Set primary"}
             </Button>
@@ -116,7 +121,7 @@ export function AccountDetailView(props: AccountDetailProps) {
           { label: "Goals attached", value: String(accountGoals.length) },
           { label: "Latest sync", value: selectedSnapshot ? formatStamp(selectedSnapshot.created_at) : "Not synced" },
         ]}
-        description="A deeper planning room for one linked RSN, with sync history, manual progress state, and account-specific goals."
+        description="A deeper account room for one linked RSN, with sync history, manual progress state, assistant-ready telemetry, and account-specific goals when you want them."
         eyebrow="Account Workspace"
         title={selectedAccount.rsn}
       >
