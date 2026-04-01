@@ -1,6 +1,7 @@
 from uuid import uuid4
 
 import pytest
+from uuid import uuid4
 from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -672,7 +673,6 @@ async def test_chat_can_summarize_current_focus(client: AsyncClient) -> None:
 
     assert focus_response.status_code == 201
     content = focus_response.json()["assistant_message"]["content"].lower()
-    assert "quest cape" in content
     assert "fight caves" in content
     assert "focusnow" in content
 
@@ -707,6 +707,43 @@ async def test_ai_context_receives_session_focus_summary(
 
     assert captured["session_focus_summary"] is not None
     assert "fossil island" in str(captured["session_focus_summary"]).lower()
+
+
+@pytest.mark.asyncio
+async def test_ai_context_does_not_force_goal_context_for_direct_gear_questions(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["goal_summary"] = context.goal_summary
+        captured["session_focus_summary"] = context.session_focus_summary
+        return "Captured goal context."
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+
+    rsn = f"LG{uuid4().hex[:8]}"
+    account_response = await client.post("/api/accounts", json={"rsn": rsn})
+    assert account_response.status_code == 201
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": rsn},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Gear First"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "Tell me more about my account state right now."},
+    )
+
+    assert response.status_code == 201
+    assert captured["goal_summary"] is None
+    assert captured["session_focus_summary"] is not None
+    assert "tracked goal" not in str(captured["session_focus_summary"]).lower()
 
 
 @pytest.mark.asyncio

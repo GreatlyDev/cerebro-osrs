@@ -53,6 +53,7 @@ class AssistantService:
             "If context is missing, say what is missing and give the safest useful next step. "
             "If the player asks a direct account question about a stat, unlock, quest count, gear, or recent progress, "
             "answer that question directly first using the exact data provided. "
+            "Goal context is optional background, not the default center of every answer, so only lean on it when the player is clearly asking for planning or goal-directed advice. "
             "Prefer practical coaching over generic hype, and write like a capable in-game advisor."
         )
 
@@ -70,7 +71,6 @@ class AssistantService:
             f"Skill readout: {context.skills_summary or 'No detailed skill readout yet.'}",
             f"Progress context: {context.progress_summary or 'No tracked progress state yet.'}",
             f"Recent sync delta: {context.snapshot_delta_summary or 'No snapshot delta available yet.'}",
-            f"Goal context: {context.goal_summary or 'No active goal summary yet.'}",
             f"Session focus: {context.session_focus_summary or 'No strong session focus inferred yet.'}",
             f"Session intent: {context.session_intent_summary or 'No strong session intent inferred yet.'}",
             f"Recent chat history:\n{recent_history}",
@@ -82,6 +82,10 @@ class AssistantService:
                 "structured fallback when they are useful."
             ),
         ]
+
+        if context.goal_summary is not None:
+            sections.insert(8, f"Goal context: {context.goal_summary}")
+
         return "\n\n".join(sections)
 
 

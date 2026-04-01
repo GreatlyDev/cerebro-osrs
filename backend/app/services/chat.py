@@ -123,6 +123,11 @@ class ChatService:
         )
         session_focus = self._infer_session_focus_from_messages(recent_messages)
         session_intent = self._infer_session_intent_from_messages(recent_messages)
+        emphasize_goal = self._should_emphasize_goal_context(
+            message=resolved_message,
+            session_focus=session_focus,
+            session_intent=session_intent,
+        )
         profile = await user_context_service.get_profile(db_session=db_session, user=user)
         latest_goal = await user_context_service.get_latest_goal(db_session=db_session, user=user)
         latest_account = await user_context_service.get_latest_account(db_session=db_session, user=user)
@@ -190,11 +195,12 @@ class ChatService:
                 skills_summary=self._summarize_skills(latest_snapshot),
                 progress_summary=self._summarize_progress(progress),
                 snapshot_delta_summary=self._summarize_snapshot_delta(latest_snapshot, previous_snapshot),
-                goal_summary=self._summarize_goal(latest_goal),
+                goal_summary=self._summarize_goal(latest_goal) if emphasize_goal else None,
                 session_focus_summary=self._summarize_session_focus(
                     session_focus=session_focus,
                     latest_goal=latest_goal,
                     account=focus_account,
+                    include_goal=emphasize_goal,
                 ),
                 session_intent_summary=self._summarize_session_intent(session_intent=session_intent),
             )
@@ -2204,6 +2210,11 @@ class ChatService:
             session_focus=session_focus,
             latest_goal=latest_goal,
             account=account,
+            include_goal=self._should_emphasize_goal_context(
+                message=message,
+                session_focus=session_focus,
+                session_intent=session_intent,
+            ),
         )
         if "priority" in normalized and session_intent is not None:
             return f"{focus_summary} Right now, the session priority is {self._humanize_session_intent(session_intent)}."
@@ -3752,16 +3763,75 @@ class ChatService:
                 generic_intent = "progression"
         return generic_intent
 
+    def _should_emphasize_goal_context(
+        self,
+        *,
+        message: str,
+        session_focus: dict[str, str | None],
+        session_intent: str | None,
+    ) -> bool:
+        normalized = message.lower()
+        direct_account_markers = (
+            "what is my",
+            "what's my",
+            "whats my",
+            "what are my",
+            "how many",
+            "do i have",
+            "did my",
+            "what changed",
+            "how do i get to",
+            "am i ready",
+            "what money maker",
+            "what low attention money maker",
+            "which money maker",
+            "what gear",
+            "what unlock",
+            "what should i prep",
+            "what skill should i train",
+            "should i train",
+        )
+        goal_first_markers = (
+            "goal",
+            "goal cape",
+            "closest to",
+            "what should i do next",
+            "what should i work on next",
+            "next best action",
+            "what should be the priority",
+            "what would move me closest",
+            "what should i focus on",
+            "what should i have done",
+            "by sunday",
+            "this week",
+            "this weekend",
+            "deprioritize",
+            "ignore for now",
+            "small win",
+            "unblock",
+            "blocker",
+            "what comes after",
+            "before recipe for disaster",
+            "worth it",
+        )
+
+        if any(marker in normalized for marker in goal_first_markers):
+            return True
+        if any(marker in normalized for marker in direct_account_markers):
+            return False
+        if any(value is not None for value in session_focus.values()):
+            return session_intent in {"progression", "questing"}
+        return session_intent in {"progression", "questing"}
+
     def _summarize_session_focus(
         self,
         *,
         session_focus: dict[str, str | None],
         latest_goal: Goal | None,
         account: Account | None,
+        include_goal: bool,
     ) -> str:
         parts: list[str] = []
-        if latest_goal is not None:
-            parts.append(f"Your main tracked goal is {latest_goal.title}.")
         if account is not None:
             parts.append(f"The current account context is {account.rsn}.")
         if session_focus.get("quest_id") is not None:
@@ -3776,8 +3846,16 @@ class ChatService:
         elif session_focus.get("combat_style") is not None:
             parts.append(f"This conversation is currently centered on {session_focus['combat_style']} upgrades.")
 
+        if include_goal and latest_goal is not None:
+            parts.append(f"There is also a tracked goal in the background: {latest_goal.title}.")
+
         if not parts:
-            return "We do not have a strong session focus yet, so I'd anchor on your latest goal or best next action."
+            if include_goal and latest_goal is not None:
+                return (
+                    f"We do not have a strong task-specific focus yet. "
+                    f"The main tracked goal in the background is {latest_goal.title}."
+                )
+            return "We do not have a strong session focus yet, so I'd anchor on the current account state first."
         return " ".join(parts)
 
     def _summarize_session_intent(

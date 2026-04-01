@@ -807,6 +807,15 @@ export function App() {
     }
   }
 
+  function handleAskAdvisorFromRail() {
+    navigateToView("ask-cerebro");
+    void handleRunChatPrompt();
+  }
+
+  function handleOpenAdvisorFromRail() {
+    navigateToView("ask-cerebro");
+  }
+
   async function handleLoadSkill(skillKey: string, options?: { openPage?: boolean }) {
     setBusyAction(`skill-${skillKey}`);
     setError(null);
@@ -1231,8 +1240,14 @@ export function App() {
       }
       utilityRail={
         <DashboardUtilityRail
+          advisorPrompt={chatPrompt}
+          busyAction={busyAction}
+          chatSessionCount={chatSessions.length}
           goals={goals}
           nextActions={nextActions}
+          onAdvisorPromptChange={setChatPrompt}
+          onAskAdvisor={handleAskAdvisorFromRail}
+          onOpenAdvisor={handleOpenAdvisorFromRail}
           selectedAccount={selectedAccount}
           selectedProgress={selectedProgress}
           selectedSnapshot={selectedSnapshot}

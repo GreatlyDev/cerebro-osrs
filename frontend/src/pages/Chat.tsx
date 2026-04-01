@@ -38,7 +38,6 @@ export function ChatView({
   const sessionState = normalizeSessionState(selectedSession?.session_state);
   const focusLabel = describeSessionFocus(sessionState);
   const intentLabel = describeSessionIntent(sessionState);
-  const goalLabel = readStateString(sessionState, "last_goal_title") ?? "No active goal in thread yet";
   const threadAccountLabel =
     readStateString(sessionState, "last_account_rsn") ?? selectedAccountRsn ?? "No account anchored yet";
   const threadNextMove = describeThreadNextMove(sessionState);
@@ -58,26 +57,26 @@ export function ChatView({
     <div className="space-y-6">
       <PageHero
         chips={[
-          { label: "Active account", value: selectedAccountRsn ?? "None selected" },
+          { label: "Active account", value: threadAccountLabel },
           { label: "Open sessions", value: String(chatSessions.length) },
-          { label: "Thread focus", value: focusLabel },
+          { label: "Advisor mode", value: intentLabel },
         ]}
-        description="Use the advisor chamber when you want Cerebro to translate synced account context, planner momentum, and ranked actions into grounded OSRS guidance."
+        description="Ask about your stats, routes, gear, boss prep, profit options, unlocks, or longer-term planning. Goals help when they are relevant, but they are not the only lane Cerebro can reason through."
         eyebrow="Advisor Chamber"
         title="Ask Cerebro from the center of the workspace"
       >
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
-            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current focus</p>
+            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Account context</p>
+            <p className="font-display text-lg text-osrs-text">{threadAccountLabel}</p>
+          </div>
+          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
+            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Thread focus</p>
             <p className="font-display text-lg text-osrs-text">{focusLabel}</p>
           </div>
           <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
-            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current priority</p>
+            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Conversation mode</p>
             <p className="font-display text-lg text-osrs-text">{intentLabel}</p>
-          </div>
-          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
-            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Goal in thread</p>
-            <p className="font-display text-lg text-osrs-text">{goalLabel}</p>
           </div>
         </div>
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
@@ -90,7 +89,7 @@ export function ChatView({
                 onRunChatPrompt();
               }
             }}
-            placeholder="Ask Cerebro anything about your account"
+            placeholder="Ask about your account, task, route, boss prep, profit, or next move"
             value={chatPrompt}
           />
           <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>

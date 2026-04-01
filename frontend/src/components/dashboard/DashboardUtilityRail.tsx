@@ -1,4 +1,5 @@
 import type { Account, AccountProgress, AccountSnapshot, Goal, NextActionResponse } from "../../types";
+import { Button } from "../ui/Button";
 import { Panel } from "../ui/Panel";
 import { SectionHeader } from "../ui/SectionHeader";
 import { GoalProgressPanel } from "./GoalProgressPanel";
@@ -14,6 +15,12 @@ type DashboardUtilityRailProps = {
   goals: Goal[];
   nextActions: NextActionResponse | null;
   selectedSnapshot: AccountSnapshot | null;
+  advisorPrompt: string;
+  busyAction: string | null;
+  chatSessionCount: number;
+  onAdvisorPromptChange: (value: string) => void;
+  onAskAdvisor: () => void;
+  onOpenAdvisor: () => void;
 };
 
 function estimateGoalProgress(goal: Goal) {
@@ -36,6 +43,12 @@ export function DashboardUtilityRail({
   goals,
   nextActions,
   selectedSnapshot,
+  advisorPrompt,
+  busyAction,
+  chatSessionCount,
+  onAdvisorPromptChange,
+  onAskAdvisor,
+  onOpenAdvisor,
 }: DashboardUtilityRailProps) {
   const inventorySlots = [
     "Head",
@@ -93,6 +106,50 @@ export function DashboardUtilityRail({
 
   return (
     <>
+      <Panel tone="soft" className="space-y-4">
+        <SectionHeader
+          eyebrow="Cerebro Assistant"
+          title="Keep the advisor within reach"
+          subtitle="Ask about stats, routes, gear, money, bosses, tasks, or goals from anywhere in the workspace."
+        />
+        <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(44,34,26,0.74),rgba(20,18,16,0.96))] px-4 py-4 shadow-insetPanel">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Live advisor</p>
+              <p className="mt-1 text-sm text-osrs-text-soft">
+                {selectedAccount
+                  ? `Grounded on ${selectedAccount.rsn} and ready for general account questions.`
+                  : "Select an account to ground replies, or ask a broader OSRS planning question."}
+              </p>
+            </div>
+            <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+              {chatSessionCount} thread{chatSessionCount === 1 ? "" : "s"}
+            </span>
+          </div>
+          <div className="mt-4 space-y-3">
+            <input
+              className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              onChange={(event) => onAdvisorPromptChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  onAskAdvisor();
+                }
+              }}
+              placeholder="Ask Cerebro about your account, task, route, or next move"
+              value={advisorPrompt}
+            />
+            <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+              <Button onClick={onAskAdvisor}>
+                {busyAction === "chat" ? "Consulting..." : "Ask Cerebro"}
+              </Button>
+              <Button onClick={onOpenAdvisor} variant="secondary">
+                Open full advisor
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Panel>
       <Panel className="space-y-4">
         <SectionHeader
           eyebrow="Command Rail"
