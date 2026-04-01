@@ -7,6 +7,7 @@ type AdvisorConsoleProps = {
   chatHistory: ChatExchange[];
   chatPrompt: string;
   chatReply: string;
+  onOpenAdvisor: () => void;
   onPromptChange: (value: string) => void;
   onSubmit: () => void;
   quickPrompts: string[];
@@ -34,6 +35,7 @@ export function AdvisorConsole({
   chatHistory,
   chatPrompt,
   chatReply,
+  onOpenAdvisor,
   onPromptChange,
   onSubmit,
   quickPrompts,
@@ -60,13 +62,18 @@ export function AdvisorConsole({
     <Panel className="space-y-5" tone="hero">
       <SectionHeader
         action={
-          <div className="inline-flex items-center gap-2 rounded-full border border-osrs-success/35 bg-osrs-success/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text">
-            <span className="h-2 w-2 rounded-full bg-osrs-success animate-drift" />
-            Advisor online
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-osrs-success/35 bg-osrs-success/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text">
+              <span className="h-2 w-2 rounded-full bg-osrs-success animate-drift" />
+              Advisor online
+            </div>
+            <Button onClick={onOpenAdvisor} variant="secondary">
+              Open full advisor
+            </Button>
           </div>
         }
         eyebrow="Advisor Console"
-        subtitle="A premium chat surface over the live planner, with enough OSRS flavor to feel in-world without drifting into parody."
+        subtitle="A premium chat surface over live account telemetry. Cerebro should feel useful for direct questions, practical OSRS decisions, and goal-guided planning when you want it."
         title="Consult Cerebro"
       />
 
@@ -120,15 +127,15 @@ export function AdvisorConsole({
           <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(60,46,30,0.62),rgba(24,19,15,0.96))] p-4 shadow-insetPanel">
             <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">What this is best at</p>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-osrs-text-soft">
-              <li>- translating ranked actions into readable next steps</li>
-              <li>- calling out blockers before you waste a session</li>
-              <li>- turning sync changes into practical advice</li>
+              <li>- answering direct account and stat questions without needing a goal first</li>
+              <li>- comparing routes, upgrades, profit lanes, and boss prep in practical terms</li>
+              <li>- turning sync changes and blockers into useful next moves</li>
             </ul>
           </div>
           <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/55 p-4 shadow-insetPanel">
             <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current mode</p>
             <p className="mt-3 text-sm leading-6 text-osrs-text-soft">
-              Planner-grounded responses only. The advisor is reading real account and recommendation context, not free-floating mock chat.
+              Live account and planner context. Cerebro can use goal state when it helps, but it should still answer broader OSRS questions even when the thread is not goal-driven.
             </p>
           </div>
         </div>

@@ -1272,6 +1272,7 @@ export function App() {
               newAccountRsn={newAccountRsn}
               nextActions={nextActions}
               onChangeNewAccountRsn={setNewAccountRsn}
+              onGoToAdvisor={() => navigateToView("ask-cerebro")}
               onGoToGear={() => navigateToView("gear")}
               onGoToGoals={() => navigateToView("goals")}
               onGoToProfile={() => navigateToView("profile")}

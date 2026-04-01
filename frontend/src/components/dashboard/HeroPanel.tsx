@@ -29,20 +29,20 @@ export function HeroPanel({
           </div>
           <div className="space-y-3">
             <h1 className="max-w-3xl font-display text-4xl font-semibold leading-tight text-osrs-text md:text-5xl">
-              Welcome back, {displayName}. Let&apos;s turn today&apos;s account state into a sharper plan.
+              Welcome back, {displayName}. Let&apos;s turn today&apos;s account state into a sharper next move.
             </h1>
             <p className="max-w-2xl text-sm leading-7 text-osrs-text-soft md:text-base">
-              Cerebro blends live OSRS account context, ranked recommendations, and structured planner logic into a premium command center inspired by the Wise Old Man&apos;s study.
+              Cerebro blends live OSRS account telemetry, ranked recommendations, and an always-available assistant into a premium command center inspired by the Wise Old Man&apos;s study.
             </p>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/50 px-4 py-3 shadow-insetPanel">
-              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Current focus</p>
+              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Live account</p>
               <p className="mt-2 font-display text-lg text-osrs-text">{selectedAccountRsn ?? "Workspace-wide"}</p>
             </div>
             <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/50 px-4 py-3 shadow-insetPanel">
-              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Workspace mode</p>
-              <p className="mt-2 font-display text-lg text-osrs-text">Planning live</p>
+              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Assistant mode</p>
+              <p className="mt-2 font-display text-lg text-osrs-text">Always available</p>
             </div>
             <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/50 px-4 py-3 shadow-insetPanel">
               <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Data state</p>
