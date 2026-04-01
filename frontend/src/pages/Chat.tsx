@@ -35,7 +35,7 @@ export function ChatView({
   const conversationEndRef = useRef<HTMLDivElement | null>(null);
   const selectedSession =
     chatSessions.find((session) => session.id === selectedChatSessionId) ?? chatSessions[0] ?? null;
-  const sessionState = selectedSession?.session_state ?? {};
+  const sessionState = normalizeSessionState(selectedSession?.session_state);
   const focusLabel = describeSessionFocus(sessionState);
   const intentLabel = describeSessionIntent(sessionState);
   const goalLabel = readStateString(sessionState, "last_goal_title") ?? "No active goal in thread yet";
@@ -163,48 +163,51 @@ export function ChatView({
             {chatSessions.length === 0 ? (
               <p className="text-sm leading-6 text-osrs-text-soft">No sessions yet.</p>
             ) : null}
-            {chatSessions.map((session) => (
-              <button
-                className={`cerebro-hover rounded-[14px] border px-4 py-3 text-left ${
-                  selectedChatSessionId === session.id
-                    ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(200,164,90,0.22),rgba(58,47,38,0.12))] shadow-glowGold"
-                    : "border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))]"
-                }`}
-                key={session.id}
-                onClick={() => setSelectedChatSessionId(session.id)}
-                type="button"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <strong className="block font-display text-base text-osrs-text">{session.title}</strong>
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-[0.62rem] uppercase tracking-[0.16em] ${getIntentBadgeClass(
-                      session.session_state,
-                    )}`}
-                  >
-                    {describeSessionIntent(session.session_state)}
-                  </span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-gold-soft">
-                    {describeSessionFocus(session.session_state)}
-                  </span>
-                  <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-text-soft">
-                    {describeSessionMode(session.session_state)}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
-                  {describeSessionPreview(session.session_state)}
-                </p>
-                {readStateString(session.session_state, "last_goal_title") ? (
-                  <p className="mt-2 text-xs leading-5 text-osrs-text-soft">
-                    Goal: {readStateString(session.session_state, "last_goal_title")}
+            {chatSessions.map((session) => {
+              const sessionState = normalizeSessionState(session.session_state);
+              return (
+                <button
+                  className={`cerebro-hover rounded-[14px] border px-4 py-3 text-left ${
+                    selectedChatSessionId === session.id
+                      ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(200,164,90,0.22),rgba(58,47,38,0.12))] shadow-glowGold"
+                      : "border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))]"
+                  }`}
+                  key={session.id}
+                  onClick={() => setSelectedChatSessionId(session.id)}
+                  type="button"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <strong className="block font-display text-base text-osrs-text">{session.title}</strong>
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-[0.62rem] uppercase tracking-[0.16em] ${getIntentBadgeClass(
+                        sessionState,
+                      )}`}
+                    >
+                      {describeSessionIntent(sessionState)}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-gold-soft">
+                      {describeSessionFocus(sessionState)}
+                    </span>
+                    <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-text-soft">
+                      {describeSessionMode(sessionState)}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
+                    {describeSessionPreview(sessionState)}
                   </p>
-                ) : null}
-                <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-osrs-text-soft">
-                  Updated {new Date(session.updated_at).toLocaleString()}
-                </span>
-              </button>
-            ))}
+                  {readStateString(sessionState, "last_goal_title") ? (
+                    <p className="mt-2 text-xs leading-5 text-osrs-text-soft">
+                      Goal: {readStateString(sessionState, "last_goal_title")}
+                    </p>
+                  ) : null}
+                  <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-osrs-text-soft">
+                    Updated {new Date(session.updated_at).toLocaleString()}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </Panel>
       </div>
@@ -277,6 +280,13 @@ export function ChatView({
       </div>
     </div>
   );
+}
+
+function normalizeSessionState(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return value as Record<string, unknown>;
 }
 
 function buildQuickPrompts(

@@ -124,9 +124,7 @@ export function GoalDetailView(props: GoalDetailProps) {
                     {Object.entries(plan.recommendations).map(([key, value]) => (
                       <div className="rounded-[14px] border border-osrs-border/60 bg-osrs-panel-2/60 px-4 py-3" key={key}>
                         <strong className="block text-sm text-osrs-text">{key.replaceAll("_", " ")}</strong>
-                        <p className="mt-2 whitespace-pre-wrap text-sm text-osrs-text-soft">
-                          {typeof value === "object" ? JSON.stringify(value, null, 2) : String(value).replaceAll("_", " ")}
-                        </p>
+                        <div className="mt-2">{renderRecommendationValue(value)}</div>
                         {key === "recommended_quest" && typeof value === "string" ? <Button className="mt-3" onClick={() => onOpenRecommendedQuest(value)} variant="secondary">Open quest page</Button> : null}
                         {key === "target_account_rsn" && typeof value === "string" ? <Button className="mt-3" onClick={() => onOpenTargetAccount(value)} variant="secondary">Open account</Button> : null}
                       </div>
@@ -162,4 +160,45 @@ export function GoalDetailView(props: GoalDetailProps) {
       </div>
     </div>
   );
+}
+
+function renderRecommendationValue(value: unknown) {
+  if (Array.isArray(value)) {
+    if (value.length === 0) {
+      return <p className="text-sm text-osrs-text-soft">None tracked.</p>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {value.map((item, index) => (
+          <span
+            className="rounded-full border border-osrs-border/70 bg-osrs-panel/60 px-3 py-1 text-xs text-osrs-text-soft"
+            key={`${String(item)}-${index}`}
+          >
+            {String(item).replaceAll("_", " ")}
+          </span>
+        ))}
+      </div>
+    );
+  }
+
+  if (value && typeof value === "object") {
+    return (
+      <div className="space-y-2">
+        {Object.entries(value).map(([nestedKey, nestedValue]) => (
+          <div
+            className="rounded-[12px] border border-osrs-border/50 bg-osrs-panel/45 px-3 py-2"
+            key={nestedKey}
+          >
+            <p className="text-[0.68rem] uppercase tracking-[0.16em] text-osrs-gold">
+              {nestedKey.replaceAll("_", " ")}
+            </p>
+            <div className="mt-1">{renderRecommendationValue(nestedValue)}</div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return <p className="text-sm text-osrs-text-soft">{String(value).replaceAll("_", " ")}</p>;
 }

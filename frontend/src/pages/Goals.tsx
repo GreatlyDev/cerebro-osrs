@@ -34,14 +34,45 @@ type GoalsViewProps = {
   setNewGoalType: Dispatch<SetStateAction<string>>;
 };
 
-function formatRecommendationValue(value: unknown) {
+function renderRecommendationValue(value: unknown) {
   if (Array.isArray(value)) {
-    return value.map((entry) => String(entry).replaceAll("_", " ")).join(", ");
+    if (value.length === 0) {
+      return <p className="text-sm text-osrs-text-soft">None tracked.</p>;
+    }
+
+    return (
+      <div className="flex flex-wrap gap-2">
+        {value.map((entry, index) => (
+          <span
+            className="rounded-full border border-osrs-border/70 bg-osrs-panel/60 px-3 py-1 text-xs text-osrs-text-soft"
+            key={`${String(entry)}-${index}`}
+          >
+            {String(entry).replaceAll("_", " ")}
+          </span>
+        ))}
+      </div>
+    );
   }
+
   if (value && typeof value === "object") {
-    return JSON.stringify(value, null, 2);
+    return (
+      <div className="space-y-2">
+        {Object.entries(value).map(([nestedKey, nestedValue]) => (
+          <div
+            className="rounded-[12px] border border-osrs-border/50 bg-osrs-panel/45 px-3 py-2"
+            key={nestedKey}
+          >
+            <p className="text-[0.68rem] uppercase tracking-[0.16em] text-osrs-gold">
+              {nestedKey.replaceAll("_", " ")}
+            </p>
+            <div className="mt-1">{renderRecommendationValue(nestedValue)}</div>
+          </div>
+        ))}
+      </div>
+    );
   }
-  return String(value).replaceAll("_", " ");
+
+  return <p className="text-sm text-osrs-text-soft">{String(value).replaceAll("_", " ")}</p>;
 }
 
 export function GoalsView({
@@ -238,9 +269,7 @@ export function GoalsView({
                           <strong className="block text-sm text-osrs-text">
                             {key.replaceAll("_", " ")}
                           </strong>
-                          <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-osrs-text-soft">
-                            {formatRecommendationValue(value)}
-                          </p>
+                          <div className="mt-2">{renderRecommendationValue(value)}</div>
                         </div>
                       ))}
                     </div>
