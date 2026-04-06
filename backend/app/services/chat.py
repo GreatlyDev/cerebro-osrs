@@ -4308,6 +4308,71 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what would keep this account from feeling stale",
+                "how do i keep this account from feeling stale",
+                "what would stop this account from feeling stale",
+                "what keeps this account interesting right now",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would keep this account from feeling stale is mixing your strongest lane with live unlock work like {unlock_label}. "
+                    "That gives each session a visible reason to matter, instead of just repeating the same isolated progress loop."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The best way to keep this account from feeling stale is to keep rotating value between your stronger {strongest_label.lower()} lane and cleanup in {weakest_label.lower()}. "
+                    "That kind of back-and-forth makes the account feel alive instead of overfarmed in one direction."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What keeps this account interesting right now is finding fresh ways to cash in your {strongest_label.lower()} lane. "
+                    "The point is not more repetition in the same spot, but turning that strength into new account value."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what would make this account easier to return to after a break",
+                "what would make the account easier to return to after a break",
+                "how do i make this account easier to come back to after a break",
+                "what setup would make this account easier to pick back up later",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would make this account easier to return to after a break is clearing support friction like {unlock_label} before you stop. "
+                    "That leaves the account in a cleaner, more open state instead of one where the next login starts with confusion and setup work."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"What would make this account easier to return to after a break is tidying up some of the drag in {weakest_label.lower()} first. "
+                    "That way the next time you come back, the account should feel usable instead of immediately awkward."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What would make this account easier to return to after a break is ending on a clean payoff in your {strongest_label.lower()} lane, not in the middle of scattered unfinished work. "
+                    "That gives your future self a clearer on-ramp."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
