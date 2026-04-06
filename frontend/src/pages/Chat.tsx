@@ -354,6 +354,8 @@ function buildQuickPrompts(
     prompts.push("What gives the best mix of utility and momentum right now?");
     prompts.push("What lane is easiest to convert into real progress this week?");
     prompts.push("What lane loses value if I ignore it?");
+    prompts.push("What part of my account is under leveraged right now?");
+    prompts.push("What should I revisit after a few days?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -410,6 +412,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What gives the best mix of utility and momentum right now?",
           "What lane is easiest to convert into real progress this week?",
           "What lane loses value if I ignore it?",
+          "What part of my account is under leveraged right now?",
+          "What should I revisit after a few days?",
           "What should I ask you about this account first?",
         ],
       },

@@ -3723,6 +3723,61 @@ class ChatService:
 
             return None
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what part of my account is under leveraged",
+                "what part of my account is underleveraged",
+                "what am i under leveraging",
+                "what strength am i not using well",
+                "what part of the account am i not using well",
+            )
+        ):
+            if strongest_category is None and progress is None:
+                return None
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                parts = [
+                    f"Your most under-leveraged lane is probably {strongest_label}."
+                ]
+                if progress is not None and progress.active_unlocks:
+                    parts.append(
+                        f"You already have strength there, but it is not compounding as well as it could until you connect it to unlock work like {progress.active_unlocks[0]}."
+                    )
+                elif top_skill_name and isinstance(top_skill_level, int):
+                    parts.append(
+                        f"You can see that in stats like {top_skill_name} at level {top_skill_level}, but the account is not fully cashing that strength in yet."
+                    )
+                return " ".join(parts)
+
+            return f"The account is not fully leveraging the strength around {top_skill_name} yet."
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what should i revisit after a few days",
+                "what should i revisit in a few days",
+                "what should i come back to after a few days",
+                "what should i recheck after a few days",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"I'd revisit {unlock_label} after a few days. "
+                    "That kind of unlock lane often becomes much more actionable once you've cleared one or two smaller blockers around it."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"I'd revisit {weakest_label} after a few days. "
+                    "It is the kind of lane that can move from weak to usable pretty quickly once the rest of the account stabilizes around it."
+                )
+
+            return None
+
         return None
 
     def _build_progress_answer(
