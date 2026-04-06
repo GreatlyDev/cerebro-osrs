@@ -3478,6 +3478,37 @@ class ChatService:
 
             return f"The cleanest neglected area to shore up next is {lowest_skill_name}."
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what should i fix first on this account",
+                "what should i fix first",
+                "what should i clean up first",
+                "where would one level go furthest",
+                "where would one push go furthest",
+                "what area would pay off most",
+                "what would pay off most on this account",
+            )
+        ):
+            if weakest_category is None and lowest_skill_name is None:
+                return None
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                strongest_label = strongest_category[0].title() if strongest_category is not None else None
+                parts = [
+                    f"I'd fix {weakest_label} first on this account."
+                ]
+                if strongest_label and strongest_category != weakest_category:
+                    parts.append(
+                        f"That is the widest gap versus your stronger {strongest_label} lane, so it should pay off fastest."
+                    )
+                if lowest_skill_name is not None:
+                    parts.append(f"If you want one clean starting point, begin with {lowest_skill_name}.")
+                return " ".join(parts)
+
+            return f"If you want the cleanest payoff first, start by fixing {lowest_skill_name}."
+
         return None
 
     def _build_progress_answer(

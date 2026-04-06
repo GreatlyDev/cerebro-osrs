@@ -11,6 +11,64 @@ from app.services.assistant import assistant_service
 from app.services.accounts import account_service
 
 
+def _sample_account_readout_summary(rsn: str) -> dict[str, object]:
+    return {
+        "rsn": rsn,
+        "overall_rank": 123,
+        "overall_level": 1800,
+        "overall_experience": 125_000_000,
+        "combat_level": 103,
+        "skills": {
+            "overall": {"rank": 123, "level": 1800, "experience": 125_000_000},
+            "attack": {"rank": 3200, "level": 82, "experience": 2_100_000},
+            "strength": {"rank": 3201, "level": 85, "experience": 3_200_000},
+            "defence": {"rank": 3202, "level": 80, "experience": 1_950_000},
+            "hitpoints": {"rank": 3203, "level": 86, "experience": 3_500_000},
+            "ranged": {"rank": 3204, "level": 78, "experience": 1_700_000},
+            "prayer": {"rank": 3205, "level": 70, "experience": 800_000},
+            "magic": {"rank": 3206, "level": 82, "experience": 2_250_000},
+            "mining": {"rank": 4200, "level": 61, "experience": 310_000},
+            "fishing": {"rank": 4201, "level": 67, "experience": 520_000},
+            "woodcutting": {"rank": 4202, "level": 74, "experience": 1_050_000},
+            "hunter": {"rank": 4203, "level": 55, "experience": 190_000},
+            "farming": {"rank": 4204, "level": 72, "experience": 930_000},
+            "cooking": {"rank": 4300, "level": 69, "experience": 700_000},
+            "crafting": {"rank": 4301, "level": 62, "experience": 340_000},
+            "fletching": {"rank": 4302, "level": 58, "experience": 240_000},
+            "firemaking": {"rank": 4303, "level": 66, "experience": 450_000},
+            "herblore": {"rank": 4304, "level": 52, "experience": 150_000},
+            "runecraft": {"rank": 4305, "level": 48, "experience": 115_000},
+            "smithing": {"rank": 4306, "level": 54, "experience": 180_000},
+            "construction": {"rank": 4307, "level": 50, "experience": 140_000},
+            "agility": {"rank": 4400, "level": 47, "experience": 110_000},
+            "thieving": {"rank": 4401, "level": 57, "experience": 220_000},
+            "slayer": {"rank": 4402, "level": 60, "experience": 290_000},
+        },
+        "top_skills": [
+            {"skill": "hitpoints", "level": 86, "experience": 3_500_000},
+            {"skill": "strength", "level": 85, "experience": 3_200_000},
+            {"skill": "attack", "level": 82, "experience": 2_100_000},
+            {"skill": "magic", "level": 82, "experience": 2_250_000},
+            {"skill": "defence", "level": 80, "experience": 1_950_000},
+        ],
+        "skill_categories": {
+            "combat": {"average_level": 80.43, "highest_level": 86, "lowest_level": 70},
+            "gathering": {"average_level": 65.8, "highest_level": 74, "lowest_level": 55},
+            "artisan": {"average_level": 57.29, "highest_level": 69, "lowest_level": 48},
+            "utility": {"average_level": 54.67, "highest_level": 60, "lowest_level": 47},
+        },
+        "progression_profile": {
+            "highest_skill": "hitpoints",
+            "lowest_tracked_skill": "agility",
+            "total_skills_at_99": 0,
+            "total_skills_at_90_plus": 0,
+        },
+        "activity_overview": {"tracked_activity_count": 0, "active_activity_count": 0},
+        "activity_metrics": [],
+        "activity_row_count": 0,
+    }
+
+
 @pytest.mark.asyncio
 async def test_create_and_list_chat_sessions(client: AsyncClient) -> None:
     create_response = await client.post("/api/chat/sessions", json={"title": "General Help"})
@@ -257,61 +315,7 @@ async def test_chat_can_identify_neglected_account_area(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
-        return {
-            "rsn": rsn,
-            "overall_rank": 123,
-            "overall_level": 1800,
-            "overall_experience": 125_000_000,
-            "combat_level": 103,
-            "skills": {
-                "overall": {"rank": 123, "level": 1800, "experience": 125_000_000},
-                "attack": {"rank": 3200, "level": 82, "experience": 2_100_000},
-                "strength": {"rank": 3201, "level": 85, "experience": 3_200_000},
-                "defence": {"rank": 3202, "level": 80, "experience": 1_950_000},
-                "hitpoints": {"rank": 3203, "level": 86, "experience": 3_500_000},
-                "ranged": {"rank": 3204, "level": 78, "experience": 1_700_000},
-                "prayer": {"rank": 3205, "level": 70, "experience": 800_000},
-                "magic": {"rank": 3206, "level": 82, "experience": 2_250_000},
-                "mining": {"rank": 4200, "level": 61, "experience": 310_000},
-                "fishing": {"rank": 4201, "level": 67, "experience": 520_000},
-                "woodcutting": {"rank": 4202, "level": 74, "experience": 1_050_000},
-                "hunter": {"rank": 4203, "level": 55, "experience": 190_000},
-                "farming": {"rank": 4204, "level": 72, "experience": 930_000},
-                "cooking": {"rank": 4300, "level": 69, "experience": 700_000},
-                "crafting": {"rank": 4301, "level": 62, "experience": 340_000},
-                "fletching": {"rank": 4302, "level": 58, "experience": 240_000},
-                "firemaking": {"rank": 4303, "level": 66, "experience": 450_000},
-                "herblore": {"rank": 4304, "level": 52, "experience": 150_000},
-                "runecraft": {"rank": 4305, "level": 48, "experience": 115_000},
-                "smithing": {"rank": 4306, "level": 54, "experience": 180_000},
-                "construction": {"rank": 4307, "level": 50, "experience": 140_000},
-                "agility": {"rank": 4400, "level": 47, "experience": 110_000},
-                "thieving": {"rank": 4401, "level": 57, "experience": 220_000},
-                "slayer": {"rank": 4402, "level": 60, "experience": 290_000},
-            },
-            "top_skills": [
-                {"skill": "hitpoints", "level": 86, "experience": 3_500_000},
-                {"skill": "strength", "level": 85, "experience": 3_200_000},
-                {"skill": "attack", "level": 82, "experience": 2_100_000},
-                {"skill": "magic", "level": 82, "experience": 2_250_000},
-                {"skill": "defence", "level": 80, "experience": 1_950_000},
-            ],
-            "skill_categories": {
-                "combat": {"average_level": 80.43, "highest_level": 86, "lowest_level": 70},
-                "gathering": {"average_level": 65.8, "highest_level": 74, "lowest_level": 55},
-                "artisan": {"average_level": 57.29, "highest_level": 69, "lowest_level": 48},
-                "utility": {"average_level": 54.67, "highest_level": 60, "lowest_level": 47},
-            },
-            "progression_profile": {
-                "highest_skill": "hitpoints",
-                "lowest_tracked_skill": "agility",
-                "total_skills_at_99": 0,
-                "total_skills_at_90_plus": 0,
-            },
-            "activity_overview": {"tracked_activity_count": 0, "active_activity_count": 0},
-            "activity_metrics": [],
-            "activity_row_count": 0,
-        }
+        return _sample_account_readout_summary(rsn)
 
     monkeypatch.setattr(
         account_service.ingestion_service,
@@ -333,6 +337,36 @@ async def test_chat_can_identify_neglected_account_area(
     content = response.json()["assistant_message"]["content"].lower()
     assert "round out" in content or "neglected" in content or "shore up" in content
     assert "combat" in content or "gathering" in content or "artisan" in content or "utility" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_what_to_fix_first_on_account(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"FF{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Fix First"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What should I fix first on this account?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "fix" in content or "pay off" in content
+    assert "utility" in content or "agility" in content
 
 
 @pytest.mark.asyncio
