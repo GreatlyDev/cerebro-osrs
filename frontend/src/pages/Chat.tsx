@@ -371,6 +371,8 @@ function buildQuickPrompts(
     prompts.push("What kind of session fits this account best tonight?");
     prompts.push("What kind of win would make me want to log in again tomorrow?");
     prompts.push("What would make tomorrow's session better?");
+    prompts.push("What kind of session would build confidence on this account right now?");
+    prompts.push("What habit would make this account easier to maintain over time?");
     prompts.push("What current strength is being wasted by a missing unlock?");
     prompts.push("What boring task would create disproportionate future value?");
     prompts.push("What lane is closest to compounding if I bridge one missing piece?");
@@ -447,6 +449,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What kind of session fits this account best tonight?",
           "What kind of win would make me want to log in again tomorrow?",
           "What would make tomorrow's session better?",
+          "What kind of session would build confidence on this account right now?",
+          "What habit would make this account easier to maintain over time?",
           "What current strength is being wasted by a missing unlock?",
           "What boring task would create disproportionate future value?",
           "What lane is closest to compounding if I bridge one missing piece?",

@@ -4236,6 +4236,78 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of session would build confidence on this account",
+                "what session would build confidence on this account",
+                "what would build confidence on this account right now",
+                "what kind of session would help me feel more confident on this account",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "The kind of session that would build confidence on this account right now is a combat-forward session with one controlled support step around it. "
+                        "That should let you use the account's strongest lane in a way that feels reliable instead of overreaching."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "The kind of session that would build confidence on this account right now is a low-friction skilling or profit session. "
+                        "That should reinforce that the account can still produce real progress without forcing an awkward jump."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "The kind of session that would build confidence on this account right now is a clean account-building session. "
+                        "A little support-skill progress plus one visible payoff should help the account feel steady and dependable."
+                    )
+                if strongest_label == "Utility":
+                    return (
+                        "The kind of session that would build confidence on this account right now is an unlock cleanup session. "
+                        "Utility progress tends to make the next few sessions feel more trustworthy because the account opens up instead of staying awkward."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The best confidence-building session right now is one built around your {top_skill_name.lower()} strength with one clean support follow-through after it. "
+                    "That should make the account feel more stable instead of more scattered."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what habit would make this account easier to maintain",
+                "what habit would make the account easier to maintain",
+                "what habit fits this account best over time",
+                "what recurring habit would help this account most",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The habit that would make this account easier to maintain is keeping one recurring support cleanup lane like {unlock_label} alive alongside your main progress. "
+                    "That stops the account from feeling good in one area while quietly getting more awkward everywhere else."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The best habit for this account is to keep your {strongest_label.lower()} lane tied to one small utility or cleanup step every session. "
+                    "That makes the account easier to maintain because progress stays connected instead of drifting into isolated wins."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"A useful maintenance habit for this account is touching {weakest_label.lower()} regularly instead of letting it become a neglected liability. "
+                    "That kind of consistency usually makes the whole account feel easier to live with."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
