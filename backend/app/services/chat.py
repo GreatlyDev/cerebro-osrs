@@ -4098,6 +4098,79 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what would make this account feel more rewarding to play",
+                "what would make the account more rewarding to play",
+                "what would make this account feel more satisfying to play",
+                "what would make this account feel better to log into",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would make this account feel more rewarding to play is closing a leverage point like {unlock_label}. "
+                    "That kind of unlock usually turns ordinary sessions into ones where more of the account suddenly starts paying you back."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"This account would feel more rewarding to play if you connected your stronger {strongest_label.lower()} lane to cleanup in {weakest_label.lower()}. "
+                    "That is the kind of bridge that makes progress feel cohesive instead of split between strong and weak parts of the account."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"This account would feel more rewarding to play if you kept cashing in your {strongest_label.lower()} lane in more practical ways. "
+                    "The goal is not just more XP there, but more visible account value from the strength you already have."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of session fits this account best tonight",
+                "what session fits this account best tonight",
+                "what kind of session should i play tonight on this account",
+                "what type of session fits this account tonight",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "The best session for this account tonight is a combat-forward session with one practical support cleanup step around it. "
+                        "That should feel more rewarding than splitting your time across unrelated account chores."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "The best session for this account tonight is a relaxed gather-and-bank-value session with one small utility step tucked into it. "
+                        "That suits the account better than forcing a high-friction push when its natural value is steadier."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "The best session for this account tonight is a quiet account-building session. "
+                        "A little support-skill progress followed by one clean utility or unlock step should fit this account better than chasing a flashy spike."
+                    )
+                if strongest_label == "Utility":
+                    return (
+                        "The best session for this account tonight is an unlock-and-capitalize session. "
+                        "Use the first part of the session to reduce friction, then spend the rest actually enjoying the space that opens up."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The best session for this account tonight is one that leans into your {top_skill_name.lower()} strength, then ends with one support step that makes tomorrow's session better. "
+                    "That pattern should fit this account better than a scattered grind."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
