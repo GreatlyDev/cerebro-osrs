@@ -1087,6 +1087,74 @@ async def test_chat_can_identify_best_session_for_tonight(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_identify_best_kind_of_win_for_tomorrow_motivation(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"LG{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Tomorrow Motivation"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of win would make me want to log in again tomorrow?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "log in again tomorrow" in content or "come back tomorrow" in content or "worth logging into again" in content
+    assert "bone voyage" in content or "bridge win" in content or "account value" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_what_would_make_tomorrows_session_better(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"TM{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Tomorrow Better"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What would make tomorrow's session better?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "tomorrow's session better" in content or "make tomorrow's session better" in content or "tomorrow feel" in content
+    assert "bone voyage" in content or "support step" in content or "friction" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_identify_strength_wasted_by_missing_unlock(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

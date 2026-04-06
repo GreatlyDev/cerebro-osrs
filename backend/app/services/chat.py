@@ -4171,6 +4171,71 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of win would make me want to log in again tomorrow",
+                "what win would make me want to log in again tomorrow",
+                "what kind of win would make this account feel worth logging into again tomorrow",
+                "what win would make tomorrow feel worth it",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of win that would make this account feel worth logging into again tomorrow is clearing something like {unlock_label}. "
+                    "That gives you a visible payoff tonight and also leaves the account in a clearly better shape for the next session."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The best kind of win here is a bridge win: use your stronger {strongest_label.lower()} lane to clean up something in {weakest_label.lower()}. "
+                    "That kind of session usually leaves the account feeling more open tomorrow instead of just a little higher in one stat."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The best win here is one that turns your {strongest_label.lower()} strength into visible account value. "
+                    "That is the kind of payoff most likely to make you want to come back tomorrow instead of feeling like you just banked another isolated level."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what would make tomorrow's session better",
+                "what would make tomorrows session better",
+                "what should i do tonight to make tomorrow better",
+                "what would set up tomorrow's session best",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would make tomorrow's session better is clearing support friction like {unlock_label} tonight. "
+                    "That kind of setup work tends to make the next session feel much cleaner, because more of the account becomes immediately usable."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"What would make tomorrow's session better is cleaning up some of the friction in {weakest_label.lower()} tonight. "
+                    "That should leave the account in a shape where tomorrow's progress feels easier to cash in."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What would make tomorrow's session better is setting up a cleaner payoff for your {strongest_label.lower()} lane tonight. "
+                    "A small support step now should make tomorrow feel much less scattered."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
