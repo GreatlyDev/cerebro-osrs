@@ -9,6 +9,7 @@ from app.models.account_snapshot import AccountSnapshot
 from app.models.chat import ChatSession
 from app.services.assistant import assistant_service
 from app.services.accounts import account_service
+from app.services.chat import chat_service
 
 
 def _sample_account_readout_summary(rsn: str) -> dict[str, object]:
@@ -1947,6 +1948,40 @@ async def test_ai_context_receives_session_intent_summary(
 
     assert captured["session_intent_summary"] is not None
     assert "making money" in str(captured["session_intent_summary"]).lower()
+
+
+@pytest.mark.asyncio
+async def test_ai_context_receives_retrieved_osrs_reference_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["retrieval_summary"] = context.retrieval_summary
+        return "Captured retrieval context."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    account_response = await client.post("/api/accounts", json={"rsn": "RetrievalAI"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Retrieval AI"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "How do I get to Fossil Island?"},
+    )
+
+    assert response.status_code == 201
+    assert captured["retrieval_summary"] is not None
+    assert "fossil island access" in str(captured["retrieval_summary"]).lower()
+    assert "bone voyage" in str(captured["retrieval_summary"]).lower()
 
 
 @pytest.mark.asyncio

@@ -29,6 +29,7 @@ from app.services.teleports import teleport_service
 from app.services.account_context import account_context_service
 from app.services.user_context import user_context_service
 from app.services.assistant import AssistantChatContext, assistant_service
+from app.services.knowledge_base import knowledge_base_service
 from app.schemas.gear import GearRecommendationRequest
 from app.schemas.recommendation import NextActionRecommendation, NextActionRequest
 from app.schemas.teleport import TeleportRouteRequest
@@ -182,6 +183,12 @@ class ChatService:
             latest_account=focus_account,
             latest_snapshot=latest_snapshot,
         )
+        session_focus_summary = self._summarize_session_focus(
+            session_focus=session_focus,
+            latest_goal=latest_goal,
+            account=focus_account,
+            include_goal=emphasize_goal,
+        )
         ai_response = await assistant_service.generate_chat_reply(
             AssistantChatContext(
                 session_title=session.title,
@@ -196,13 +203,13 @@ class ChatService:
                 progress_summary=self._summarize_progress(progress),
                 snapshot_delta_summary=self._summarize_snapshot_delta(latest_snapshot, previous_snapshot),
                 goal_summary=self._summarize_goal(latest_goal) if emphasize_goal else None,
-                session_focus_summary=self._summarize_session_focus(
-                    session_focus=session_focus,
-                    latest_goal=latest_goal,
-                    account=focus_account,
-                    include_goal=emphasize_goal,
-                ),
+                session_focus_summary=session_focus_summary,
                 session_intent_summary=self._summarize_session_intent(session_intent=session_intent),
+                retrieval_summary=knowledge_base_service.retrieve(
+                    query=resolved_message,
+                    session_intent=session_intent,
+                    session_focus_summary=session_focus_summary,
+                ),
             )
         )
         return (ai_response or structured_response), self._merge_session_state(

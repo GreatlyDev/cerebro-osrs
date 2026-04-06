@@ -22,6 +22,7 @@ class AssistantChatContext:
     goal_summary: str | None = None
     session_focus_summary: str | None = None
     session_intent_summary: str | None = None
+    retrieval_summary: str | None = None
 
 
 class AssistantService:
@@ -54,6 +55,7 @@ class AssistantService:
             "If the player asks a direct account question about a stat, unlock, quest count, gear, or recent progress, "
             "answer that question directly first using the exact data provided. "
             "Goal context is optional background, not the default center of every answer, so only lean on it when the player is clearly asking for planning or goal-directed advice. "
+            "If retrieved OSRS reference context is present, use it as supporting knowledge, but never let it override the player's actual account state. "
             "Prefer practical coaching over generic hype, and write like a capable in-game advisor."
         )
 
@@ -73,6 +75,7 @@ class AssistantService:
             f"Recent sync delta: {context.snapshot_delta_summary or 'No snapshot delta available yet.'}",
             f"Session focus: {context.session_focus_summary or 'No strong session focus inferred yet.'}",
             f"Session intent: {context.session_intent_summary or 'No strong session intent inferred yet.'}",
+            f"Retrieved OSRS reference context: {context.retrieval_summary or 'No extra reference context retrieved for this question.'}",
             f"Recent chat history:\n{recent_history}",
             f"Structured fallback answer:\n{context.structured_fallback}",
             f"Latest player message:\n{context.user_message}",
