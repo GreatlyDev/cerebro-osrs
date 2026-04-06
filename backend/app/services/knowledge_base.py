@@ -79,6 +79,39 @@ class KnowledgeBaseService:
                     "whether a prerequisite chain changes multiple future paths at once."
                 ),
             ),
+            KnowledgeSnippet(
+                topic="achievement diary utility",
+                keywords=("diary", "diary-style", "achievement diary", "diaries"),
+                content=(
+                    "Achievement diary planning is usually about utility leverage rather than diary completion for its own sake. "
+                    "The strongest diary-like questions are which unlock saves travel time, improves routine skilling, or opens a "
+                    "more valuable repeatable convenience."
+                ),
+            ),
+            KnowledgeSnippet(
+                topic="clue prep",
+                keywords=("clue", "clue scroll", "hard clue", "elite clue", "master clue"),
+                content=(
+                    "Clue prep questions usually center on transport coverage, stash convenience, quest access, and whether the "
+                    "player is missing one annoying requirement that slows the whole loop down."
+                ),
+            ),
+            KnowledgeSnippet(
+                topic="skilling tradeoffs",
+                keywords=("xp", "train", "training", "method", "efficient", "efficiency"),
+                content=(
+                    "Skilling tradeoff questions should weigh raw XP, unlock value, profit, and attention cost. The best answer "
+                    "depends on whether the player wants immediate levels, longer-term utility, or a method they can actually stick with."
+                ),
+            ),
+            KnowledgeSnippet(
+                topic="boss unlock burden",
+                keywords=("boss", "bossing", "readiness", "requirements", "prep"),
+                content=(
+                    "Boss readiness is rarely just about combat stats. It usually depends on unlock burden, route friction, gear consistency, "
+                    "and whether the player has the supporting utility to repeat the activity comfortably."
+                ),
+            ),
         )
 
     def retrieve(
@@ -98,12 +131,19 @@ class KnowledgeBaseService:
 
         if session_intent == "money":
             scored.append((1, self._snippet_by_topic("profit versus progression")))
+            if any(token in normalized for token in ("afk", "low attention", "low effort", "casual")):
+                scored.append((1, self._snippet_by_topic("afk planning")))
         elif session_intent == "questing":
             scored.append((1, self._snippet_by_topic("questing utility")))
+            if "diary" in normalized:
+                scored.append((1, self._snippet_by_topic("achievement diary utility")))
         elif session_intent == "bossing":
             scored.append((1, self._snippet_by_topic("fight caves prep")))
-        elif session_intent == "training" and any(token in normalized for token in ("afk", "low effort", "casual")):
-            scored.append((1, self._snippet_by_topic("afk planning")))
+            scored.append((1, self._snippet_by_topic("boss unlock burden")))
+        elif session_intent == "training":
+            scored.append((1, self._snippet_by_topic("skilling tradeoffs")))
+            if any(token in normalized for token in ("afk", "low effort", "casual")):
+                scored.append((1, self._snippet_by_topic("afk planning")))
 
         if session_focus_summary:
             focus = session_focus_summary.lower()
@@ -111,6 +151,12 @@ class KnowledgeBaseService:
                 scored.append((1, self._snippet_by_topic("fossil island access")))
             if "fight caves" in focus or "jad" in focus:
                 scored.append((1, self._snippet_by_topic("fight caves prep")))
+            if "barrows" in focus:
+                scored.append((1, self._snippet_by_topic("barrows prep")))
+            if "recipe for disaster" in focus:
+                scored.append((1, self._snippet_by_topic("recipe for disaster chain")))
+            if "slayer" in focus:
+                scored.append((1, self._snippet_by_topic("slayer utility")))
 
         if not scored:
             return None

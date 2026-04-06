@@ -1985,6 +1985,75 @@ async def test_ai_context_receives_retrieved_osrs_reference_context(
 
 
 @pytest.mark.asyncio
+async def test_ai_context_receives_diary_retrieval_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["retrieval_summary"] = context.retrieval_summary
+        return "Captured diary retrieval context."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"DR{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Diary Retrieval"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What diary-style utility unlock should I care about next?"},
+    )
+
+    assert response.status_code == 201
+    assert captured["retrieval_summary"] is not None
+    assert "achievement diary utility" in str(captured["retrieval_summary"]).lower()
+
+
+@pytest.mark.asyncio
+async def test_ai_context_receives_low_attention_money_retrieval_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["retrieval_summary"] = context.retrieval_summary
+        return "Captured money retrieval context."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"MR{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch("/api/profile", json={"prefers_profitable_methods": True, "prefers_afk_methods": True})
+    session_response = await client.post("/api/chat/sessions", json={"title": "Money Retrieval"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What low attention money maker should I do?"},
+    )
+
+    assert response.status_code == 201
+    assert captured["retrieval_summary"] is not None
+    retrieval = str(captured["retrieval_summary"]).lower()
+    assert "profit versus progression" in retrieval
+    assert "afk planning" in retrieval
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
