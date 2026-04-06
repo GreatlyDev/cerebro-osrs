@@ -347,6 +347,7 @@ function buildQuickPrompts(
     prompts.push("What should I do if I want both profit and progression?");
     prompts.push("What area of my account am I neglecting right now?");
     prompts.push("What should I fix first on this account?");
+    prompts.push("What part of my account is already in a good spot?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -396,6 +397,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "How balanced is my account right now?",
           "What area of my account am I neglecting right now?",
           "What should I fix first on this account?",
+          "What part of my account is already in a good spot?",
           "What should I ask you about this account first?",
         ],
       },

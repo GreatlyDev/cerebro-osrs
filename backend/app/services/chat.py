@@ -3509,6 +3509,35 @@ class ChatService:
 
             return f"If you want the cleanest payoff first, start by fixing {lowest_skill_name}."
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what is already in a good spot",
+                "what part of my account is already in a good spot",
+                "what can i leave alone for now",
+                "what do i not need to touch right now",
+                "what is already strong enough",
+            )
+        ):
+            if strongest_category is None and top_skill_name is None:
+                return None
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                parts = [
+                    f"{strongest_label} is already in a good spot right now."
+                ]
+                if top_skill_name and isinstance(top_skill_level, int):
+                    parts.append(
+                        f"You can feel that in standout stats like {top_skill_name} at level {top_skill_level}."
+                    )
+                parts.append(
+                    "I would treat that as stable for now unless it directly blocks the thing you're trying to do next."
+                )
+                return " ".join(parts)
+
+            return f"{top_skill_name} is already one of the stronger parts of the account, so that does not need urgent attention."
+
         return None
 
     def _build_progress_answer(
