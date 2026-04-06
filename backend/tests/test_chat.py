@@ -465,6 +465,74 @@ async def test_chat_can_identify_capitalization_lane(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_identify_whether_account_is_bottlenecked_by_unlocks_or_stats(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"BT{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"], "unlocked_transports": []},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Bottleneck"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "Am I more bottlenecked by unlocks or stats right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "bottlenecked" in content
+    assert "unlock" in content or "stat" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_best_mix_of_utility_and_momentum(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"UM{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Utility Momentum"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What gives the best mix of utility and momentum right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "utility" in content and "momentum" in content
+    assert "bone voyage" in content or "combat" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_answer_completed_quests_question(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "QuestTracker"})
     account_id = account_response.json()["id"]

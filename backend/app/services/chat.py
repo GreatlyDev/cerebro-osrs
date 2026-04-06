@@ -3603,6 +3603,69 @@ class ChatService:
 
             return f"Your strongest immediate capitalization lane is whatever builds most directly on {top_skill_name}."
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "am i bottlenecked by unlocks or stats",
+                "what is bottlenecking me more unlocks or stats",
+                "am i more bottlenecked by unlocks or stats",
+                "what is the bigger bottleneck unlocks or stats",
+            )
+        ):
+            unlock_count = len(progress.active_unlocks) if progress is not None else 0
+            transport_count = len(progress.unlocked_transports) if progress is not None else 0
+            weak_average = weakest_category[1] if weakest_category is not None else None
+
+            if unlock_count > 0 and transport_count < 2:
+                unlock_label = progress.active_unlocks[0] if progress is not None and progress.active_unlocks else "your current unlock chain"
+                return (
+                    f"Right now you're more bottlenecked by unlocks than raw stats. "
+                    f"The account still has open utility friction around {unlock_label}, so I'd clear that before chasing extra levels just for their own sake."
+                )
+
+            if weak_average is not None and weak_average < 60:
+                weakest_label = weakest_category[0].title() if weakest_category is not None else "your weakest lane"
+                return (
+                    f"Right now you're more bottlenecked by stats, especially in {weakest_label}. "
+                    f"That lane is still soft enough that a few focused levels should pay off faster than another unlock cleanup."
+                )
+
+            return (
+                "You're fairly split between stat and unlock pressure right now. "
+                "I'd treat it as a mixed bottleneck and pick whichever lane gives the cleanest immediate payoff."
+            )
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what gives the best mix of utility and momentum",
+                "what lane gives the best mix of utility and momentum",
+                "what path gives the best mix of utility and momentum",
+                "what has the best mix of utility and momentum right now",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                if strongest_category is not None:
+                    strongest_label = strongest_category[0].title()
+                    return (
+                        f"The best mix of utility and momentum right now is to pair {unlock_label} with your stronger {strongest_label} lane. "
+                        f"That gives you an unlock payoff while still compounding an area of the account that already has traction."
+                    )
+                return (
+                    f"The best mix of utility and momentum right now is to push {unlock_label}. "
+                    "It gives you account value immediately while still keeping the broader progression path moving."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"Your best mix of utility and momentum right now is {strongest_label}. "
+                    "That's the lane with enough traction to capitalize on immediately without feeling like a dead-end stat grind."
+                )
+
+            return None
+
         return None
 
     def _build_progress_answer(

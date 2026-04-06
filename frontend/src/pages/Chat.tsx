@@ -350,6 +350,8 @@ function buildQuickPrompts(
     prompts.push("What part of my account is already in a good spot?");
     prompts.push("What part of my account am I overinvesting in?");
     prompts.push("What lane is most ready to capitalize on right now?");
+    prompts.push("Am I more bottlenecked by unlocks or stats right now?");
+    prompts.push("What gives the best mix of utility and momentum right now?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -402,6 +404,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What part of my account is already in a good spot?",
           "What part of my account am I overinvesting in?",
           "What lane is most ready to capitalize on right now?",
+          "Am I more bottlenecked by unlocks or stats right now?",
+          "What gives the best mix of utility and momentum right now?",
           "What should I ask you about this account first?",
         ],
       },
