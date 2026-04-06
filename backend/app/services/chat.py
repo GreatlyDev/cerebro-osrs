@@ -4542,6 +4542,104 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what would make this account feel more resilient",
+                "how do i make this account feel more resilient",
+                "what would make the account feel more resilient",
+                "what would make this account more resilient",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would make this account feel more resilient is locking in practical support around {unlock_label}. "
+                    "That kind of utility makes the account easier to recover, easier to route, and less dependent on perfect motivation."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"What would make this account feel more resilient is shoring up the drag in {weakest_label.lower()}. "
+                    "That is usually the part that makes the account feel brittle when you try to pivot or come back after a few days away."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What would make this account feel more resilient is giving your {strongest_label.lower()} strength one cleaner support layer under it. "
+                    "That turns a good lane into something the account can keep cashing in without feeling fragile."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of play pattern is likely to burn out this account",
+                "what play pattern is likely to burn out this account",
+                "what kind of play pattern would burn out this account",
+                "what would burn out this account",
+            )
+        ):
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The play pattern most likely to burn this account out is overfarming {strongest_label.lower()} while ignoring the drag in {weakest_label.lower()}. "
+                    "That usually makes progress look good on paper but feel worse and worse to actually play."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The play pattern most likely to burn this account out is grinding past live utility friction like {unlock_label} instead of resolving it. "
+                    "That kind of avoidance tends to make every later session feel heavier than it should."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The play pattern most likely to burn this account out is leaning too hard on {strongest_label.lower()} without enough variety or payoff conversion. "
+                    "That is how an account with real strengths starts to feel stale anyway."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what one habit would keep progress compounding without making the game feel like work",
+                "what habit would keep progress compounding without making the game feel like work",
+                "what one habit would keep this account compounding",
+                "what habit would keep this account growing without burnout",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The one habit most likely to keep progress compounding without making the game feel like work is pairing each session with one small piece of support cleanup around {unlock_label}. "
+                    "That keeps momentum stacking quietly instead of forcing every login to be a major push."
+                )
+
+            if weakest_category is not None and strongest_category is not None and weakest_category != strongest_category:
+                weakest_label = weakest_category[0].title()
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The one habit most likely to keep this account compounding is letting each session invest a little into {weakest_label.lower()} before cashing out through {strongest_label.lower()}. "
+                    "That kind of loop builds the account without making progress feel like maintenance homework."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The one habit most likely to keep this account compounding is ending most sessions with one practical payoff in your {strongest_label.lower()} lane. "
+                    "That keeps progress feeling real enough to come back for, not abstract enough to postpone."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",

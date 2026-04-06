@@ -380,6 +380,9 @@ function buildQuickPrompts(
     prompts.push("What part of the account needs protecting from drift?");
     prompts.push("What kind of session would reinforce this account's identity?");
     prompts.push("What one cleanup task would make everything feel more connected?");
+    prompts.push("What would make this account feel more resilient?");
+    prompts.push("What kind of play pattern is likely to burn out this account?");
+    prompts.push("What one habit would keep progress compounding without making the game feel like work?");
     prompts.push("What current strength is being wasted by a missing unlock?");
     prompts.push("What boring task would create disproportionate future value?");
     prompts.push("What lane is closest to compounding if I bridge one missing piece?");
@@ -465,6 +468,9 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What part of the account needs protecting from drift?",
           "What kind of session would reinforce this account's identity?",
           "What one cleanup task would make everything feel more connected?",
+          "What would make this account feel more resilient?",
+          "What kind of play pattern is likely to burn out this account?",
+          "What one habit would keep progress compounding without making the game feel like work?",
           "What current strength is being wasted by a missing unlock?",
           "What boring task would create disproportionate future value?",
           "What lane is closest to compounding if I bridge one missing piece?",
