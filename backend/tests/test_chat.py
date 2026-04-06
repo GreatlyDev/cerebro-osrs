@@ -2054,6 +2054,78 @@ async def test_ai_context_receives_low_attention_money_retrieval_context(
 
 
 @pytest.mark.asyncio
+async def test_ai_context_receives_slayer_unlock_retrieval_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["retrieval_summary"] = context.retrieval_summary
+        return "Captured slayer retrieval context."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"SR{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Slayer Retrieval"})
+    session_id = session_response.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What slayer unlock should I care about next?"},
+    )
+
+    assert response.status_code == 201
+    assert captured["retrieval_summary"] is not None
+    retrieval = str(captured["retrieval_summary"]).lower()
+    assert "slayer utility" in retrieval or "slayer unlock planning" in retrieval
+
+
+@pytest.mark.asyncio
+async def test_ai_context_receives_weekend_milestone_retrieval_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["retrieval_summary"] = context.retrieval_summary
+        return "Captured weekend retrieval context."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"WR{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Weekend Retrieval"})
+    session_id = session_response.json()["id"]
+
+    await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I do next?"},
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        json={"content": "What should I have done by Sunday?"},
+    )
+
+    assert response.status_code == 201
+    assert captured["retrieval_summary"] is not None
+    retrieval = str(captured["retrieval_summary"]).lower()
+    assert "weekend milestone planning" in retrieval
+
+
+@pytest.mark.asyncio
 async def test_chat_can_use_ai_reply_when_available(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

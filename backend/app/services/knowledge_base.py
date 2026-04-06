@@ -112,6 +112,38 @@ class KnowledgeBaseService:
                     "and whether the player has the supporting utility to repeat the activity comfortably."
                 ),
             ),
+            KnowledgeSnippet(
+                topic="slayer unlock planning",
+                keywords=("slayer unlock", "slayer reward", "slayer points", "bigger and badder", "broader fletching"),
+                content=(
+                    "Slayer unlock planning is usually about leverage per point spent. The best early unlocks tend to be the ones that improve "
+                    "task value, convenience, or future profit instead of cosmetic upgrades or niche unlocks."
+                ),
+            ),
+            KnowledgeSnippet(
+                topic="clue route friction",
+                keywords=("clue route", "clue prep", "stash", "teleport coverage", "step coverage"),
+                content=(
+                    "Clue friction is usually caused by missing teleports, weak stash setup, and one or two awkward access requirements. "
+                    "The best clue-prep advice usually targets the biggest repeat-time saver first."
+                ),
+            ),
+            KnowledgeSnippet(
+                topic="money maker unlock burden",
+                keywords=("unlock burden", "requirements", "money maker requirement", "profit unlock"),
+                content=(
+                    "When comparing money makers, unlock burden matters almost as much as GP per hour. A lower raw-profit activity can still be "
+                    "the better recommendation if it is available sooner, simpler to repeat, or builds toward later profit options."
+                ),
+            ),
+            KnowledgeSnippet(
+                topic="weekend milestone planning",
+                keywords=("weekend", "by sunday", "milestone", "this week"),
+                content=(
+                    "Weekend planning works best when the milestone is concrete and sequenced: one cleanup unlock, one high-value account push, "
+                    "and one optional profit or AFK buffer if time remains."
+                ),
+            ),
         )
 
     def retrieve(
@@ -131,6 +163,7 @@ class KnowledgeBaseService:
 
         if session_intent == "money":
             scored.append((1, self._snippet_by_topic("profit versus progression")))
+            scored.append((1, self._snippet_by_topic("money maker unlock burden")))
             if any(token in normalized for token in ("afk", "low attention", "low effort", "casual")):
                 scored.append((1, self._snippet_by_topic("afk planning")))
         elif session_intent == "questing":
@@ -144,6 +177,8 @@ class KnowledgeBaseService:
             scored.append((1, self._snippet_by_topic("skilling tradeoffs")))
             if any(token in normalized for token in ("afk", "low effort", "casual")):
                 scored.append((1, self._snippet_by_topic("afk planning")))
+        elif session_intent == "progression":
+            scored.append((1, self._snippet_by_topic("weekend milestone planning")))
 
         if session_focus_summary:
             focus = session_focus_summary.lower()
@@ -157,6 +192,10 @@ class KnowledgeBaseService:
                 scored.append((1, self._snippet_by_topic("recipe for disaster chain")))
             if "slayer" in focus:
                 scored.append((1, self._snippet_by_topic("slayer utility")))
+                scored.append((1, self._snippet_by_topic("slayer unlock planning")))
+            if "clue" in focus:
+                scored.append((1, self._snippet_by_topic("clue prep")))
+                scored.append((1, self._snippet_by_topic("clue route friction")))
 
         if not scored:
             return None
