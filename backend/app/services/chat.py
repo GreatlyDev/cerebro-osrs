@@ -3991,6 +3991,81 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what content is safest to learn on this account",
+                "what should i learn first on this account",
+                "what content would be safest to learn right now",
+                "what content is safest to practice on this account",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "The safest thing to learn on this account right now is lower-friction combat progression. "
+                        "You already have enough combat traction that quest-backed combat content, easier boss prep, and gear cleanup should teach useful habits without feeling brutally punishing."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "The safest thing to learn on this account right now is relaxed skilling and profit loops. "
+                        "That gives you repetition, account stability, and momentum without forcing hard unlock checks too early."
+                    )
+                if strongest_category[0].title() in {"Artisan", "Utility"}:
+                    return (
+                        "The safest thing to learn on this account right now is utility and account-enabling progression. "
+                        "Unlock cleanup, travel prep, and low-friction support work should teach the shape of the account without demanding a high-risk push."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The safest thing to learn on this account right now is content built around your {top_skill_name.lower()} strength. "
+                    "That is where the account already has enough traction to make learning feel forgiving instead of punishing."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of progress loop fits this account best",
+                "what progress loop fits this account best",
+                "what kind of loop should i be doing on this account",
+                "what sort of day to day loop fits this account best",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "The best progress loop for this account right now is combat-forward with support cleanup around it. "
+                        "Think combat gains, then unlock cleanup, then gear or route improvements that let the next combat push pay off harder."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "The best progress loop for this account right now is gather, bank value, and unlock. "
+                        "That kind of steady loop should keep building account value without forcing high-friction jumps before the account is ready."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "The best progress loop for this account right now is support-skill improvement followed by utility cleanup. "
+                        "That should keep turning quiet account polish into stronger future routes."
+                    )
+                if strongest_label == "Utility":
+                    return (
+                        "The best progress loop for this account right now is unlock, route, and capitalize. "
+                        "This account should benefit most from opening better movement and account utility, then cashing that into broader progress."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The loop that fits this account best right now is one that repeatedly cashes in your {top_skill_name.lower()} strength and then turns it into a broader unlock or money step. "
+                    "That should feel much better than treating every session like a disconnected grind."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what content is one unlock away from opening up",
                 "what is one unlock away from opening up",
                 "what content is one unlock away right now",
