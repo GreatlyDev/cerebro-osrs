@@ -3447,6 +3447,37 @@ class ChatService:
                 + ". After that, ask what would move the account forward fastest."
             )
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what should i round out next",
+                "what am i neglecting",
+                "what area am i neglecting",
+                "what area of my account am i neglecting",
+                "what part of my account am i neglecting",
+                "what should i shore up next",
+                "what should i clean up next",
+            )
+        ):
+            if weakest_category is None and lowest_skill_name is None:
+                return None
+
+            if weakest_category is not None:
+                category_label = strongest_category[0].title() if strongest_category is not None else None
+                weakest_label = weakest_category[0].title()
+                parts = [
+                    f"I'd round out {weakest_label} next."
+                ]
+                if category_label and strongest_category != weakest_category:
+                    parts.append(
+                        f"That is the clearest contrast against your stronger {category_label} lane right now."
+                    )
+                if lowest_skill_name:
+                    parts.append(f"A good place to start inside that weaker lane is {lowest_skill_name}.")
+                return " ".join(parts)
+
+            return f"The cleanest neglected area to shore up next is {lowest_skill_name}."
+
         return None
 
     def _build_progress_answer(

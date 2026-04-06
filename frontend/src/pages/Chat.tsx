@@ -345,6 +345,7 @@ function buildQuickPrompts(
 
   prompts.push("What should I do today if I want real progress?");
   prompts.push("What should I do if I want both profit and progression?");
+  prompts.push("What area of my account am I neglecting right now?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -385,6 +386,17 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       : "What's the tradeoff?";
 
   return [
+    {
+      eyebrow: "Account read",
+      title: "Ask for an account readout",
+      description: "Use these when you want Cerebro to read the account itself instead of jumping straight into a goal lane.",
+      prompts: [
+        "What stands out about my account right now?",
+        "How balanced is my account right now?",
+        "What area of my account am I neglecting right now?",
+        "What should I ask you about this account first?",
+      ],
+    },
     {
       eyebrow: "Planning coach",
       title: "Ask for sequencing",
