@@ -3831,6 +3831,126 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of account is this becoming",
+                "what kind of account am i building",
+                "what kind of account am i turning this into",
+                "what account identity is this trending toward",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                parts = [
+                    f"This account is trending toward a {strongest_label.lower()}-led all-rounder."
+                ]
+                if top_skill_name and isinstance(top_skill_level, int):
+                    parts.append(
+                        f"The clearest tell is {top_skill_name} at level {top_skill_level}, which is already giving that lane a visible identity."
+                    )
+                if progress is not None and progress.active_unlocks:
+                    parts.append(
+                        f"If you keep tying that strength into unlocks like {progress.active_unlocks[0]}, it should turn into a much more rounded progression account instead of a narrow stat stack."
+                    )
+                return " ".join(parts)
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"This account is starting to look like it wants to grow around {top_skill_name}. "
+                    "The next question is whether you connect that to unlocks and utility, or let it stay isolated as one strong stat."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what playstyle does this account naturally support",
+                "what playstyle does my account naturally support",
+                "what does this account naturally support",
+                "what style of play does this account fit",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "This account naturally supports combat-forward progression right now. "
+                        "Your combat lane already has enough traction that boss prep, quest unlocks, and gear improvements should feel more natural than forcing a pure skilling focus."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "This account naturally supports resource-driven progression right now. "
+                        "Gathering, passive profit, and utility unlocks should feel smoother than trying to brute-force high-friction combat jumps."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "This account naturally supports a flexible skilling-and-upkeep style right now. "
+                        "You have enough artisan traction that account polish, utility, and low-friction progression should feel better than a narrow boss rush."
+                    )
+                if strongest_label == "Utility":
+                    return (
+                        "This account naturally supports utility-first progression right now. "
+                        "Movement, unlock cleanup, and quality-of-life upgrades should pay off more cleanly than forcing another isolated stat push."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"This account naturally wants to play around {top_skill_name.lower()} right now. "
+                    "That does not lock you in, but it is the lane where progress should feel the least forced."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what content does this account look built for",
+                "what content does my account look built for",
+                "what kind of content is this account built for",
+                "what content am i most built for right now",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    parts = [
+                        "Right now this account looks most built for combat-adjacent content."
+                    ]
+                    if progress is not None and progress.active_unlocks:
+                        parts.append(
+                            f"The biggest upgrade path is turning that into cleaner unlock-backed content through work like {progress.active_unlocks[0]}."
+                        )
+                    else:
+                        parts.append(
+                            "That means quest unlocks, boss prep, and gear progression should fit more naturally than a pure skilling detour."
+                        )
+                    return " ".join(parts)
+                if strongest_label == "Gathering":
+                    return (
+                        "Right now this account looks most built for gathering-heavy and low-friction progression content. "
+                        "Resource loops, passive profit, and utility unlocks should fit more naturally than forcing harder combat content too early."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "Right now this account looks most built for account-development content. "
+                        "Skilling support work, unlock cleanup, and prep-heavy progression should fit better than jumping straight into high-friction bossing."
+                    )
+                if strongest_label == "Utility":
+                    return (
+                        "Right now this account looks most built for utility-driven content. "
+                        "Travel unlocks, diary-style cleanup, and account-enabling progression should pay off more cleanly than chasing isolated XP."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"This account looks most built for content that cashes in your {top_skill_name.lower()} strength. "
+                    "The next win is pairing that with the right unlock or route so it turns into broader account value."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what current strength is being wasted by a missing unlock",
                 "what strength is being wasted by a missing unlock",
                 "what am i wasting because of a missing unlock",
