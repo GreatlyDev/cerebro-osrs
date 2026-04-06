@@ -1351,6 +1351,104 @@ async def test_chat_can_identify_how_to_make_account_more_coherent(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_identify_what_needs_protecting_from_drift(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"DR{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Protect Drift"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What part of the account needs protecting from drift?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "drift" in content or "protect" in content or "momentum" in content
+    assert "combat" in content or "bone voyage" in content or "support" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_session_that_reinforces_account_identity(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"ID{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Account Identity"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of session would reinforce this account's identity?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "identity" in content or "like a real fighter" in content or "knows what it wants to be" in content
+    assert "combat" in content or "supporting cleanup" in content or "usable" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_cleanup_that_makes_account_more_connected(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"CL{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Cleanup Task"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What one cleanup task would make everything feel more connected?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "cleanup" in content or "connected" in content or "bridge work" in content
+    assert "bone voyage" in content or "drag" in content or "flows" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_identify_strength_wasted_by_missing_unlock(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

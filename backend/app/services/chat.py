@@ -4437,6 +4437,111 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what part of the account needs protecting from drift",
+                "what part of this account needs protecting from drift",
+                "where is this account at risk of drifting",
+                "what should i protect from drift on this account",
+            )
+        ):
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The part of the account that needs the most protection from drift is your {strongest_label.lower()} lane, especially if it keeps outrunning support in {weakest_label.lower()}. "
+                    "That is usually where an account starts to feel powerful on paper but awkward in practice."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The thing I would protect from drift right now is the value behind {unlock_label}. "
+                    "If you leave that thread half-converted for too long, the account starts losing momentum it already paid to build."
+                )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The thing most at risk of drift right now is the value in your {top_skill_name.lower()} progress. "
+                    "You probably want one practical follow-through step so it keeps feeling like real account strength instead of an isolated number."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of session would reinforce this account's identity",
+                "what kind of session would reinforce the account's identity",
+                "what session would reinforce this account's identity",
+                "what kind of session would make this account feel more like itself",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "The kind of session that would reinforce this account's identity right now is a combat-centered one with one supporting cleanup attached. "
+                        "That keeps the account feeling like a real fighter instead of a pile of unrelated side progress."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "The kind of session that would reinforce this account's identity right now is a steady gather-profit-improve loop. "
+                        "That keeps the account feeling grounded in useful momentum instead of scattered between too many unrelated pushes."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "The kind of session that would reinforce this account's identity right now is a support-and-utility session with one visible payoff at the end. "
+                        "That makes the account feel deliberately built, not just incremented."
+                    )
+
+                return (
+                    f"The kind of session that would reinforce this account's identity right now is one that leans into your {strongest_label.lower()} strength and turns it into something immediately usable. "
+                    "That is how you keep the account feeling like it knows what it wants to be."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of session that would reinforce this account's identity right now is one that finishes off a live utility thread like {unlock_label}. "
+                    "That sort of cleanup turns account potential into something you can actually feel in play."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what one cleanup task would make everything feel more connected",
+                "what cleanup task would make everything feel more connected",
+                "what one cleanup task would tie this account together",
+                "what cleanup would make this account feel more connected",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The one cleanup task most likely to make everything feel more connected is finishing the support around {unlock_label}. "
+                    "That kind of bridge work often turns several scattered strengths into one account that actually flows."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The one cleanup task most likely to make this account feel more connected is shoring up the drag in {weakest_label.lower()}. "
+                    "That is usually the quiet piece that keeps stronger lanes from linking together cleanly."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The one cleanup task most likely to make everything feel more connected is finding a practical payoff for your {strongest_label.lower()} strength. "
+                    "That stops the account from feeling like it has good stats but no connective tissue."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
