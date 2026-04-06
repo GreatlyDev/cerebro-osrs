@@ -356,6 +356,8 @@ function buildQuickPrompts(
     prompts.push("What lane loses value if I ignore it?");
     prompts.push("What part of my account is under leveraged right now?");
     prompts.push("What should I revisit after a few days?");
+    prompts.push("What part of my account is quietly high leverage right now?");
+    prompts.push("Where is the hidden opportunity on my account right now?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -414,6 +416,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What lane loses value if I ignore it?",
           "What part of my account is under leveraged right now?",
           "What should I revisit after a few days?",
+          "What part of my account is quietly high leverage right now?",
+          "Where is the hidden opportunity on my account right now?",
           "What should I ask you about this account first?",
         ],
       },

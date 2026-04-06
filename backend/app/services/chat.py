@@ -3778,6 +3778,56 @@ class ChatService:
 
             return None
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what part of my account is quietly high leverage",
+                "what is quietly high leverage right now",
+                "what doesn't look flashy but is high leverage",
+                "what is the quiet high leverage play",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The quiet high-leverage play right now is {unlock_label}. "
+                    "It may not look flashy on the surface, but utility unlocks like that tend to improve several later routes at once."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"{weakest_label} is the quietly high-leverage lane right now. "
+                    "It does not look like the flashiest push, but lifting a weak lane usually improves how much value you can get from the rest of the account."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "where is the hidden opportunity on my account",
+                "what is the hidden opportunity on my account",
+                "where is the hidden value on my account",
+                "what am i sleeping on right now",
+            )
+        ):
+            if strongest_category is not None and progress is not None and progress.active_unlocks:
+                strongest_label = strongest_category[0].title()
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The hidden opportunity is connecting your stronger {strongest_label} lane to unlock work like {unlock_label}. "
+                    "That is where the account probably has more value sitting under the surface than it looks like at first glance."
+                )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The hidden opportunity is that you already have real strength in {top_skill_name} at level {top_skill_level}. "
+                    "The next win is finding the activity or unlock that actually converts that into broader account value."
+                )
+
+            return None
+
         return None
 
     def _build_progress_answer(
