@@ -358,6 +358,9 @@ function buildQuickPrompts(
     prompts.push("What should I revisit after a few days?");
     prompts.push("What part of my account is quietly high leverage right now?");
     prompts.push("Where is the hidden opportunity on my account right now?");
+    prompts.push("What current strength is being wasted by a missing unlock?");
+    prompts.push("What boring task would create disproportionate future value?");
+    prompts.push("What lane is closest to compounding if I bridge one missing piece?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -418,6 +421,9 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What should I revisit after a few days?",
           "What part of my account is quietly high leverage right now?",
           "Where is the hidden opportunity on my account right now?",
+          "What current strength is being wasted by a missing unlock?",
+          "What boring task would create disproportionate future value?",
+          "What lane is closest to compounding if I bridge one missing piece?",
           "What should I ask you about this account first?",
         ],
       },

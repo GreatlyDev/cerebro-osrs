@@ -3828,6 +3828,83 @@ class ChatService:
 
             return None
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what current strength is being wasted by a missing unlock",
+                "what strength is being wasted by a missing unlock",
+                "what am i wasting because of a missing unlock",
+                "what strength is not paying off because of a missing unlock",
+            )
+        ):
+            if strongest_category is not None and progress is not None and progress.active_unlocks:
+                strongest_label = strongest_category[0].title()
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"Your stronger {strongest_label} lane is probably being underused because of {unlock_label}. "
+                    "That missing unlock is the piece stopping one of your best-developed strengths from paying off as cleanly as it could."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The strength most at risk of being wasted right now is {strongest_label}. "
+                    "It already has traction, so the next question is what support piece or unlock would let it cash out into broader value."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what boring task would create disproportionate future value",
+                "what boring task would create the most future value",
+                "what boring task is secretly worth doing",
+                "what boring task has disproportionate value",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The boring task with disproportionate future value is probably {unlock_label}. "
+                    "It may not feel flashy, but jobs like that usually remove friction across several future routes at once."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"A boring but valuable task right now is cleaning up {weakest_label}. "
+                    "Those quieter cleanup pushes often create more future value than another flashy level in a lane that's already comfortable."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what lane is closest to compounding if i bridge one missing piece",
+                "what is closest to compounding if i bridge one missing piece",
+                "what lane is closest to compounding right now",
+                "what is one missing piece away from compounding",
+            )
+        ):
+            if strongest_category is not None and progress is not None and progress.active_unlocks:
+                strongest_label = strongest_category[0].title()
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"{strongest_label} is the lane closest to compounding if you bridge one missing piece like {unlock_label}. "
+                    "You already have traction there, so one support unlock can turn that strength into a much broader payoff."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"{strongest_label} is the lane closest to compounding right now. "
+                    "It already has enough traction that one clean support step should make the rest of the account benefit from it more quickly."
+                )
+
+            return None
+
         return None
 
     def _build_progress_answer(
