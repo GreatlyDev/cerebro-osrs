@@ -348,6 +348,8 @@ function buildQuickPrompts(
     prompts.push("What area of my account am I neglecting right now?");
     prompts.push("What should I fix first on this account?");
     prompts.push("What part of my account is already in a good spot?");
+    prompts.push("What part of my account am I overinvesting in?");
+    prompts.push("What lane is most ready to capitalize on right now?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -398,6 +400,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What area of my account am I neglecting right now?",
           "What should I fix first on this account?",
           "What part of my account is already in a good spot?",
+          "What part of my account am I overinvesting in?",
+          "What lane is most ready to capitalize on right now?",
           "What should I ask you about this account first?",
         ],
       },

@@ -3545,6 +3545,64 @@ class ChatService:
 
             return f"{top_skill_name} is already one of the stronger parts of the account, so that does not need urgent attention."
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what am i overinvesting in",
+                "what part of my account am i overinvesting in",
+                "what am i leaning too hard into",
+                "where am i overfocused",
+            )
+        ):
+            if strongest_category is None and top_skill_name is None:
+                return None
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                parts = [
+                    f"If anything looks overinvested right now, it's {strongest_label}."
+                ]
+                if weakest_category is not None and strongest_category != weakest_category:
+                    parts.append(
+                        f"That lane is clearly ahead of your {weakest_category[0].title()} baseline, so I'd be careful about pushing it even harder unless it serves a specific goal."
+                    )
+                elif top_skill_name and isinstance(top_skill_level, int):
+                    parts.append(
+                        f"You can see that in standout stats like {top_skill_name} at level {top_skill_level}."
+                    )
+                return " ".join(parts)
+
+            return f"{top_skill_name} looks like one of the most heavily developed parts of the account right now."
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what lane is most ready to capitalize on",
+                "what part of my account is most ready to capitalize on",
+                "what am i best positioned to capitalize on",
+                "what lane can i capitalize on right now",
+            )
+        ):
+            if strongest_category is None and top_skill_name is None:
+                return None
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                parts = [
+                    f"{strongest_label} is the lane most ready to capitalize on right now."
+                ]
+                if top_skill_name and isinstance(top_skill_level, int):
+                    parts.append(
+                        f"You already have real momentum there through stats like {top_skill_name} at level {top_skill_level}."
+                    )
+                if progress is not None and progress.active_unlocks:
+                    parts.append(
+                        f"If you want to compound that advantage, line it up with unlocks like {progress.active_unlocks[0]}."
+                    )
+                return " ".join(parts)
+
+            return f"Your strongest immediate capitalization lane is whatever builds most directly on {top_skill_name}."
+
         return None
 
     def _build_progress_answer(
