@@ -1053,6 +1053,14 @@ class ChatService:
         if lowest_skill_answer is not None:
             return lowest_skill_answer
 
+        account_telemetry_answer = self._build_account_telemetry_answer(
+            message=message,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+        )
+        if account_telemetry_answer is not None:
+            return account_telemetry_answer
+
         metric = self._detect_stat_metric(normalized)
         skill_name = self._detect_skill_name(normalized, skills)
 
@@ -3327,6 +3335,119 @@ class ChatService:
 
         preview = ", ".join(f"{skill_name} {level}" for level, skill_name in ranked_skills[:5])
         return f"Your lowest tracked skills right now are {preview}."
+
+    def _build_account_telemetry_answer(
+        self,
+        *,
+        message: str,
+        latest_snapshot: AccountSnapshot,
+        progress: AccountProgress | None,
+    ) -> str | None:
+        normalized = message.lower()
+        summary = latest_snapshot.summary or {}
+        progression_profile = summary.get("progression_profile")
+        skill_categories = summary.get("skill_categories")
+
+        if not isinstance(progression_profile, dict):
+            progression_profile = {}
+        if not isinstance(skill_categories, dict):
+            skill_categories = {}
+
+        top_skills = latest_snapshot.summary.get("top_skills")
+        top_skill = top_skills[0] if isinstance(top_skills, list) and top_skills and isinstance(top_skills[0], dict) else None
+        top_skill_name = str(top_skill.get("skill", "")).replace("_", " ").title() if top_skill else None
+        top_skill_level = top_skill.get("level") if top_skill else None
+        lowest_skill_name = progression_profile.get("lowest_tracked_skill")
+        if isinstance(lowest_skill_name, str):
+            lowest_skill_name = lowest_skill_name.replace("_", " ").title()
+        else:
+            lowest_skill_name = None
+
+        category_averages: list[tuple[str, float]] = []
+        for category_name, data in skill_categories.items():
+            if not isinstance(data, dict):
+                continue
+            average_level = data.get("average_level")
+            if isinstance(average_level, (int, float)):
+                category_averages.append((str(category_name), float(average_level)))
+
+        strongest_category = None
+        weakest_category = None
+        if category_averages:
+            strongest_category = max(category_averages, key=lambda item: item[1])
+            weakest_category = min(category_averages, key=lambda item: item[1])
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what stands out",
+                "what stands out about my account",
+                "give me an account summary",
+                "summarize my account",
+                "account summary",
+                "read my account",
+            )
+        ):
+            parts = [
+                f"Your account is currently around overall level {summary.get('overall_level')} with combat {summary.get('combat_level')}.",
+            ]
+            if top_skill_name and isinstance(top_skill_level, int):
+                parts.append(f"Your standout stat right now is {top_skill_name} at level {top_skill_level}.")
+            if strongest_category is not None:
+                parts.append(
+                    f"Your strongest lane looks like {strongest_category[0].title()} with an average around {strongest_category[1]:.0f}."
+                )
+            if weakest_category is not None and weakest_category != strongest_category:
+                parts.append(
+                    f"The softest lane is {weakest_category[0].title()} around {weakest_category[1]:.0f}, so that is where gains would round the account out fastest."
+                )
+            if progress is not None and progress.active_unlocks:
+                parts.append(f"Your current tracked unlock push is {progress.active_unlocks[0]}.")
+            return " ".join(parts)
+
+        if "strongest stat" in normalized or "best stat" in normalized or "standout stat" in normalized:
+            if top_skill_name and isinstance(top_skill_level, int):
+                return f"Your strongest tracked stat right now is {top_skill_name} at level {top_skill_level}."
+            return None
+
+        if "how balanced" in normalized or "is my account balanced" in normalized:
+            if strongest_category is None or weakest_category is None:
+                return None
+            spread = strongest_category[1] - weakest_category[1]
+            if spread <= 10:
+                tone = "fairly balanced"
+            elif spread <= 20:
+                tone = "somewhat uneven"
+            else:
+                tone = "pretty lopsided right now"
+            return (
+                f"Your account looks {tone}. "
+                f"{strongest_category[0].title()} is leading around {strongest_category[1]:.0f}, "
+                f"while {weakest_category[0].title()} trails around {weakest_category[1]:.0f}."
+            )
+
+        if "what should i ask" in normalized and "account" in normalized:
+            suggestion_parts = []
+            if top_skill_name and isinstance(top_skill_level, int):
+                suggestion_parts.append(f"your strongest lane like {top_skill_name} {top_skill_level}")
+            if lowest_skill_name:
+                suggestion_parts.append(f"your weakest area like {lowest_skill_name}")
+            if progress is not None and progress.active_unlocks:
+                suggestion_parts.append(f"your current unlock push like {progress.active_unlocks[0]}")
+
+            if not suggestion_parts:
+                return (
+                    "Start with one of these: what stands out about my account, what should I do next, "
+                    "or what changed since my last sync."
+                )
+
+            return (
+                "Start by asking about "
+                + ", ".join(suggestion_parts[:3])
+                + ". After that, ask what would move the account forward fastest."
+            )
+
+        return None
 
     def _build_progress_answer(
         self,

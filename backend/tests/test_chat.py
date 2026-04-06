@@ -193,6 +193,65 @@ async def test_chat_can_answer_top_skills_question(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_chat_can_summarize_account_state(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "AccountRead"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["barrows gloves"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Account Readout"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What stands out about my account right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "overall level" in content
+    assert "magic" in content
+    assert "barrows gloves" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_answer_balance_question(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "BalanceCheck"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Balance Check"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "How balanced is my account right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "balanced" in content or "lopsided" in content or "uneven" in content
+    assert "combat" in content or "gathering" in content or "artisan" in content or "utility" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_suggest_account_questions(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": f"QS{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Question Starter"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What should I ask you about this account first?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "start by asking" in content
+    assert "strongest" in content or "weakest" in content or "unlock" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_answer_completed_quests_question(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "QuestTracker"})
     account_id = account_response.json()["id"]
