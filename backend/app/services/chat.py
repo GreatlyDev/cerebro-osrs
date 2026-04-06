@@ -3666,6 +3666,63 @@ class ChatService:
 
             return None
 
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what lane is easiest to convert into real progress this week",
+                "what lane is easiest to turn into real progress this week",
+                "what can i convert into real progress this week",
+                "what lane can i turn into real progress this week",
+            )
+        ):
+            if strongest_category is None and top_skill_name is None:
+                return None
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                parts = [
+                    f"{strongest_label} is the easiest lane to convert into real progress this week."
+                ]
+                if top_skill_name and isinstance(top_skill_level, int):
+                    parts.append(
+                        f"You already have usable momentum there through stats like {top_skill_name} at level {top_skill_level}."
+                    )
+                if progress is not None and progress.active_unlocks:
+                    parts.append(
+                        f"If you want that progress to stick, pair it with unlock cleanup like {progress.active_unlocks[0]}."
+                    )
+                return " ".join(parts)
+
+            return f"The easiest lane to convert into real progress this week is whatever compounds {top_skill_name}."
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what lane loses value if i ignore it",
+                "what starts losing value if i ignore it",
+                "what should i not ignore for too long",
+                "what lane gets worse if i leave it alone too long",
+            )
+        ):
+            if weakest_category is None and progress is None:
+                return None
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The thing most likely to lose value if ignored is {unlock_label}. "
+                    "Open unlock chains tend to keep blocking other useful routes until you close them."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"{weakest_label} is the lane I'd be careful not to ignore too long. "
+                    "If it keeps trailing, it starts limiting how much value you can get out of the stronger parts of the account."
+                )
+
+            return None
+
         return None
 
     def _build_progress_answer(

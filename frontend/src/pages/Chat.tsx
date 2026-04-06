@@ -352,6 +352,8 @@ function buildQuickPrompts(
     prompts.push("What lane is most ready to capitalize on right now?");
     prompts.push("Am I more bottlenecked by unlocks or stats right now?");
     prompts.push("What gives the best mix of utility and momentum right now?");
+    prompts.push("What lane is easiest to convert into real progress this week?");
+    prompts.push("What lane loses value if I ignore it?");
 
   const deduped: string[] = [];
   const seen = new Set<string>();
@@ -406,6 +408,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What lane is most ready to capitalize on right now?",
           "Am I more bottlenecked by unlocks or stats right now?",
           "What gives the best mix of utility and momentum right now?",
+          "What lane is easiest to convert into real progress this week?",
+          "What lane loses value if I ignore it?",
           "What should I ask you about this account first?",
         ],
       },
