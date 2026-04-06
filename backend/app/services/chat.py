@@ -4373,6 +4373,70 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what should i preserve about this account right now",
+                "what should i protect about this account right now",
+                "what should i be careful not to lose on this account",
+                "what is worth preserving on this account right now",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What is most worth preserving right now is the traction in your {strongest_label.lower()} lane. "
+                    "Whatever else you change, try not to let the account drift so far away from that strength that it stops paying you back."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What is worth preserving right now is the live value behind {unlock_label}. "
+                    "You do not want that thread to go cold if it is the thing making the rest of the account easier to use."
+                )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"What is most worth preserving right now is your traction in {top_skill_name.lower()}. "
+                    "That is one of the clearest places where the account already feels like it has a real identity."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what would make this account feel more coherent",
+                "how do i make this account feel more coherent",
+                "what would make the account feel more coherent",
+                "what would make this account feel less fragmented",
+            )
+        ):
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"What would make this account feel more coherent is linking your stronger {strongest_label.lower()} lane to cleanup in {weakest_label.lower()}. "
+                    "That kind of bridge work makes the account feel like one connected progression path instead of a stack of unrelated wins."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would make this account feel more coherent is resolving support friction like {unlock_label}. "
+                    "That kind of unlock often turns scattered progress into something that feels like it belongs to the same account story."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What would make this account feel more coherent is cashing in your {strongest_label.lower()} strength through a more practical follow-through step. "
+                    "That keeps the account from feeling like a set of disconnected stats."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",

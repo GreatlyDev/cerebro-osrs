@@ -375,6 +375,8 @@ function buildQuickPrompts(
     prompts.push("What habit would make this account easier to maintain over time?");
     prompts.push("What would keep this account from feeling stale right now?");
     prompts.push("What would make this account easier to return to after a break?");
+    prompts.push("What should I preserve about this account right now?");
+    prompts.push("What would make this account feel more coherent right now?");
     prompts.push("What current strength is being wasted by a missing unlock?");
     prompts.push("What boring task would create disproportionate future value?");
     prompts.push("What lane is closest to compounding if I bridge one missing piece?");
@@ -455,6 +457,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What habit would make this account easier to maintain over time?",
           "What would keep this account from feeling stale right now?",
           "What would make this account easier to return to after a break?",
+          "What should I preserve about this account right now?",
+          "What would make this account feel more coherent right now?",
           "What current strength is being wasted by a missing unlock?",
           "What boring task would create disproportionate future value?",
           "What lane is closest to compounding if I bridge one missing piece?",
