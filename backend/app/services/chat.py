@@ -4066,6 +4066,78 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what would make this account feel smoother to play",
+                "what would make the account feel smoother to play",
+                "what would make this account feel better to play",
+                "what would make this account less awkward to play",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The thing most likely to make this account feel smoother to play is clearing support friction like {unlock_label}. "
+                    "Those kinds of unlocks remove awkward routing, reduce dead time, and make the rest of the account's strengths easier to use."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"What would make this account feel smoother to play is shoring up {weakest_label}. "
+                    "Right now that softer lane is where the account is most likely to feel clunky or incomplete."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The smoothest improvement is making your {strongest_label.lower()} lane easier to cash in consistently. "
+                    "That should make the account feel better session to session than another isolated stat push."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what routine fits this account best",
+                "what routine should i build around this account",
+                "what repeatable should i build around this account",
+                "what daily loop fits this account best",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "The routine that fits this account best right now is combat progress anchored by one support cleanup step each session. "
+                        "That keeps your strongest lane moving while steadily removing the friction that stops it from paying off harder."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "The routine that fits this account best right now is a steady gather-profit-unlock loop. "
+                        "That should keep the account feeling productive without demanding a high-pressure goal every time you log in."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "The routine that fits this account best right now is quiet account-building: support skills, then utility cleanup, then a small payoff step. "
+                        "That pattern should suit this account better than forcing a flashy but unstable route."
+                    )
+                if strongest_label == "Utility":
+                    return (
+                        "The routine that fits this account best right now is unlock-first progression. "
+                        "Open one more useful route, then spend the rest of the session cashing that convenience into broader account value."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The routine that fits this account best right now is one built around your {top_skill_name.lower()} strength, then a small unlock or utility step after it. "
+                    "That should keep progress feeling coherent instead of scattered."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what content is one unlock away from opening up",
                 "what is one unlock away from opening up",
                 "what content is one unlock away right now",
