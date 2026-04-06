@@ -835,6 +835,70 @@ async def test_chat_can_identify_what_content_account_is_built_for(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_identify_what_kind_of_player_would_enjoy_account(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"PL{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Player Fit"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of player would enjoy this account right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "player" in content and "account" in content
+    assert "combat" in content or "progression" in content or "quest" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_what_content_is_one_unlock_away(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"OA{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "One Unlock Away"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What content is one unlock away from opening up right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "one unlock away" in content or "opening up" in content or "bridge" in content
+    assert "bone voyage" in content or "combat" in content or "support unlock" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_identify_strength_wasted_by_missing_unlock(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

@@ -3951,6 +3951,77 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of player would enjoy this account",
+                "who would enjoy playing this account",
+                "what kind of player is this account good for",
+                "what type of player would like this account",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "A player who likes active progression, quest unlocks, and combat payoff would probably enjoy this account most right now. "
+                        "It already has enough combat traction that pushing into boss prep, gear progression, and combat utility should feel rewarding instead of forced."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "A player who likes relaxed progress, passive profit, and steady skilling loops would probably enjoy this account most right now. "
+                        "It looks best suited to low-friction account growth rather than forcing high-pressure combat jumps."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "A player who likes building the account up methodically would probably enjoy this account most right now. "
+                        "It fits someone who enjoys prep work, support skills, and turning quiet progress into stronger future routes."
+                    )
+                if strongest_label == "Utility":
+                    return (
+                        "A player who likes unlocking convenience and account quality-of-life would probably enjoy this account most right now. "
+                        "It looks best when treated like an account-enabling project instead of a pure XP sprint."
+                    )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"A player who likes leaning into {top_skill_name.lower()} would probably enjoy this account most right now. "
+                    "That is the lane where the account already has the most natural traction."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what content is one unlock away from opening up",
+                "what is one unlock away from opening up",
+                "what content is one unlock away right now",
+                "what is almost unlocked for this account",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                if strongest_category is not None:
+                    strongest_label = strongest_category[0].title()
+                    return (
+                        f"The content that feels one unlock away right now is whatever cashes in your {strongest_label.lower()} lane after {unlock_label}. "
+                        "That support unlock is the bridge between your current strength and content that will actually start paying it off."
+                    )
+                return (
+                    f"The main thing that looks one unlock away right now is the next route behind {unlock_label}. "
+                    "That is the support piece most likely to turn the account's current stats into more usable content."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The content that feels closest to opening up is whatever best cashes in your {strongest_label.lower()} lane. "
+                    "You have enough traction there that one good support unlock should noticeably widen the account."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what current strength is being wasted by a missing unlock",
                 "what strength is being wasted by a missing unlock",
                 "what am i wasting because of a missing unlock",

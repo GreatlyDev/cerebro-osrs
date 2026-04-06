@@ -361,6 +361,8 @@ function buildQuickPrompts(
     prompts.push("What kind of account is this becoming?");
     prompts.push("What playstyle does this account naturally support?");
     prompts.push("What content does this account look built for right now?");
+    prompts.push("What kind of player would enjoy this account right now?");
+    prompts.push("What content is one unlock away from opening up right now?");
     prompts.push("What current strength is being wasted by a missing unlock?");
     prompts.push("What boring task would create disproportionate future value?");
     prompts.push("What lane is closest to compounding if I bridge one missing piece?");
@@ -427,6 +429,8 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What kind of account is this becoming?",
           "What playstyle does this account naturally support?",
           "What content does this account look built for right now?",
+          "What kind of player would enjoy this account right now?",
+          "What content is one unlock away from opening up right now?",
           "What current strength is being wasted by a missing unlock?",
           "What boring task would create disproportionate future value?",
           "What lane is closest to compounding if I bridge one missing piece?",
