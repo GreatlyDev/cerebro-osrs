@@ -4640,6 +4640,111 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of goal would fit this account without distorting it",
+                "what goal would fit this account without distorting it",
+                "what kind of goal fits this account without distorting it",
+                "what kind of goal fits this account naturally right now",
+            )
+        ):
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                if strongest_label == "Combat":
+                    return (
+                        "The kind of goal that fits this account without distorting it is one that turns combat strength into a cleaner unlock or durable routine, not one that asks you to abandon the lane the account already wants to grow through. "
+                        "That usually keeps progress feeling aligned instead of forced."
+                    )
+                if strongest_label == "Gathering":
+                    return (
+                        "The kind of goal that fits this account without distorting it is one that turns gathering traction into profit, utility, or a useful unlock, not one that drags the whole account into a lane it has not earned yet. "
+                        "That tends to preserve momentum without flattening the account's identity."
+                    )
+                if strongest_label == "Artisan":
+                    return (
+                        "The kind of goal that fits this account without distorting it is one that rewards support and utility cleanup with a visible payoff. "
+                        "That keeps the account feeling deliberately shaped instead of redirected by a flashy but mismatched target."
+                    )
+
+                return (
+                    f"The kind of goal that fits this account without distorting it is one that lets your {strongest_label.lower()} strength open something useful next. "
+                    "That keeps the goal in step with the account instead of making the account twist itself around the goal."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of goal that fits this account naturally right now is one that converts live support work like {unlock_label} into a cleaner future lane. "
+                    "That gives you a goal without making the account feel like it has to become something else first."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of upgrade would feel exciting instead of obligatory",
+                "what upgrade would feel exciting instead of obligatory",
+                "what kind of upgrade would feel exciting right now",
+                "what upgrade would feel exciting right now",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The upgrade most likely to feel exciting instead of obligatory right now is one that cashes in the utility behind {unlock_label}. "
+                    "Those kinds of upgrades usually change how the account plays, not just what number it has."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The upgrade most likely to feel exciting instead of obligatory right now is one that immediately amplifies your {strongest_label.lower()} lane in a noticeable way. "
+                    "You want an upgrade that changes the feel of the account, not one that only looks responsible on a checklist."
+                )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The kind of upgrade that would feel exciting right now is one that turns your {top_skill_name.lower()} traction into something more usable or more rewarding. "
+                    "That is usually more motivating than another invisible layer of preparation."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of progress would keep this account feeling alive over the next week",
+                "what progress would keep this account feeling alive over the next week",
+                "what would keep this account feeling alive over the next week",
+                "what would keep this account alive over the next week",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of progress that would keep this account feeling alive over the next week is progress that keeps turning a live thread like {unlock_label} into something easier to use day after day. "
+                    "That creates the feeling that the account is opening up, not just inching forward."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of progress that would keep this account feeling alive over the next week is a back-and-forth between your stronger {strongest_label.lower()} lane and some cleanup in {weakest_label.lower()}. "
+                    "That gives you visible momentum without letting the account drift into repetition."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of progress that would keep this account feeling alive over the next week is progress that keeps paying off inside your {strongest_label.lower()} lane in a visible way. "
+                    "That helps each login feel like continuation, not reset."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
