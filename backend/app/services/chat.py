@@ -5239,6 +5239,102 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what one change would reduce friction across the whole account",
+                "what change would reduce friction across the whole account",
+                "what one change would reduce friction across this whole account",
+                "what would reduce friction across the whole account",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The one change most likely to reduce friction across the whole account is turning support friction like {unlock_label} into a real convenience layer. "
+                    "That kind of change tends to make every later session easier, not just the next one."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The one change most likely to reduce friction across the whole account is cleaning up the drag in {weakest_label.lower()}. "
+                    "That is usually the small ugly layer that keeps a decent account from feeling smooth everywhere else."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The one change most likely to reduce friction across the whole account is giving your {strongest_label.lower()} strength a cleaner support path. "
+                    "That way the lane you already trust stops demanding extra setup every time you want to use it."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what part of this account is quietly carrying everything",
+                "what part of the account is quietly carrying everything",
+                "what part of this account is quietly carrying the account",
+                "what part of this account is quietly carrying me",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What is quietly carrying a lot right now is the utility value tied up in {unlock_label}. "
+                    "Even if it is not flashy, that kind of support thread often does more for the whole account than another isolated spike."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What is quietly carrying a lot of this account right now is your {strongest_label.lower()} lane. "
+                    "That seems to be the part most of the account's useful momentum is leaning on, even if it is not the thing asking for attention the loudest."
+                )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"What is quietly carrying a lot right now is your {top_skill_name.lower()} progress. "
+                    "It looks like one of the clearest places where the account already has real weight behind it."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what would make this account feel more legendary without becoming tedious",
+                "what would make this account feel legendary without becoming tedious",
+                "what would make this account feel more legendary without becoming a slog",
+                "what would make this account feel legendary without becoming a slog",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would make this account feel more legendary without becoming tedious is turning a live support thread like {unlock_label} into a real unlock or convenience payoff. "
+                    "That kind of progress feels bigger because it widens the account instead of simply asking more from it."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"What would make this account feel more legendary without becoming tedious is polishing your stronger {strongest_label.lower()} lane with just enough {weakest_label.lower()} cleanup to let it breathe. "
+                    "That tends to create a more heroic-feeling account without pushing you into joyless maintenance."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What would make this account feel more legendary without becoming tedious is a visible payoff inside your {strongest_label.lower()} lane that changes how the account feels to use. "
+                    "That is usually the better kind of prestige: noticeable, but still fun."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
