@@ -2057,6 +2057,108 @@ async def test_chat_can_identify_unlock_that_makes_account_feel_more_open(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_identify_progress_that_feels_elite_without_being_joyless(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"ELT{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Elite Without Joyless"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of progress would make the account feel more elite without becoming joyless?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "elite" in content or "prestige" in content or "without becoming joyless" in content
+    assert "bone voyage" in content or "support" in content or "combat" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_habit_that_quietly_wastes_account_potential(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"WST{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Quiet Waste"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of habit would quietly waste the account's potential?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "waste" in content or "almost-ready" in content or "delay" in content
+    assert "bone voyage" in content or "support" in content or "combat" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_improvement_that_makes_account_future_proof(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"FTR{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Future Proof"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What one improvement would make the account feel dramatically more future proof?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "future-proof" in content or "future proof" in content or "sturdier foundation" in content
+    assert "bone voyage" in content or "support" in content or "combat" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_identify_strength_wasted_by_missing_unlock(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

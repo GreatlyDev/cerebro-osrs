@@ -5140,6 +5140,105 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of progress would make the account feel more elite without becoming joyless",
+                "what progress would make the account feel more elite without becoming joyless",
+                "what would make this account feel more elite without becoming joyless",
+                "what would make this account feel elite without becoming joyless",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of progress that would make this account feel more elite without becoming joyless is progress that turns support friction like {unlock_label} into cleaner high-value access. "
+                    "That is the sort of prestige that improves the whole account instead of just asking for more strain."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel more elite without becoming joyless is progress that lets your stronger {strongest_label.lower()} lane stand on top of cleaner {weakest_label.lower()} support. "
+                    "That usually gives the account a sharper feel without turning every session into punishment."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel more elite without becoming joyless is progress that makes your {strongest_label.lower()} strength more polished and more practical at the same time. "
+                    "That tends to feel better than prestige that only makes the account more demanding."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of habit would quietly waste the account's potential",
+                "what habit would quietly waste the account's potential",
+                "what habit would quietly waste this account's potential",
+                "what habit would quietly waste this account",
+            )
+        ):
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The habit most likely to quietly waste this account's potential is overleaning on {strongest_label.lower()} while always postponing the cleanup still sitting in {weakest_label.lower()}. "
+                    "That is how a strong account ends up feeling permanently almost-ready."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The habit most likely to quietly waste this account's potential is treating live support work like {unlock_label} as something to maybe circle back to later. "
+                    "That kind of delay is subtle, but it keeps the account from ever fully cashing in its own momentum."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The habit most likely to quietly waste this account is always choosing visible progress over friction cleanup in {weakest_label.lower()}. "
+                    "That usually feels fine in the moment and expensive over time."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what one improvement would make the account feel dramatically more future proof",
+                "what improvement would make the account feel dramatically more future proof",
+                "what one improvement would make this account feel dramatically more future proof",
+                "what would make this account feel more future proof",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The one improvement most likely to make this account feel dramatically more future-proof is one that turns support friction like {unlock_label} into a durable convenience layer. "
+                    "That kind of change pays you back in every later plan instead of only in the current one."
+                )
+
+            if weakest_category is not None and strongest_category is not None and weakest_category != strongest_category:
+                weakest_label = weakest_category[0].title()
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The one improvement most likely to make this account feel more future-proof is cleaning up {weakest_label.lower()} under your stronger {strongest_label.lower()} lane. "
+                    "That usually gives the account a sturdier foundation for whatever direction you want to take later."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The one improvement most likely to make this account feel more future-proof is one that makes your {strongest_label.lower()} lane easier to reuse across more of the game. "
+                    "That kind of improvement ages better than a narrow spike."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",

@@ -398,6 +398,9 @@ function buildQuickPrompts(
     prompts.push("What kind of progress would make this account feel more self sufficient?");
     prompts.push("What kind of habit would make the account feel more premium over a month?");
     prompts.push("What one unlock would make the account feel dramatically more open?");
+    prompts.push("What kind of progress would make the account feel more elite without becoming joyless?");
+    prompts.push("What kind of habit would quietly waste the account's potential?");
+    prompts.push("What one improvement would make the account feel dramatically more future proof?");
     prompts.push("What current strength is being wasted by a missing unlock?");
     prompts.push("What boring task would create disproportionate future value?");
     prompts.push("What lane is closest to compounding if I bridge one missing piece?");
@@ -501,6 +504,9 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What kind of progress would make this account feel more self sufficient?",
           "What kind of habit would make the account feel more premium over a month?",
           "What one unlock would make the account feel dramatically more open?",
+          "What kind of progress would make the account feel more elite without becoming joyless?",
+          "What kind of habit would quietly waste the account's potential?",
+          "What one improvement would make the account feel dramatically more future proof?",
           "What current strength is being wasted by a missing unlock?",
           "What boring task would create disproportionate future value?",
           "What lane is closest to compounding if I bridge one missing piece?",
