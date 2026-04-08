@@ -4943,6 +4943,105 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of progress would make this account feel more prestigious",
+                "what progress would make this account feel more prestigious",
+                "what would make this account feel more prestigious",
+                "what would make this account feel more distinguished",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of progress that would make this account feel more prestigious right now is progress that turns live utility work like {unlock_label} into something that is both visible and useful. "
+                    "That kind of prestige tends to feel better than a hollow flex because it changes what the account can actually do."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel more prestigious is progress that lets your stronger {strongest_label.lower()} lane stand on top of cleaner {weakest_label.lower()} support. "
+                    "That gives the account a more finished kind of status, not just a louder one."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel more prestigious is progress that turns your {strongest_label.lower()} strength into a more complete expression of the account. "
+                    "Prestige usually lands best when the account feels polished, not just inflated."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of task is flashy but low real value right now",
+                "what task is flashy but low real value right now",
+                "what looks flashy but is low real value right now",
+                "what flashy thing is low value for this account right now",
+            )
+        ):
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of task that is flashy but low real value right now is one that tries to cash in your {strongest_label.lower()} lane without respecting the drag still sitting in {weakest_label.lower()}. "
+                    "That is the kind of thing that looks exciting in the short term but does not actually stabilize the account."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The flashy but low-value move right now is anything that skips over live utility friction like {unlock_label} in favor of something louder. "
+                    "If the account still has that kind of loose support thread, the flash usually lands thinner than it looks."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of task that is flashy but low real value right now is one that avoids the awkwardness still sitting in {weakest_label.lower()} just because it is less glamorous to fix. "
+                    "That usually creates more spectacle than progress."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what one improvement would make the account feel most transformed",
+                "what one improvement would make this account feel most transformed",
+                "what one improvement would transform this account the most",
+                "what would transform this account the most right now",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The one improvement most likely to make this account feel transformed right now is converting support friction like {unlock_label} into a real convenience unlock. "
+                    "That kind of change tends to touch every later session instead of only one number on the account."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The one improvement most likely to transform this account is giving your stronger {strongest_label.lower()} lane cleaner footing through {weakest_label.lower()} cleanup. "
+                    "That usually changes how the whole account feels, not just how one part of it performs."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The one improvement most likely to transform this account is one that makes your {strongest_label.lower()} lane more usable every time you log in. "
+                    "That kind of transformation feels bigger because it changes rhythm, not just totals."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
