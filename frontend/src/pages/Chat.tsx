@@ -389,6 +389,9 @@ function buildQuickPrompts(
     prompts.push("What kind of milestone would feel genuinely worth chasing next?");
     prompts.push("What kind of grind is too dry for this account right now?");
     prompts.push("What kind of progress would make the next login feel obvious instead of uncertain?");
+    prompts.push("What would make this account feel more premium or unlocked?");
+    prompts.push("What kind of task is secretly too early even if it looks tempting?");
+    prompts.push("What kind of progress would make this account feel less awkward and more complete?");
     prompts.push("What current strength is being wasted by a missing unlock?");
     prompts.push("What boring task would create disproportionate future value?");
     prompts.push("What lane is closest to compounding if I bridge one missing piece?");
@@ -483,6 +486,9 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What kind of milestone would feel genuinely worth chasing next?",
           "What kind of grind is too dry for this account right now?",
           "What kind of progress would make the next login feel obvious instead of uncertain?",
+          "What would make this account feel more premium or unlocked?",
+          "What kind of task is secretly too early even if it looks tempting?",
+          "What kind of progress would make this account feel less awkward and more complete?",
           "What current strength is being wasted by a missing unlock?",
           "What boring task would create disproportionate future value?",
           "What lane is closest to compounding if I bridge one missing piece?",

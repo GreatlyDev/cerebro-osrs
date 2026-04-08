@@ -4844,6 +4844,105 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what would make this account feel more premium or unlocked",
+                "what would make this account feel more premium",
+                "what would make this account feel more unlocked",
+                "what would make this account feel more complete and premium",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What would make this account feel more premium or unlocked right now is turning support friction like {unlock_label} into a real convenience win. "
+                    "That kind of utility tends to make the whole account feel like it has more room to breathe instead of more chores attached to it."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"What would make this account feel more premium right now is giving your stronger {strongest_label.lower()} lane cleaner support in {weakest_label.lower()}. "
+                    "That usually makes the account feel more complete and less like a powerful core wrapped in avoidable friction."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What would make this account feel more premium right now is a step that turns your {strongest_label.lower()} strength into something more usable every session. "
+                    "You want the account to feel smoother and more unlocked, not just more leveled."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of task is secretly too early even if it looks tempting",
+                "what task is secretly too early even if it looks tempting",
+                "what looks tempting but is too early right now",
+                "what am i tempted to do too early right now",
+            )
+        ):
+            if weakest_category is not None and strongest_category is not None and weakest_category != strongest_category:
+                weakest_label = weakest_category[0].title()
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of task that is secretly too early right now is one that assumes your {weakest_label.lower()} support is already sturdy enough just because your {strongest_label.lower()} lane looks strong. "
+                    "That is the kind of temptation that makes an account feel more impressive than ready."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What looks tempting but is probably too early right now is any push that skips past live support friction like {unlock_label}. "
+                    "If you bypass that kind of setup too long, the account starts borrowing against comfort it has not actually earned yet."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"What is most likely too early right now is anything that asks your {strongest_label.lower()} strength to carry a lane it has not been properly connected into yet. "
+                    "That usually feels exciting for a session or two and then starts to feel awkward."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of progress would make this account feel less awkward and more complete",
+                "what progress would make this account feel less awkward and more complete",
+                "what would make this account feel less awkward and more complete",
+                "what would make this account feel less awkward",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of progress that would make this account feel less awkward and more complete is progress that resolves support friction like {unlock_label} in a visible way. "
+                    "That usually removes the little points of resistance that stop a decent account from feeling good to actually use."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel less awkward is progress that lets your stronger {strongest_label.lower()} lane finally run on top of less drag in {weakest_label.lower()}. "
+                    "That is often the difference between an account that looks good and one that actually feels complete."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel less awkward is progress that cleans up the friction in {weakest_label.lower()}. "
+                    "That kind of cleanup tends to make the rest of the account feel more finished without needing a dramatic leap."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
