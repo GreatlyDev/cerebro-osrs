@@ -4745,6 +4745,105 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of milestone would feel genuinely worth chasing next",
+                "what milestone would feel genuinely worth chasing next",
+                "what kind of milestone would feel worth chasing next",
+                "what milestone would actually feel worth chasing next",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of milestone that would feel genuinely worth chasing next is one that turns a live unlock thread like {unlock_label} into a real shift in how the account moves. "
+                    "That gives you a milestone that feels earned in play, not just impressive on paper."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of milestone that would feel worth chasing next is one that lets your stronger {strongest_label.lower()} lane finally cash out through cleanup in {weakest_label.lower()}. "
+                    "That usually feels better than a milestone that ignores the account's current shape."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of milestone that would feel worth chasing next is one that makes your {strongest_label.lower()} strength more visible and more usable. "
+                    "You want something that changes the feel of the account, not just the wording of the next target."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of grind is too dry for this account right now",
+                "what grind is too dry for this account right now",
+                "what kind of grind would be too dry for this account",
+                "what grind would be too dry for this account",
+            )
+        ):
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of grind that is probably too dry for this account right now is one that keeps farming {weakest_label.lower()} in isolation while your more live {strongest_label.lower()} lane sits waiting for a cleaner payoff. "
+                    "That is the kind of work that can feel responsible without feeling rewarding."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of grind that is too dry for this account right now is one that keeps ignoring utility friction like {unlock_label} while asking you to stack more raw effort on top. "
+                    "That tends to make the account feel heavier, not more alive."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of grind that is too dry for this account right now is one that overcommits to {weakest_label.lower()} without any visible payoff nearby. "
+                    "You probably want progress that creates some immediate feel before you ask the account to eat more pure setup."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of progress would make the next login feel obvious instead of uncertain",
+                "what progress would make the next login feel obvious instead of uncertain",
+                "what would make the next login feel obvious instead of uncertain",
+                "what would make my next login feel obvious",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of progress that would make the next login feel obvious is progress that leaves a live utility thread like {unlock_label} in a cleaner state than it started. "
+                    "That gives your future self a clear re-entry point instead of another vague pile of things to maybe do."
+                )
+
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of progress that would make the next login feel obvious is progress that bridges your stronger {strongest_label.lower()} lane into a little cleanup in {weakest_label.lower()}. "
+                    "That leaves a clean continuation path instead of a session that ends with the account feeling split."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of progress that would make the next login feel obvious is progress that ends with one visible payoff inside your {strongest_label.lower()} lane. "
+                    "That way the next session starts with continuation, not re-evaluation."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",

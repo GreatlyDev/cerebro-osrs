@@ -1649,6 +1649,108 @@ async def test_chat_can_identify_progress_that_keeps_account_alive_over_week(
 
 
 @pytest.mark.asyncio
+async def test_chat_can_identify_milestone_that_feels_worth_chasing(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"MS{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Worth Chasing"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of milestone would feel genuinely worth chasing next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "milestone" in content or "worth chasing" in content or "earned in play" in content
+    assert "bone voyage" in content or "combat" in content or "usable" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_grind_that_is_too_dry_for_account(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"DRY{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Too Dry"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of grind is too dry for this account right now?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "dry" in content or "heavier" in content or "responsible" in content
+    assert "bone voyage" in content or "combat" in content or "setup" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_can_identify_progress_that_makes_next_login_obvious(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_fetch_enriched_account_summary(rsn: str) -> dict[str, object]:
+        return _sample_account_readout_summary(rsn)
+
+    monkeypatch.setattr(
+        account_service.ingestion_service,
+        "fetch_enriched_account_summary",
+        fake_fetch_enriched_account_summary,
+    )
+
+    account_response = await client.post("/api/accounts", json={"rsn": f"LOG{uuid4().hex[:8]}"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={"active_unlocks": ["bone voyage"]},
+    )
+    session_response = await client.post("/api/chat/sessions", json={"title": "Obvious Login"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What kind of progress would make the next login feel obvious instead of uncertain?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "next login" in content or "future self" in content or "continuation" in content
+    assert "bone voyage" in content or "combat" in content or "cleanup" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_identify_strength_wasted_by_missing_unlock(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
