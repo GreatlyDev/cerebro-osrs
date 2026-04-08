@@ -5042,6 +5042,104 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of progress would make this account feel more self sufficient",
+                "what progress would make this account feel more self sufficient",
+                "what would make this account feel more self sufficient",
+                "what would make this account more self sufficient",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of progress that would make this account feel more self-sufficient right now is progress that turns live support friction like {unlock_label} into something you can rely on every session. "
+                    "That kind of utility lowers dependence on workarounds and makes the account feel more capable on its own."
+                )
+
+            if weakest_category is not None and strongest_category is not None and weakest_category != strongest_category:
+                weakest_label = weakest_category[0].title()
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel more self-sufficient is progress that removes the drag in {weakest_label.lower()} underneath your stronger {strongest_label.lower()} lane. "
+                    "That is usually what turns momentum into something durable instead of fragile."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel more self-sufficient is progress that makes your {strongest_label.lower()} strength easier to cash in without extra setup every time. "
+                    "That is how an account starts to feel dependable instead of merely promising."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what kind of habit would make the account feel more premium over a month",
+                "what habit would make the account feel more premium over a month",
+                "what kind of habit would make this account feel more premium over a month",
+                "what habit would make this account feel more premium over time",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of habit that would make this account feel more premium over a month is consistently converting one live support thread like {unlock_label} into cleaner convenience. "
+                    "That kind of steady utility work compounds into an account that feels smoother and more complete, not just more leveled."
+                )
+
+            if weakest_category is not None and strongest_category is not None and weakest_category != strongest_category:
+                weakest_label = weakest_category[0].title()
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The habit most likely to make this account feel more premium over time is a routine that steadily patches {weakest_label.lower()} while continuing to cash out through {strongest_label.lower()}. "
+                    "That is the kind of month-long rhythm that makes the account feel polished instead of lopsided."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The habit most likely to make this account feel more premium over time is one that keeps turning your {strongest_label.lower()} strength into cleaner session-to-session usability. "
+                    "That is the difference between an account that is high level and one that feels finished."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what one unlock would make the account feel dramatically more open",
+                "what unlock would make the account feel dramatically more open",
+                "what one unlock would make this account feel dramatically more open",
+                "what unlock would make this account feel much more open",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The one unlock most likely to make this account feel dramatically more open right now is the one that resolves support friction around {unlock_label}. "
+                    "Unlocks like that tend to widen the whole account instead of only one corner of it."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The unlock most likely to make this account feel more open is one that relieves the drag sitting in {weakest_label.lower()}. "
+                    "That kind of unlock usually creates more room than another isolated push in a lane that is already doing fine."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The unlock most likely to make this account feel more open is one that lets your {strongest_label.lower()} strength connect into more of the game. "
+                    "That is usually where an account starts to feel wider, not just stronger."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
