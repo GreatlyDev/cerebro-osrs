@@ -48,31 +48,31 @@ export function QuestsView({
         title="Unlock-first quest planning"
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
-        <Panel className="space-y-4">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader
             eyebrow="Catalog"
             subtitle="Browse the structured quest catalog and open any entry into its own richer page."
             title="Quest board"
           />
           {filteredQuests.length === 0 ? (
-            <div className="rounded-[16px] border border-dashed border-osrs-border/70 bg-osrs-panel/40 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+            <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
               No quests matched that search. Clear the filter or try a broader term to reopen the catalog.
             </div>
           ) : (
             <div className="grid gap-3">
               {filteredQuests.map((quest) => (
                 <div
-                  className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-4 shadow-insetPanel"
+                  className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                   key={quest.id}
                 >
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                        <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                           {quest.difficulty}
                         </span>
-                        <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                        <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                           {quest.category}
                         </span>
                       </div>
@@ -90,7 +90,7 @@ export function QuestsView({
         </Panel>
 
         <div className="space-y-6">
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Selected quest"
               subtitle="This keeps a cleaner preview in view before you move into the dedicated quest page."
@@ -98,13 +98,13 @@ export function QuestsView({
             />
             {selectedQuest ? (
               <div className="space-y-4">
-                <div className="rounded-[18px] border border-osrs-border-light/60 bg-[linear-gradient(180deg,rgba(60,46,30,0.84),rgba(31,24,18,0.98))] p-5 shadow-insetPanel">
+                <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <h3 className="font-display text-2xl text-osrs-text">{selectedQuest.name}</h3>
                   <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
                     {selectedQuest.short_description}
                   </p>
                 </div>
-                <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-4 shadow-insetPanel">
+                <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Why it matters</p>
                   <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{selectedQuest.why_it_matters}</p>
                 </div>
@@ -113,13 +113,13 @@ export function QuestsView({
                 </Button>
               </div>
             ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/70 bg-osrs-panel/40 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
                 No quest is selected yet. Open one from the catalog and Cerebro will load the dedicated unlock page.
               </div>
             )}
           </Panel>
 
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Planner pull"
               subtitle="These are the quest-shaped ranked actions currently surfacing from the planner."
@@ -129,7 +129,7 @@ export function QuestsView({
               <div className="grid gap-3">
                 {recommendedQuestActions.slice(0, 3).map((action) => (
                   <div
-                    className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel"
+                    className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                     key={`${action.action_type}-${action.title}`}
                   >
                     <strong className="block text-base text-osrs-text">{action.title}</strong>
@@ -138,7 +138,7 @@ export function QuestsView({
                 ))}
               </div>
             ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/70 bg-osrs-panel/40 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
                 No ranked quest actions are active yet. Create a goal and sync an account to make the quest board sharper.
               </div>
             )}

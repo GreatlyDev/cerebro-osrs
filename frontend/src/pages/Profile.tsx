@@ -55,8 +55,8 @@ export function ProfileView({
         title="Set the planning baseline for your workspace"
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
-        <Panel className="space-y-4">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader
             eyebrow="Workspace defaults"
             subtitle="These preferences follow you across recommendations, goals, and advisor replies."
@@ -64,7 +64,7 @@ export function ProfileView({
           />
           <div className="grid gap-4 md:grid-cols-2">
             <input
-              className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) =>
                 setProfileDraft((current) => ({
                   ...current,
@@ -75,7 +75,7 @@ export function ProfileView({
               value={profileDraft.display_name}
             />
             <input
-              className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) =>
                 setProfileDraft((current) => ({
                   ...current,
@@ -86,7 +86,7 @@ export function ProfileView({
               value={profileDraft.primary_account_rsn}
             />
             <select
-              className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none focus:border-osrs-border-light/80"
+              className="rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none focus:border-osrs-border-light/80"
               onChange={(event) =>
                 setProfileDraft((current) => ({
                   ...current,
@@ -100,7 +100,7 @@ export function ProfileView({
               <option value="profitable">Profitable</option>
             </select>
             <select
-              className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none focus:border-osrs-border-light/80"
+              className="rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none focus:border-osrs-border-light/80"
               onChange={(event) =>
                 setProfileDraft((current) => ({
                   ...current,
@@ -115,7 +115,7 @@ export function ProfileView({
             </select>
           </div>
           <div className="grid gap-3">
-            <label className="flex items-center gap-3 rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 text-sm text-osrs-text-soft shadow-insetPanel">
+            <label className="flex items-center gap-3 rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-4 text-sm text-osrs-text-soft shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <input
                 checked={profileDraft.prefers_afk_methods}
                 onChange={(event) =>
@@ -128,7 +128,7 @@ export function ProfileView({
               />
               <span>Prefer AFK methods</span>
             </label>
-            <label className="flex items-center gap-3 rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 text-sm text-osrs-text-soft shadow-insetPanel">
+            <label className="flex items-center gap-3 rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-4 text-sm text-osrs-text-soft shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <input
                 checked={profileDraft.prefers_profitable_methods}
                 onChange={(event) =>
@@ -144,7 +144,7 @@ export function ProfileView({
           </div>
         </Panel>
 
-        <Panel className="space-y-4">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader
             eyebrow="Primary account"
             subtitle="Pick which linked account the rest of the workspace should naturally orient around."
@@ -159,7 +159,7 @@ export function ProfileView({
                     className={`cerebro-hover rounded-[16px] border px-4 py-4 text-left shadow-insetPanel ${
                       isActive
                         ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(200,164,90,0.22),rgba(58,47,38,0.12))] shadow-glowGold"
-                        : "border-osrs-border/70 bg-osrs-panel-2/55"
+                        : "border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))]"
                     }`}
                     key={account.id}
                     onClick={() =>
@@ -183,7 +183,7 @@ export function ProfileView({
               No linked accounts yet. Add an RSN from the dashboard first, then come back here to set the default account.
             </div>
           )}
-          <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 text-sm leading-6 text-osrs-text-soft shadow-insetPanel">
+          <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-4 text-sm leading-6 text-osrs-text-soft shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <strong className="block text-osrs-text">Current saved profile</strong>
             <p className="mt-2">
               {profile

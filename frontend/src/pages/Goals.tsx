@@ -105,8 +105,8 @@ export function GoalsView({
         title="Anchor the workspace around a real target"
       />
 
-      <div className="grid gap-6 xl:grid-cols-[24rem_minmax(0,1fr)]">
-        <Panel className="space-y-4">
+      <div className="grid gap-5 xl:grid-cols-[24rem_minmax(0,1fr)]">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader
             eyebrow="Create goal"
             subtitle="Use one strong goal to sharpen the planner before you branch into secondary targets."
@@ -114,13 +114,13 @@ export function GoalsView({
           />
           <div className="space-y-3">
             <input
-              className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) => setNewGoalTitle(event.target.value)}
               placeholder="Goal title"
               value={newGoalTitle}
             />
             <input
-              className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none focus:border-osrs-border-light/80"
+              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none focus:border-osrs-border-light/80"
               onChange={(event) => setNewGoalType(event.target.value)}
               placeholder="Goal type"
               value={newGoalType}
@@ -137,7 +137,7 @@ export function GoalsView({
                   className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.16em] transition ${
                     newGoalType === goalType
                       ? "border-osrs-border-light/80 bg-osrs-gold/12 text-osrs-gold-soft"
-                      : "border-osrs-border/70 bg-osrs-panel-2/60 text-osrs-text-soft hover:border-osrs-border-light/60"
+                      : "border-osrs-border/45 bg-black/20 text-osrs-text-soft hover:border-osrs-border-light/60"
                   }`}
                   key={goalType}
                   onClick={() => setNewGoalType(goalType)}
@@ -148,7 +148,7 @@ export function GoalsView({
               ))}
             </div>
             <input
-              className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) => setNewGoalTargetRsn(event.target.value)}
               placeholder="Target RSN (optional)"
               value={newGoalTargetRsn}
@@ -165,40 +165,40 @@ export function GoalsView({
               {busyAction === "create-goal" ? "Creating..." : "Create goal"}
             </Button>
           </div>
-          <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/50 px-4 py-4 text-sm leading-6 text-osrs-text-soft">
+          <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-4 text-sm leading-6 text-osrs-text-soft">
             Goal plans feed ranked actions, advisor replies, and account-aware planning. Use one of the common goal types or make your own if your target does not fit the preset list.
           </div>
         </Panel>
 
         <div className="space-y-6">
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Active board"
               subtitle="Open a goal page for the full planning surface, or generate a fresh plan from here."
               title="Current goals"
             />
             {goals.length === 0 ? (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/70 bg-osrs-panel/40 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
                 No goals yet. Create one on the left to turn the rest of Cerebro into a more opinionated planning workspace.
               </div>
             ) : (
               <div className="grid gap-3">
                 {goals.map((goal) => (
                   <div
-                    className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-4 shadow-insetPanel"
+                    className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                     key={goal.id}
                   >
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                          <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                             {goal.status}
                           </span>
-                          <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                          <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                             {goal.goal_type}
                           </span>
                           {goal.target_account_rsn ? (
-                            <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                            <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                               {goal.target_account_rsn}
                             </span>
                           ) : null}
@@ -225,7 +225,7 @@ export function GoalsView({
             )}
           </Panel>
 
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Plan readout"
               subtitle="The latest generated plan stays visible here so the goal board still feels useful before you drill into a dedicated goal page."
@@ -233,7 +233,7 @@ export function GoalsView({
             />
             {selectedGoalPlan ? (
               <div className="space-y-4">
-                <div className="rounded-[18px] border border-osrs-border-light/60 bg-[linear-gradient(180deg,rgba(60,46,30,0.84),rgba(31,24,18,0.98))] p-5 shadow-insetPanel">
+                <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Summary</p>
@@ -245,7 +245,7 @@ export function GoalsView({
                   </div>
                 </div>
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                  <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-5 shadow-insetPanel">
+                  <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                     <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Steps</p>
                     <ol className="mt-4 space-y-3 text-sm leading-7 text-osrs-text-soft">
                       {selectedGoalPlan.steps.map((step, index) => (
@@ -258,12 +258,12 @@ export function GoalsView({
                       ))}
                     </ol>
                   </div>
-                  <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-5 shadow-insetPanel">
+                  <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                     <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Recommendation snapshot</p>
                     <div className="mt-4 grid gap-3">
                       {Object.entries(selectedGoalPlan.recommendations).map(([key, value]) => (
                         <div
-                          className="rounded-[14px] border border-osrs-border/60 bg-osrs-panel-2/60 px-4 py-3"
+                          className="rounded-[14px] border border-osrs-border/45 bg-black/20 px-4 py-3"
                           key={key}
                         >
                           <strong className="block text-sm text-osrs-text">
@@ -277,7 +277,7 @@ export function GoalsView({
                 </div>
               </div>
             ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/70 bg-osrs-panel/40 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
                 No plan selected yet. Generate a plan from one of the goal cards above and it will surface here immediately.
               </div>
             )}
