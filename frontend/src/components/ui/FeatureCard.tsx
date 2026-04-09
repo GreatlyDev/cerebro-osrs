@@ -19,7 +19,7 @@ export function FeatureCard({
   title,
   summary,
   eyebrow,
-  accent = "from-osrs-gold/20 to-osrs-panel-2/10",
+  accent = "from-[rgba(212,175,55,0.08)] to-transparent",
   meta,
   actionLabel,
   onAction,
@@ -29,22 +29,22 @@ export function FeatureCard({
   return (
     <Panel
       tone="soft"
-      className={`cerebro-hover overflow-hidden border-osrs-border/40 bg-gradient-to-br ${accent}`}
+      className={`cerebro-hover overflow-hidden border-white/8 bg-gradient-to-br ${accent}`}
     >
       <div className="space-y-3.5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.22em] text-osrs-gold">{eyebrow}</p>
-            <h3 className="mt-2 font-display text-[1.02rem] font-semibold text-osrs-text">{title}</h3>
+            <p className="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-osrs-gold">{eyebrow}</p>
+            <h3 className="mt-2 font-display text-[0.98rem] font-bold uppercase tracking-[0.06em] text-white">{title}</h3>
           </div>
           {badge ? (
-            <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+            <span className="border border-white/8 bg-black/30 px-2.5 py-1 font-mono text-[0.54rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
               {badge}
             </span>
           ) : null}
         </div>
         <p className="text-[0.92rem] leading-6 text-osrs-text-soft">{summary}</p>
-        {meta ? <p className="text-xs uppercase tracking-[0.18em] text-osrs-text-soft/80">{meta}</p> : null}
+        {meta ? <p className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-text-soft/80">{meta}</p> : null}
         {footer}
         {actionLabel && onAction ? (
           <Button className="w-full justify-center" onClick={onAction} variant="secondary">
