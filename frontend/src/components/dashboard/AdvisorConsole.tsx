@@ -73,11 +73,11 @@ export function AdvisorConsole({
           </div>
         }
         eyebrow="Advisor Console"
-        subtitle="A premium chat surface over live account telemetry. Cerebro should feel useful for direct questions, practical OSRS decisions, and goal-guided planning when you want it."
+        subtitle="A premium chat surface over live account telemetry. Cerebro should feel useful for direct questions, practical OSRS decisions, and broader account reads before any goal planning takes over."
         title="Consult Cerebro"
       />
 
-      <div className="rounded-[20px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+      <div className="rounded-[20px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-2 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Quick prompts</span>
           {quickPrompts.map((prompt) => (
@@ -105,7 +105,7 @@ export function AdvisorConsole({
             </span>
           </div>
 
-          <div className="cerebro-stagger space-y-3">
+          <div className="cerebro-stagger space-y-3 min-h-[12rem]">
             {messages.map((message, index) => (
               <MessageBubble content={message.content} key={`${message.role}-${index}`} role={message.role} />
             ))}

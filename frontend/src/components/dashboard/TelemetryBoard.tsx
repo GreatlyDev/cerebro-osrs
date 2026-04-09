@@ -30,15 +30,15 @@ export function TelemetryBoard({
   const spotlightSummary =
     topAction?.summary ??
     (selectedAccountRsn
-      ? "Live account context is available. Use this board to keep the account’s strongest signals in view while Cerebro guides the next move."
+      ? "Live account context is available. Use this board to keep the account's strongest signals in view while Cerebro guides the next move."
       : "Select and sync an account to unlock the full telemetry board.");
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6">
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.9fr)]">
-        <div className="relative overflow-hidden rounded-[28px] border border-osrs-border/80 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.14),transparent_24%),linear-gradient(135deg,rgba(19,19,19,0.98),rgba(24,20,17,0.98)_62%,rgba(48,40,30,0.92))] p-8 shadow-osrs">
+        <div className="relative overflow-hidden rounded-[28px] border border-osrs-border/70 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.12),transparent_24%),linear-gradient(135deg,rgba(19,19,19,0.98),rgba(24,20,17,0.98)_62%,rgba(48,40,30,0.86))] p-7 shadow-osrs">
           <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.18))]" />
-          <div className="relative space-y-8">
+          <div className="relative space-y-6">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full border border-osrs-border-light/80 bg-osrs-gold/10 px-3 py-1 text-[0.64rem] uppercase tracking-[0.2em] text-osrs-gold-soft">
                 Critical movement
@@ -48,7 +48,7 @@ export function TelemetryBoard({
               </span>
             </div>
             <div className="space-y-3">
-              <h2 className="max-w-4xl font-display text-3xl font-semibold uppercase leading-tight text-osrs-text md:text-5xl">
+              <h2 className="max-w-4xl font-display text-[2rem] font-semibold uppercase leading-tight text-osrs-text md:text-[3.2rem]">
                 {spotlightTitle}
               </h2>
               <p className="max-w-3xl text-sm leading-7 text-osrs-text-soft md:text-base">
@@ -56,17 +56,17 @@ export function TelemetryBoard({
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-[18px] border border-osrs-border/70 bg-black/20 px-4 py-4">
+              <div className="rounded-[18px] border border-osrs-border/60 bg-black/20 px-4 py-3.5">
                 <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Highest skill</p>
                 <p className="mt-2 font-display text-xl text-osrs-text">
                   {profile?.highest_skill ?? topSkills[0]?.skill ?? "Unknown"}
                 </p>
               </div>
-              <div className="rounded-[18px] border border-osrs-border/70 bg-black/20 px-4 py-4">
+              <div className="rounded-[18px] border border-osrs-border/60 bg-black/20 px-4 py-3.5">
                 <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Quest completions</p>
                 <p className="mt-2 font-display text-xl text-osrs-text">{completedQuests}</p>
               </div>
-              <div className="rounded-[18px] border border-osrs-border/70 bg-black/20 px-4 py-4">
+              <div className="rounded-[18px] border border-osrs-border/60 bg-black/20 px-4 py-3.5">
                 <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Live unlock threads</p>
                 <p className="mt-2 font-display text-xl text-osrs-text">{trackedUnlocks}</p>
               </div>
@@ -74,11 +74,11 @@ export function TelemetryBoard({
           </div>
         </div>
 
-        <div className="space-y-3 rounded-[24px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(26,22,18,0.96))] p-5 shadow-osrs">
+        <div className="space-y-3 rounded-[24px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(26,22,18,0.96))] p-5 shadow-osrs">
           <div>
             <p className="text-[0.64rem] uppercase tracking-[0.22em] text-osrs-gold">Live telemetry</p>
             <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
-              Keep the account’s cleanest signals visible while you move through Cerebro.
+              Keep the account's cleanest signals visible while you move through Cerebro.
             </p>
           </div>
           <div className="space-y-3">
@@ -100,7 +100,7 @@ export function TelemetryBoard({
         </div>
       </div>
 
-      <section className="space-y-5">
+      <section className="space-y-4">
         <div className="flex items-center gap-5">
           <h3 className="font-display text-sm uppercase tracking-[0.34em] text-osrs-text">Active skill tracking</h3>
           <div className="h-px flex-1 bg-osrs-border/70" />

@@ -29,13 +29,13 @@ export function FeatureCard({
   return (
     <Panel
       tone="soft"
-      className={`cerebro-hover overflow-hidden border-osrs-border/45 bg-gradient-to-br ${accent}`}
+      className={`cerebro-hover overflow-hidden border-osrs-border/40 bg-gradient-to-br ${accent}`}
     >
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[0.68rem] uppercase tracking-[0.22em] text-osrs-gold">{eyebrow}</p>
-            <h3 className="mt-2 font-display text-lg font-semibold text-osrs-text">{title}</h3>
+            <p className="text-[0.64rem] uppercase tracking-[0.22em] text-osrs-gold">{eyebrow}</p>
+            <h3 className="mt-2 font-display text-[1.02rem] font-semibold text-osrs-text">{title}</h3>
           </div>
           {badge ? (
             <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
@@ -43,7 +43,7 @@ export function FeatureCard({
             </span>
           ) : null}
         </div>
-        <p className="text-sm leading-6 text-osrs-text-soft">{summary}</p>
+        <p className="text-[0.92rem] leading-6 text-osrs-text-soft">{summary}</p>
         {meta ? <p className="text-xs uppercase tracking-[0.18em] text-osrs-text-soft/80">{meta}</p> : null}
         {footer}
         {actionLabel && onAction ? (

@@ -123,7 +123,7 @@ export function DashboardPage(props: DashboardPageProps) {
         goals.length > 0
           ? `${goals.length} goal${goals.length > 1 ? "s" : ""} are available as planning anchors, but they are only one input into Cerebro's broader account advice.`
           : "Goals still matter, but they should sharpen the workspace when you want them instead of defining every recommendation by default.",
-      meta: goals.length > 0 ? `${goals[0]?.status} • ${goals[0]?.target_account_rsn ?? "workspace-wide"}` : "No goals yet",
+      meta: goals.length > 0 ? `${goals[0]?.status} / ${goals[0]?.target_account_rsn ?? "workspace-wide"}` : "No goals yet",
       actionLabel: goals.length > 0 ? "Open Goal Planner" : "Create First Goal",
       onAction: onGoToGoals,
     },
@@ -172,11 +172,12 @@ export function DashboardPage(props: DashboardPageProps) {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <HeroPanel
         bankValue={formatBankValue(selectedProgress)}
         combatLevel={selectedSnapshot?.summary.combat_level ?? null}
         displayName={profile?.display_name ?? currentUser.display_name}
+        overallLevel={selectedSnapshot?.summary.overall_level ?? null}
         questPoints={formatQuestPoints(selectedProgress)}
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
       />

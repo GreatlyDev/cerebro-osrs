@@ -18,11 +18,11 @@ type FeatureGridProps = {
 
 export function FeatureGrid({ items }: FeatureGridProps) {
   return (
-    <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(11,11,11,0.98),rgba(15,13,11,0.98))]" tone="soft">
+    <Panel className="space-y-3 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(11,11,11,0.98),rgba(15,13,11,0.98))]" tone="soft">
       <SectionHeader
         eyebrow="Strategic Surfaces"
-        subtitle="These are the highest-value Cerebro surfaces to keep close at hand as the planner gets smarter."
-        title="Command modules"
+        subtitle="Keep the surfaces that matter most close at hand while Cerebro reads the account and sharpens the next move."
+        title="Command surfaces"
       />
       <div className="cerebro-stagger grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
