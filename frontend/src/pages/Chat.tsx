@@ -54,7 +54,7 @@ export function ChatView({
   }, [selectedChatSessionId, visibleHistory.length]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHero
         chips={[
           { label: "Active account", value: threadAccountLabel },
@@ -79,9 +79,10 @@ export function ChatView({
             <p className="font-display text-lg text-osrs-text">{intentLabel}</p>
           </div>
         </div>
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.3))] p-3">
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
           <input
-            className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+            className="rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
             onChange={(event) => setChatPrompt(event.target.value)}
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -96,10 +97,11 @@ export function ChatView({
             {busyAction === "chat" ? "Thinking..." : "Consult Advisor"}
           </Button>
         </div>
+        </div>
       </PageHero>
 
-      <div className="grid gap-6 xl:grid-cols-[16rem_minmax(0,1fr)_20rem]">
-        <Panel className="space-y-3">
+      <div className="grid gap-5 xl:grid-cols-[15rem_minmax(0,1fr)_19rem]">
+        <Panel className="space-y-3 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader
             eyebrow="Quick prompts"
             title={selectedSession ? "Keep the thread moving" : "Start from a known question"}
@@ -112,7 +114,7 @@ export function ChatView({
           <div className="grid gap-2">
             {quickPrompts.map((prompt) => (
               <button
-                className="cerebro-hover rounded-[14px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 text-left text-sm text-osrs-text-soft"
+                className="cerebro-hover rounded-[14px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.3))] px-4 py-3 text-left text-sm leading-6 text-osrs-text-soft"
                 key={prompt}
                 onClick={() => onRunChatPrompt(prompt)}
                 type="button"
@@ -123,13 +125,13 @@ export function ChatView({
           </div>
         </Panel>
 
-        <Panel className="space-y-4">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader
-            eyebrow="Latest reply"
+            eyebrow="Live conversation"
             title="Conversation"
-            subtitle="This is where the planner turns structured account intelligence into readable advice."
+            subtitle="Cerebro should read like a real advisor thread, not a pile of one-off planner outputs."
           />
-          <div className="max-h-[70vh] min-h-[24rem] space-y-3 overflow-y-auto pr-1">
+          <div className="max-h-[70vh] min-h-[28rem] space-y-3 overflow-y-auto pr-1">
             {visibleHistory.length > 0 ? (
               visibleHistory.map((exchange) => (
                 <div className="space-y-3" key={`${exchange.sessionId}-${exchange.prompt}`}>
@@ -144,7 +146,7 @@ export function ChatView({
                 </div>
               ))
             ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/70 bg-osrs-panel/40 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
                 {chatReply || "No session history yet. Start with a quick prompt and Cerebro will begin building conversation context here."}
               </div>
             )}
@@ -152,7 +154,7 @@ export function ChatView({
           </div>
         </Panel>
 
-        <Panel className="space-y-4">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader
             eyebrow="Session list"
             title="Conversation threads"
@@ -168,8 +170,8 @@ export function ChatView({
                 <button
                   className={`cerebro-hover rounded-[14px] border px-4 py-3 text-left ${
                     selectedChatSessionId === session.id
-                      ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(200,164,90,0.22),rgba(58,47,38,0.12))] shadow-glowGold"
-                      : "border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))]"
+                      ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(200,164,90,0.18),rgba(20,20,20,0.36))] shadow-glowGold"
+                      : "border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))]"
                   }`}
                   key={session.id}
                   onClick={() => setSelectedChatSessionId(session.id)}
@@ -213,12 +215,12 @@ export function ChatView({
 
       <div className="grid gap-4 xl:grid-cols-3">
         {advisorCapabilities.map((capability) => (
-          <Panel className="space-y-3" key={capability.title}>
+          <Panel className="space-y-3 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4" key={capability.title}>
             <SectionHeader eyebrow={capability.eyebrow} title={capability.title} subtitle={capability.description} />
             <div className="grid gap-2">
               {capability.prompts.map((prompt) => (
                 <button
-                  className="cerebro-hover rounded-[14px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 text-left text-sm text-osrs-text-soft"
+                  className="cerebro-hover rounded-[14px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-3 text-left text-sm leading-6 text-osrs-text-soft"
                   key={prompt}
                   onClick={() => onRunChatPrompt(prompt)}
                   type="button"
@@ -232,29 +234,29 @@ export function ChatView({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-5">
-        <Panel className="space-y-2">
+        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader eyebrow="Thread account" title={threadAccountLabel} />
           <p className="text-sm leading-6 text-osrs-text-soft">
             Cerebro anchors direct stat, gear, route, and sync questions against this account when possible.
           </p>
         </Panel>
-        <Panel className="space-y-2">
+        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader eyebrow="Current lane" title={focusLabel} />
           <p className="text-sm leading-6 text-osrs-text-soft">
             This is the main subject Cerebro thinks the current thread is orbiting right now.
           </p>
         </Panel>
-        <Panel className="space-y-2">
+        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader eyebrow="Current priority" title={intentLabel} />
           <p className="text-sm leading-6 text-osrs-text-soft">
             Cerebro is using this planning intent to shape comparisons, follow-ups, and what it deprioritizes.
           </p>
         </Panel>
-        <Panel className="space-y-2">
+        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader eyebrow="Best next move" title={threadNextMove.title} />
           <p className="text-sm leading-6 text-osrs-text-soft">{threadNextMove.body}</p>
         </Panel>
-        <Panel className="space-y-2">
+        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
           <SectionHeader
             eyebrow="Current blockers"
             title={threadBlockers.length > 0 ? threadBlockers[0] : "No hard blockers tracked"}
@@ -263,7 +265,7 @@ export function ChatView({
             {threadBlockers.length > 0 ? (
               threadBlockers.map((blocker) => (
                 <div
-                  className="rounded-[12px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-2 text-sm text-osrs-text-soft"
+                  className="rounded-[12px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-3 py-2 text-sm text-osrs-text-soft"
                   key={blocker}
                 >
                   {blocker}

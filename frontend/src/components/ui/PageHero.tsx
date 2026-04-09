@@ -25,13 +25,12 @@ export function PageHero({
   children,
 }: PageHeroProps) {
   return (
-    <Panel className="overflow-hidden" tone="hero">
-      <div className="relative space-y-6">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 rounded-[22px] bg-[radial-gradient(circle_at_top,rgba(217,191,134,0.12),transparent_72%)]" />
+    <Panel className="overflow-hidden border-osrs-border/45 bg-[linear-gradient(180deg,rgba(11,11,11,0.98),rgba(15,13,11,0.98))]" tone="soft">
+      <div className="relative space-y-5">
         <div className="relative flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-osrs-border-light/40 bg-osrs-gold/8 px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.24em] text-osrs-gold-soft">
-              <span className="h-2 w-2 rounded-full bg-osrs-gold/80 shadow-[0_0_12px_rgba(200,164,90,0.45)]" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-osrs-border/40 bg-black/20 px-3 py-1.5 text-[0.68rem] uppercase tracking-[0.24em] text-osrs-gold-soft">
+              <span className="h-2 w-2 rounded-full bg-osrs-gold/80" />
               {eyebrow}
             </div>
             <div className="space-y-3">
@@ -50,7 +49,7 @@ export function PageHero({
           <div className="relative grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {chips.map((chip) => (
               <div
-                className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.52),rgba(24,19,15,0.95))] px-4 py-3 shadow-insetPanel"
+                className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 key={`${chip.label}-${chip.value}`}
               >
                 <p className="text-[0.64rem] uppercase tracking-[0.18em] text-osrs-gold">

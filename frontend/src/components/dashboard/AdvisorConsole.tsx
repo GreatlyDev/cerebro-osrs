@@ -59,12 +59,12 @@ export function AdvisorConsole({
         ];
 
   return (
-    <Panel className="space-y-5" tone="hero">
+    <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(11,11,11,0.98),rgba(15,13,11,0.98))]" tone="soft">
       <SectionHeader
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-osrs-success/35 bg-osrs-success/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text">
-              <span className="h-2 w-2 rounded-full bg-osrs-success animate-drift" />
+            <div className="inline-flex items-center gap-2 rounded-full border border-osrs-success/25 bg-osrs-success/8 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text">
+              <span className="h-2 w-2 rounded-full bg-osrs-success" />
               Advisor online
             </div>
             <Button onClick={onOpenAdvisor} variant="secondary">
@@ -77,13 +77,13 @@ export function AdvisorConsole({
         title="Consult Cerebro"
       />
 
-      <div className="rounded-[20px] border border-osrs-border/70 bg-osrs-panel-2/35 p-4 shadow-insetPanel">
+      <div className="rounded-[20px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
         <div className="flex flex-wrap items-center gap-2">
           <span className="mr-2 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Quick prompts</span>
           {quickPrompts.map((prompt) => (
             <button
               key={prompt}
-              className="cerebro-hover rounded-full border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-2 text-left text-sm text-osrs-text-soft"
+              className="cerebro-hover rounded-full border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.28))] px-3 py-2 text-left text-sm text-osrs-text-soft"
               onClick={() => onRunQuickPrompt(prompt)}
               type="button"
             >
@@ -93,8 +93,8 @@ export function AdvisorConsole({
         </div>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="space-y-4 rounded-[22px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(28,22,17,0.92),rgba(16,13,11,0.98))] p-4 shadow-insetPanel">
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="space-y-4 rounded-[22px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
           <div className="flex items-center justify-between gap-3 border-b border-osrs-border/60 pb-3">
             <div>
               <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Conversation feed</p>
@@ -112,7 +112,7 @@ export function AdvisorConsole({
           </div>
           <div className="grid gap-3 border-t border-osrs-border/60 pt-4 md:grid-cols-[minmax(0,1fr)_auto]">
             <input
-              className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) => onPromptChange(event.target.value)}
               placeholder="Ask about training, unlocks, routes, or what changed since the last sync"
               value={chatPrompt}
@@ -124,7 +124,7 @@ export function AdvisorConsole({
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(60,46,30,0.62),rgba(24,19,15,0.96))] p-4 shadow-insetPanel">
+          <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">What this is best at</p>
             <ul className="mt-3 space-y-2 text-sm leading-6 text-osrs-text-soft">
               <li>- answering direct account and stat questions without needing a goal first</li>
@@ -132,7 +132,7 @@ export function AdvisorConsole({
               <li>- turning sync changes and blockers into useful next moves</li>
             </ul>
           </div>
-          <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/55 p-4 shadow-insetPanel">
+          <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current mode</p>
             <p className="mt-3 text-sm leading-6 text-osrs-text-soft">
               Live account and planner context. Cerebro can use goal state when it helps, but it should still answer broader OSRS questions even when the thread is not goal-driven.
