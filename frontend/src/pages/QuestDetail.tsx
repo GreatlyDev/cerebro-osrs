@@ -56,9 +56,9 @@ export function QuestDetailView({
         </div>
       </PageHero>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
         <div className="space-y-6">
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Why it matters"
               subtitle={selectedQuest.why_it_matters}
@@ -70,7 +70,7 @@ export function QuestDetailView({
             </div>
           </Panel>
 
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Next steps"
               subtitle="A clean place for richer guide content later without crowding the catalog."
@@ -89,12 +89,12 @@ export function QuestDetailView({
           </Panel>
         </div>
 
-        <Panel className="space-y-4">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader eyebrow="Planner links" title="Related actions" subtitle="Ranked quest pressure and follow-through for this unlock." />
           {relatedActions.length > 0 ? (
             relatedActions.map((action) => (
               <div
-                className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel"
+                className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 key={`${action.action_type}-${action.title}`}
               >
                 <strong className="block text-osrs-text">{action.title}</strong>
@@ -117,7 +117,7 @@ export function QuestDetailView({
 
 function ListPanel({ items, title }: { items: string[]; title: string }) {
   return (
-    <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-5 shadow-insetPanel">
+    <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <strong className="block font-display text-xl text-osrs-text">{title}</strong>
       <ul className="mt-4 space-y-2 text-sm leading-7 text-osrs-text-soft">
         {items.map((item) => (

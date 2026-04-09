@@ -56,8 +56,8 @@ export function SkillDetailView({
         </div>
       </PageHero>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_22rem]">
-        <Panel className="space-y-4">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_22rem]">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader
             eyebrow="Methods"
             subtitle="Live methods from the backend recommendation layer."
@@ -66,7 +66,7 @@ export function SkillDetailView({
           <div className="grid gap-4">
             {skillRecommendations.recommendations.map((recommendation) => (
               <div
-                className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-5 shadow-insetPanel"
+                className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 key={recommendation.method}
               >
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -74,12 +74,12 @@ export function SkillDetailView({
                     <strong className="block font-display text-2xl text-osrs-text">{recommendation.method}</strong>
                     <p className="mt-2 text-sm leading-7 text-osrs-text-soft">{recommendation.rationale}</p>
                   </div>
-                  <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs uppercase tracking-[0.18em] text-osrs-text-soft">
+                    <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-xs uppercase tracking-[0.18em] text-osrs-text-soft">
                     {recommendation.estimated_xp_rate}
                   </span>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-3 py-1 text-xs text-osrs-gold-soft">
+                  <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-xs text-osrs-gold-soft">
                     Levels {recommendation.min_level}-{recommendation.max_level}
                   </span>
                   <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs text-osrs-text-soft">
@@ -87,7 +87,7 @@ export function SkillDetailView({
                   </span>
                   {recommendation.tags.map((tag) => (
                     <span
-                      className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs text-osrs-text-soft"
+                      className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-xs text-osrs-text-soft"
                       key={tag}
                     >
                       {tag}
@@ -106,22 +106,22 @@ export function SkillDetailView({
           </div>
         </Panel>
 
-        <Panel className="space-y-4">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader
             eyebrow="Skill frame"
             subtitle="A compact read of how Cerebro is judging this skill right now."
             title="Training posture"
           />
           <div className="grid gap-3">
-            <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+            <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <strong className="block text-osrs-text">Selected account</strong>
               <p className="mt-2 text-sm text-osrs-text-soft">{selectedAccountRsn ?? "none selected"}</p>
             </div>
-            <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+            <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <strong className="block text-osrs-text">Current level</strong>
               <p className="mt-2 text-sm text-osrs-text-soft">{skillRecommendations.current_level ?? "unknown"}</p>
             </div>
-            <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+            <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
               <strong className="block text-osrs-text">Preference</strong>
               <p className="mt-2 text-sm text-osrs-text-soft">{skillRecommendations.preference}</p>
             </div>

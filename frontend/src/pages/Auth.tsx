@@ -70,18 +70,18 @@ export function AuthView(props: AuthViewProps) {
           </div>
         </div>
 
-        <Panel tone="hero" className="space-y-5">
+        <Panel tone="soft" className="space-y-5 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(11,11,11,0.98),rgba(15,13,11,0.98))]">
           <div className="space-y-3">
-            <div className="inline-flex rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 p-1">
+            <div className="inline-flex rounded-full border border-osrs-border/45 bg-black/20 p-1">
               <button
-                className={`rounded-full px-4 py-2 text-sm ${props.authMode === "login" ? "bg-osrs-gold/15 text-osrs-text" : "text-osrs-text-soft"}`}
+                className={`rounded-full px-4 py-2 text-sm ${props.authMode === "login" ? "bg-osrs-gold/12 text-osrs-text" : "text-osrs-text-soft"}`}
                 onClick={() => props.setAuthMode("login")}
                 type="button"
               >
                 Sign in
               </button>
               <button
-                className={`rounded-full px-4 py-2 text-sm ${props.authMode === "register" ? "bg-osrs-gold/15 text-osrs-text" : "text-osrs-text-soft"}`}
+                className={`rounded-full px-4 py-2 text-sm ${props.authMode === "register" ? "bg-osrs-gold/12 text-osrs-text" : "text-osrs-text-soft"}`}
                 onClick={() => props.setAuthMode("register")}
                 type="button"
               >
@@ -106,19 +106,19 @@ export function AuthView(props: AuthViewProps) {
 
           <div className="space-y-3">
             <input
-              className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) => props.setLoginEmail(event.target.value)}
               placeholder="Email address"
               value={props.loginEmail}
             />
             <input
-              className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) => props.setLoginDisplayName(event.target.value)}
               placeholder={isRegister ? "Display name" : "Display name (optional)"}
               value={props.loginDisplayName}
             />
             <input
-              className="w-full rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
               onChange={(event) => props.setLoginPassword(event.target.value)}
               placeholder={isRegister ? "Password (8+ characters)" : "Password"}
               type="password"
@@ -140,7 +140,7 @@ export function AuthView(props: AuthViewProps) {
             </Button>
           </div>
 
-          <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/55 p-4 shadow-insetPanel">
+          <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
             <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Local dev shortcut</p>
             <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
               If you already have a workspace from the earlier dev-login phase, you can still use the shortcut while we transition fully into password auth.

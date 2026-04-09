@@ -70,27 +70,27 @@ export function GoalDetailView(props: GoalDetailProps) {
         </div>
       </PageHero>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
         <div className="space-y-6">
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader eyebrow="Goal read" title="Planning context" subtitle="A dedicated surface for this goal's direction and generated plan." />
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+              <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <strong className="block text-osrs-text">Workspace focus</strong>
                 <p className="mt-2 text-sm text-osrs-text-soft">{profile?.goals_focus ?? "progression"}</p>
               </div>
-              <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+              <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <strong className="block text-osrs-text">Notes</strong>
                 <p className="mt-2 text-sm text-osrs-text-soft">{selectedGoal.notes ?? "No notes yet."}</p>
               </div>
             </div>
             {matchedActions.length > 0 ? (
-              <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/45 px-4 py-4 shadow-insetPanel">
+              <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Planner pressure</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {matchedActions.slice(0, 4).map((action) => (
                     <span
-                      className="rounded-full border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-1 text-xs text-osrs-text-soft"
+                      className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-xs text-osrs-text-soft"
                       key={`${action.action_type}-${action.title}`}
                     >
                       {action.action_type} · {action.priority}
@@ -101,11 +101,11 @@ export function GoalDetailView(props: GoalDetailProps) {
             ) : null}
           </Panel>
 
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader eyebrow="Generated plan" title={plan?.summary ?? "No plan loaded"} subtitle="Use the generated plan as the anchor for the rest of the workspace." />
             {plan ? (
               <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-5 shadow-insetPanel">
+                <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Steps</p>
                   <ol className="mt-4 space-y-3 text-sm leading-7 text-osrs-text-soft">
                     {plan.steps.map((step, index) => (
@@ -118,11 +118,11 @@ export function GoalDetailView(props: GoalDetailProps) {
                     ))}
                   </ol>
                 </div>
-                <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-5 shadow-insetPanel">
+                <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Recommendations</p>
                   <div className="mt-4 grid gap-3">
                     {Object.entries(plan.recommendations).map(([key, value]) => (
-                      <div className="rounded-[14px] border border-osrs-border/60 bg-osrs-panel-2/60 px-4 py-3" key={key}>
+                      <div className="rounded-[14px] border border-osrs-border/45 bg-black/20 px-4 py-3" key={key}>
                         <strong className="block text-sm text-osrs-text">{key.replaceAll("_", " ")}</strong>
                         <div className="mt-2">{renderRecommendationValue(value)}</div>
                         {key === "recommended_quest" && typeof value === "string" ? <Button className="mt-3" onClick={() => onOpenRecommendedQuest(value)} variant="secondary">Open quest page</Button> : null}
@@ -138,12 +138,12 @@ export function GoalDetailView(props: GoalDetailProps) {
           </Panel>
         </div>
 
-        <Panel className="space-y-4">
+        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <SectionHeader eyebrow="Goal-aware actions" title="Ranked actions" subtitle="The planner's live next moves for this exact goal." />
           {matchedActions.length > 0 ? (
             <div className="grid gap-3">
               {matchedActions.map((action) => (
-                <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel" key={`${action.action_type}-${action.title}`}>
+                <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]" key={`${action.action_type}-${action.title}`}>
                   <strong className="block text-osrs-text">{action.title}</strong>
                   <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{action.summary}</p>
                   <div className="mt-3 flex items-center justify-between gap-3">
