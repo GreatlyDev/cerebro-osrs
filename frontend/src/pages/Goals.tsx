@@ -1,9 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
-import { PageHero } from "../components/ui/PageHero";
-import { Panel } from "../components/ui/Panel";
-import { SectionHeader } from "../components/ui/SectionHeader";
 import type { Goal, GoalPlanResponse } from "../types";
 
 const COMMON_GOAL_TYPES = [
@@ -43,10 +40,7 @@ function renderRecommendationValue(value: unknown) {
     return (
       <div className="flex flex-wrap gap-2">
         {value.map((entry, index) => (
-          <span
-            className="rounded-full border border-osrs-border/70 bg-osrs-panel/60 px-3 py-1 text-xs text-osrs-text-soft"
-            key={`${String(entry)}-${index}`}
-          >
+          <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-xs text-osrs-text-soft" key={`${String(entry)}-${index}`}>
             {String(entry).replaceAll("_", " ")}
           </span>
         ))}
@@ -58,10 +52,7 @@ function renderRecommendationValue(value: unknown) {
     return (
       <div className="space-y-2">
         {Object.entries(value).map(([nestedKey, nestedValue]) => (
-          <div
-            className="rounded-[12px] border border-osrs-border/50 bg-osrs-panel/45 px-3 py-2"
-            key={nestedKey}
-          >
+          <div className="border border-white/8 bg-[#0b0b0b] px-3 py-3" key={nestedKey}>
             <p className="text-[0.68rem] uppercase tracking-[0.16em] text-osrs-gold">
               {nestedKey.replaceAll("_", " ")}
             </p>
@@ -92,39 +83,67 @@ export function GoalsView({
   setNewGoalType,
 }: GoalsViewProps) {
   return (
-    <div className="space-y-6">
-      <PageHero
-        action={<Button onClick={onGoToRecommendations} variant="secondary">Open recommendations</Button>}
-        chips={[
-          { label: "Active RSN", value: selectedAccountRsn ?? "None selected" },
-          { label: "Tracked goals", value: String(goals.length) },
-          { label: "Latest plan", value: selectedGoalPlan ? "Loaded" : "Not loaded" },
-        ]}
-        description="Goals are where Cerebro stops being broad advice and starts turning account context, unlock pressure, and momentum into a real progression plan."
-        eyebrow="Goal Planner"
-        title="Anchor the workspace around a real target"
-      />
+    <div className="space-y-10">
+      <section className="border-b border-white/8 pb-8">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
+              Goals // Workspace anchor
+            </p>
+            <h1 className="mt-2 max-w-5xl font-display text-[3.1rem] font-black tracking-[0.02em] text-white md:text-[4rem]">
+              Anchor the workspace around a real target
+            </h1>
+            <p className="mt-4 max-w-3xl text-[0.98rem] leading-8 text-osrs-text-soft">
+              Goals are where Cerebro stops being broad advice and starts turning account context, unlock pressure,
+              and momentum into a real progression plan.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={onGoToRecommendations} variant="secondary">
+              Open recommendations
+            </Button>
+          </div>
+        </div>
+      </section>
 
-      <div className="grid gap-5 xl:grid-cols-[24rem_minmax(0,1fr)]">
-        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-          <SectionHeader
-            eyebrow="Create goal"
-            subtitle="Use one strong goal to sharpen the planner before you branch into secondary targets."
-            title="Start a new objective"
-          />
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Active RSN</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedAccountRsn ?? "None selected"}</p>
+        </div>
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Tracked goals</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{goals.length}</p>
+        </div>
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Latest plan</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedGoalPlan ? "Loaded" : "Not loaded"}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[25rem_minmax(0,1fr)]">
+        <section className="border border-white/8 bg-[#101010] px-6 py-6">
+          <div className="mb-6">
+            <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Create goal</p>
+            <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Start a new objective</h2>
+            <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+              Use one strong goal to sharpen the planner before you branch into secondary targets.
+            </p>
+          </div>
+
           <div className="space-y-3">
             <input
-              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
               onChange={(event) => setNewGoalTitle(event.target.value)}
               placeholder="Goal title"
               value={newGoalTitle}
             />
             <input
-              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none focus:border-osrs-border-light/80"
+              className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
+              list="goal-type-suggestions"
               onChange={(event) => setNewGoalType(event.target.value)}
               placeholder="Goal type"
               value={newGoalType}
-              list="goal-type-suggestions"
             />
             <datalist id="goal-type-suggestions">
               {COMMON_GOAL_TYPES.map((goalType) => (
@@ -134,10 +153,10 @@ export function GoalsView({
             <div className="flex flex-wrap gap-2">
               {COMMON_GOAL_TYPES.map((goalType) => (
                 <button
-                  className={`rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.16em] transition ${
+                  className={`border px-3 py-1.5 text-xs uppercase tracking-[0.16em] transition ${
                     newGoalType === goalType
-                      ? "border-osrs-border-light/80 bg-osrs-gold/12 text-osrs-gold-soft"
-                      : "border-osrs-border/45 bg-black/20 text-osrs-text-soft hover:border-osrs-border-light/60"
+                      ? "border-osrs-gold/45 bg-white/[0.03] text-osrs-gold-soft"
+                      : "border-white/8 bg-[#0b0b0b] text-osrs-text-soft hover:border-white/14 hover:text-white"
                   }`}
                   key={goalType}
                   onClick={() => setNewGoalType(goalType)}
@@ -148,62 +167,62 @@ export function GoalsView({
               ))}
             </div>
             <input
-              className="w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+              className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
               onChange={(event) => setNewGoalTargetRsn(event.target.value)}
               placeholder="Target RSN (optional)"
               value={newGoalTargetRsn}
             />
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button
-              onClick={() => setNewGoalTargetRsn(selectedAccountRsn ?? "")}
-              variant="secondary"
-            >
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Button onClick={() => setNewGoalTargetRsn(selectedAccountRsn ?? "")} variant="secondary">
               Use selected account
             </Button>
             <Button onClick={onCreateGoal}>
               {busyAction === "create-goal" ? "Creating..." : "Create goal"}
             </Button>
           </div>
-          <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-4 text-sm leading-6 text-osrs-text-soft">
-            Goal plans feed ranked actions, advisor replies, and account-aware planning. Use one of the common goal types or make your own if your target does not fit the preset list.
+
+          <div className="mt-4 border border-white/8 bg-[#111111] px-4 py-4 text-sm leading-7 text-osrs-text-soft">
+            Goal plans feed ranked actions, advisor replies, and account-aware planning. Use one of the common goal
+            types or make your own if your target does not fit the preset list.
           </div>
-        </Panel>
+        </section>
 
         <div className="space-y-6">
-          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-            <SectionHeader
-              eyebrow="Active board"
-              subtitle="Open a goal page for the full planning surface, or generate a fresh plan from here."
-              title="Current goals"
-            />
+          <section className="border border-white/8 bg-[#101010] px-6 py-6">
+            <div className="mb-6">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Active board</p>
+              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Current goals</h2>
+              <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+                Open a goal page for the full planning surface, or generate a fresh plan from here.
+              </p>
+            </div>
+
             {goals.length === 0 ? (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
                 No goals yet. Create one on the left to turn the rest of Cerebro into a more opinionated planning workspace.
               </div>
             ) : (
               <div className="grid gap-3">
                 {goals.map((goal) => (
-                  <div
-                    className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-                    key={goal.id}
-                  >
+                  <div className="border border-white/8 bg-[#111111] px-5 py-5" key={goal.id}>
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                          <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                             {goal.status}
                           </span>
-                          <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                          <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                             {goal.goal_type}
                           </span>
                           {goal.target_account_rsn ? (
-                            <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                            <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                               {goal.target_account_rsn}
                             </span>
                           ) : null}
                         </div>
-                        <h3 className="font-display text-2xl text-osrs-text">{goal.title}</h3>
+                        <h3 className="font-display text-2xl text-white">{goal.title}</h3>
                         <p className="text-sm leading-7 text-osrs-text-soft">
                           {goal.generated_plan
                             ? "A generated plan already exists for this goal. Open it for the dedicated planning page or refresh the plan from here."
@@ -223,34 +242,38 @@ export function GoalsView({
                 ))}
               </div>
             )}
-          </Panel>
+          </section>
 
-          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-            <SectionHeader
-              eyebrow="Plan readout"
-              subtitle="The latest generated plan stays visible here so the goal board still feels useful before you drill into a dedicated goal page."
-              title="Latest generated plan"
-            />
+          <section className="border border-white/8 bg-[#101010] px-6 py-6">
+            <div className="mb-6">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Plan readout</p>
+              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Latest generated plan</h2>
+              <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+                The latest generated plan stays visible here so the goal board still feels useful before you drill into a dedicated goal page.
+              </p>
+            </div>
+
             {selectedGoalPlan ? (
               <div className="space-y-4">
-                <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <div className="border border-white/8 bg-[#111111] px-5 py-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Summary</p>
-                      <h3 className="mt-2 font-display text-2xl text-osrs-text">{selectedGoalPlan.summary}</h3>
+                      <h3 className="mt-2 font-display text-2xl text-white">{selectedGoalPlan.summary}</h3>
                     </div>
-                    <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                    <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                       {selectedGoalPlan.status}
                     </span>
                   </div>
                 </div>
-                <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-                  <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+
+                <div className="grid gap-4 xl:grid-cols-2">
+                  <div className="border border-white/8 bg-[#111111] px-5 py-5">
                     <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Steps</p>
                     <ol className="mt-4 space-y-3 text-sm leading-7 text-osrs-text-soft">
                       {selectedGoalPlan.steps.map((step, index) => (
                         <li className="flex gap-3" key={step}>
-                          <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-osrs-border-light/70 bg-osrs-gold/10 text-xs text-osrs-gold-soft">
+                          <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center border border-white/8 bg-[#0b0b0b] text-xs text-osrs-gold-soft">
                             {index + 1}
                           </span>
                           <span>{step}</span>
@@ -258,15 +281,13 @@ export function GoalsView({
                       ))}
                     </ol>
                   </div>
-                  <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+
+                  <div className="border border-white/8 bg-[#111111] px-5 py-5">
                     <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Recommendation snapshot</p>
                     <div className="mt-4 grid gap-3">
                       {Object.entries(selectedGoalPlan.recommendations).map(([key, value]) => (
-                        <div
-                          className="rounded-[14px] border border-osrs-border/45 bg-black/20 px-4 py-3"
-                          key={key}
-                        >
-                          <strong className="block text-sm text-osrs-text">
+                        <div className="border border-white/8 bg-[#0b0b0b] px-4 py-4" key={key}>
+                          <strong className="block text-sm uppercase tracking-[0.08em] text-white">
                             {key.replaceAll("_", " ")}
                           </strong>
                           <div className="mt-2">{renderRecommendationValue(value)}</div>
@@ -277,11 +298,11 @@ export function GoalsView({
                 </div>
               </div>
             ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
                 No plan selected yet. Generate a plan from one of the goal cards above and it will surface here immediately.
               </div>
             )}
-          </Panel>
+          </section>
         </div>
       </div>
     </div>
