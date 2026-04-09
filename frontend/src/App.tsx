@@ -1287,20 +1287,24 @@ export function App() {
         />
       }
       utilityRail={
-        <DashboardUtilityRail
-          advisorPrompt={chatPrompt}
-          busyAction={busyAction}
-          chatSessionCount={chatSessions.length}
-          goals={goals}
-          nextActions={nextActions}
-          onAdvisorPromptChange={setChatPrompt}
-          onAskAdvisor={handleAskAdvisorFromRail}
-          onOpenAdvisor={handleOpenAdvisorFromRail}
-          selectedAccount={selectedAccount}
-          selectedProgress={selectedProgress}
-          selectedSnapshot={selectedSnapshot}
-          selectedSnapshotDelta={snapshotDelta}
-        />
+        activeView === "dashboard"
+          ? undefined
+          : (
+            <DashboardUtilityRail
+              advisorPrompt={chatPrompt}
+              busyAction={busyAction}
+              chatSessionCount={chatSessions.length}
+              goals={goals}
+              nextActions={nextActions}
+              onAdvisorPromptChange={setChatPrompt}
+              onAskAdvisor={handleAskAdvisorFromRail}
+              onOpenAdvisor={handleOpenAdvisorFromRail}
+              selectedAccount={selectedAccount}
+              selectedProgress={selectedProgress}
+              selectedSnapshot={selectedSnapshot}
+              selectedSnapshotDelta={snapshotDelta}
+            />
+          )
       }
     >
       {error ? <div className="banner error-banner">{error}</div> : null}

@@ -51,7 +51,7 @@ export function SkillIcon(props: { skill: string; className?: string }) {
   return (
     <img
       alt={`${skill} icon`}
-      className={`h-7 w-7 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.45)] ${className}`.trim()}
+      className={`h-10 w-10 object-cover drop-shadow-[0_4px_10px_rgba(0,0,0,0.55)] ${className}`.trim()}
       onError={() => setFailed(true)}
       src={path}
     />

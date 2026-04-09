@@ -1,4 +1,5 @@
 import type { Account, AccountProgress, AccountSnapshot, Goal, NextActionResponse } from "../../types";
+import { RecommendationThumb } from "./RecommendationThumb";
 import { Button } from "../ui/Button";
 
 type DashboardUtilityRailProps = {
@@ -112,7 +113,7 @@ export function DashboardUtilityRail({
           {recommendationCards.length > 0 ? (
             recommendationCards.map((action) => (
               <div key={`${action.action_type}-${action.title}`} className="flex items-center gap-4 border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45">
-                <div className="h-12 w-12 shrink-0 border border-white/8 bg-[#151515]" />
+                <RecommendationThumb action={action} className="h-16 w-16 shrink-0" />
                 <div className="min-w-0">
                   <p className="font-display text-[1.02rem] font-bold uppercase leading-tight text-white">{action.title}</p>
                   <p className="mt-1 text-[0.78rem] leading-6 text-osrs-text-soft">{action.summary}</p>

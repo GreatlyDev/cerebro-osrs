@@ -25,18 +25,18 @@ type SidebarNavProps = {
 export type { SidebarNavItem };
 
 const iconPaths: Record<string, string> = {
-  dashboard: "M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z",
-  advisor: "M21 6h-2v9H6v2c0 .55.45 1 1 1h11l4 4V7c0-.55-.45-1-1-1zm-4 6V3c0-.55-.45-1-1-1H3c-.55 0-1 .45-1 1v14l4-4h10c.55 0 1-.45 1-1z",
-  "gear optimizer": "M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z",
-  "quest helper": "M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z",
-  "money makers": "M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z",
-  "goal planner": "M19 5H5v14h14V5zm-2 2v10H7V7h10z",
-  "saved builds": "M5 5h14v14H5z M8 8h8v8H8z",
-  inventory: "M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z",
-  skills: "M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z",
-  recommendations: "M4 17h4V7H4v10zm6 0h4V3h-4v14zm6 0h4V11h-4v6z",
-  teleports: "M12 3 1 9l11 6 9-4.91V17h2V9L12 3z",
-  profile: "M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.33 0-10 1.67-10 5v3h20v-3c0-3.33-6.67-5-10-5z",
+  dashboard: "M4 5h7v6H4zm9 0h7v6h-7zM4 13h7v6H4zm9 0h7v6h-7z",
+  advisor: "M4 5h16v10H8l-4 4z",
+  "gear optimizer": "M13.5 4 20 10.5 10.5 20H4v-6.5z",
+  "quest helper": "M7 3.5h8.5L19 7v13.5H7z M15.5 3.5V7H19",
+  "money makers": "M12 4c-3.31 0-6 1.34-6 3v10c0 1.66 2.69 3 6 3s6-1.34 6-3V7c0-1.66-2.69-3-6-3zm0 0v16",
+  "goal planner": "M12 4a8 8 0 1 0 8 8 M12 4v8l5 3",
+  "saved builds": "M6 5h12v14H6z M9 9h6 M9 13h6",
+  inventory: "M6 4h12v16H6z M6 9h12 M10 4v16 M14 4v16",
+  skills: "M6 18h3V9H6zm5 0h3V5h-3zm5 0h3v-7h-3z",
+  recommendations: "m12 4 2.1 4.8L19 10l-3.5 3 1 5-4.5-2.6L7.5 18l1-5L5 10l4.9-1.2z",
+  teleports: "M12 3c-4.4 0-8 3.28-8 7.33C4 15.78 12 21 12 21s8-5.22 8-10.67C20 6.28 16.4 3 12 3zm0 10a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z",
+  profile: "M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.33 0-6 1.67-6 4v2h12v-2c0-2.33-2.67-4-6-4z",
 };
 
 function statusDotClass(status: "online" | "offline" | "checking") {
@@ -50,7 +50,7 @@ function statusDotClass(status: "online" | "offline" | "checking") {
 }
 
 function NavButton({ item }: { item: SidebarNavItem }) {
-  const iconPath = iconPaths[item.label.toLowerCase()] ?? iconPaths.dashboard;
+  const iconPath = iconPaths[item.id.toLowerCase()] ?? iconPaths[item.label.toLowerCase()] ?? iconPaths.dashboard;
 
   return (
     <button
