@@ -32,6 +32,12 @@ export function TelemetryBoard({
 }: TelemetryBoardProps) {
   const topAction = nextActions?.top_action ?? null;
   const topSkills = snapshot?.summary.top_skills?.slice(0, 4) ?? [];
+  const normalizedNewRsn = newAccountRsn.trim().toLowerCase();
+  const hasPendingExistingRsn = Boolean(
+    normalizedNewRsn &&
+      selectedAccountRsn &&
+      selectedAccountRsn.trim().toLowerCase() === normalizedNewRsn,
+  );
   const featuredTitle = topAction?.title?.toUpperCase() ?? "ACCOUNT TELEMETRY READY";
   const featuredSummary =
     topAction?.summary ??
@@ -123,7 +129,11 @@ export function TelemetryBoard({
                       onClick={onQuickstartAccount}
                       type="button"
                     >
-                      {busyAction === "quickstart-account" ? "Syncing..." : "Add + sync RSN"}
+                      {busyAction === "quickstart-account"
+                        ? "Syncing..."
+                        : hasPendingExistingRsn
+                          ? "Sync linked RSN"
+                          : "Add + sync RSN"}
                     </button>
                   </div>
                 </div>
@@ -142,7 +152,7 @@ export function TelemetryBoard({
                   key={`${action.action_type}-${action.title}`}
                   className="flex items-center gap-4 border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45"
                 >
-                  <RecommendationThumb action={action} className="h-16 w-16 shrink-0" />
+                  <RecommendationThumb action={action} className="h-20 w-20 shrink-0" />
                   <div className="min-w-0">
                     <p className="font-display text-[1.02rem] font-bold uppercase leading-tight text-white">{action.title}</p>
                     <p className="mt-1 text-[0.78rem] leading-6 text-osrs-text-soft">{action.summary}</p>
@@ -164,8 +174,8 @@ export function TelemetryBoard({
             topSkills.map((skill) => (
               <div key={skill.skill} className="border border-white/8 bg-[#101010] px-6 py-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-16 w-16 items-center justify-center overflow-hidden border border-white/8 bg-[#151515] shadow-[inset_2px_2px_4px_rgba(255,255,255,0.03),inset_-2px_-2px_4px_rgba(0,0,0,0.45)]">
-                    <SkillIcon className="h-12 w-12 object-cover" skill={skill.skill} />
+                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden border border-white/8 bg-[#151515] shadow-[inset_2px_2px_4px_rgba(255,255,255,0.03),inset_-2px_-2px_4px_rgba(0,0,0,0.45)]">
+                    <SkillIcon className="h-16 w-16 object-cover" skill={skill.skill} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">

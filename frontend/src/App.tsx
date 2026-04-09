@@ -702,7 +702,10 @@ export function App() {
     setBusyAction("quickstart-account");
     setError(null);
     try {
-      const account = await api.createAccount(newAccountRsn.trim());
+      const normalizedRsn = newAccountRsn.trim().toLowerCase();
+      const existingAccount =
+        accounts.find((account) => account.rsn.trim().toLowerCase() === normalizedRsn) ?? null;
+      const account = existingAccount ?? (await api.createAccount(newAccountRsn.trim()));
       await api.syncAccount(account.id);
       const snapshot = await api.getAccountSnapshot(account.id);
       const updatedProfile = await api.updateProfile({

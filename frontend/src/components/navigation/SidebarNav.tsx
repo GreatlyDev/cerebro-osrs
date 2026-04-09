@@ -27,14 +27,14 @@ export type { SidebarNavItem };
 const iconPaths: Record<string, string> = {
   dashboard: "M4 5h7v6H4zm9 0h7v6h-7zM4 13h7v6H4zm9 0h7v6h-7z",
   advisor: "M4 5h16v10H8l-4 4z",
-  "gear optimizer": "M13.5 4 20 10.5 10.5 20H4v-6.5z",
-  "quest helper": "M7 3.5h8.5L19 7v13.5H7z M15.5 3.5V7H19",
-  "money makers": "M12 4c-3.31 0-6 1.34-6 3v10c0 1.66 2.69 3 6 3s6-1.34 6-3V7c0-1.66-2.69-3-6-3zm0 0v16",
-  "goal planner": "M12 4a8 8 0 1 0 8 8 M12 4v8l5 3",
-  "saved builds": "M6 5h12v14H6z M9 9h6 M9 13h6",
-  inventory: "M6 4h12v16H6z M6 9h12 M10 4v16 M14 4v16",
+  "gear optimizer": "M13.5 3.5 20.5 10.5 10.5 20.5H3.5v-7z M12.5 6.5l4.8 4.8",
+  "quest helper": "M7 3.5h8.5L19 7v13.5H7z M15.5 3.5V7H19 M10 11h6 M10 14h6 M10 17h4",
+  "money makers": "M8 7.5h8M8 12h8M8 16.5h8 M6 5h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2",
+  "goal planner": "M12 4a8 8 0 1 0 8 8 M12 4v8l4 2.5 M12 8h7",
+  "saved builds": "M7 6h10v4H7z M5 12h14v6H5z",
+  inventory: "M7 5h10l2 3v10H5V8z M8 10h8 M8 14h8",
   skills: "M6 18h3V9H6zm5 0h3V5h-3zm5 0h3v-7h-3z",
-  recommendations: "m12 4 2.1 4.8L19 10l-3.5 3 1 5-4.5-2.6L7.5 18l1-5L5 10l4.9-1.2z",
+  recommendations: "m12 4 2.1 4.8L19 10l-3.5 3 1 5-4.5-2.6L7.5 18l1-5L5 10l4.9-1.2z M12 8.5v4",
   teleports: "M12 3c-4.4 0-8 3.28-8 7.33C4 15.78 12 21 12 21s8-5.22 8-10.67C20 6.28 16.4 3 12 3zm0 10a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z",
   profile: "M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.33 0-6 1.67-6 4v2h12v-2c0-2.33-2.67-4-6-4z",
 };
@@ -65,7 +65,7 @@ function NavButton({ item }: { item: SidebarNavItem }) {
       type="button"
     >
       <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-        <path d={iconPath} />
+        <path d={iconPath} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       {item.active ? <span className="absolute -left-[9px] top-1/2 h-8 w-px -translate-y-1/2 bg-osrs-gold" /> : null}
       {item.badge ? (

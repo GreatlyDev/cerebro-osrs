@@ -39,6 +39,9 @@ export function ProfileView({
   selectedAccountRsn,
   setProfileDraft,
 }: ProfileViewProps) {
+  const normalizedNewRsn = newAccountRsn.trim().toLowerCase();
+  const pendingExistingAccount = accounts.find((account) => account.rsn.trim().toLowerCase() === normalizedNewRsn) ?? null;
+
   return (
     <div className="space-y-10">
       <section className="border-b border-white/8 pb-8">
@@ -202,7 +205,11 @@ export function ProfileView({
                   type="button"
                   variant="secondary"
                 >
-                  {busyAction === "quickstart-account" ? "Syncing..." : "Add + sync RSN"}
+                  {busyAction === "quickstart-account"
+                    ? "Syncing..."
+                    : pendingExistingAccount
+                      ? `Sync ${pendingExistingAccount.rsn}`
+                      : "Add + sync RSN"}
                 </Button>
               </div>
 

@@ -42,7 +42,7 @@ export function SkillIcon(props: { skill: string; className?: string }) {
 
   if (!path || failed) {
     return (
-      <span className={`font-mono text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold ${className}`.trim()}>
+      <span className={`font-mono text-[0.7rem] uppercase tracking-[0.18em] text-osrs-gold ${className}`.trim()}>
         {skill.slice(0, 2)}
       </span>
     );
@@ -51,7 +51,7 @@ export function SkillIcon(props: { skill: string; className?: string }) {
   return (
     <img
       alt={`${skill} icon`}
-      className={`h-10 w-10 object-cover drop-shadow-[0_4px_10px_rgba(0,0,0,0.55)] ${className}`.trim()}
+      className={`h-14 w-14 object-cover drop-shadow-[0_10px_18px_rgba(0,0,0,0.62)] ${className}`.trim()}
       onError={() => setFailed(true)}
       src={path}
     />
