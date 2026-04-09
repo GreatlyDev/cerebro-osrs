@@ -1,5 +1,5 @@
 import type { AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
-import { getSkillIconPath } from "./skillIcons";
+import { SkillIcon } from "./skillIcons";
 
 type TelemetryBoardProps = {
   selectedAccountRsn: string | null;
@@ -66,17 +66,7 @@ export function TelemetryBoard({
               <div key={skill.skill} className="border border-white/8 bg-[#101010] px-6 py-6">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center border border-white/8 bg-[#151515] shadow-[inset_2px_2px_4px_rgba(255,255,255,0.03),inset_-2px_-2px_4px_rgba(0,0,0,0.45)]">
-                    {getSkillIconPath(skill.skill) ? (
-                      <img
-                        alt={`${skill.skill} icon`}
-                        className="h-7 w-7 object-contain"
-                        src={getSkillIconPath(skill.skill) ?? undefined}
-                      />
-                    ) : (
-                      <span className="font-mono text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">
-                        {skill.skill.slice(0, 2)}
-                      </span>
-                    )}
+                    <SkillIcon skill={skill.skill} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">
