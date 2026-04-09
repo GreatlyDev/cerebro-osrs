@@ -132,9 +132,9 @@ export function AccountDetailView(props: AccountDetailProps) {
         </div>
       </PageHero>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
         <div className="space-y-6">
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Power read"
               subtitle="A quick snapshot of where this account stands right now."
@@ -147,12 +147,12 @@ export function AccountDetailView(props: AccountDetailProps) {
               <MetricCard label="Unlock chains" value={selectedProgress?.active_unlocks.length ?? 0} />
             </div>
             {selectedSnapshot?.summary.top_skills?.length ? (
-              <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/45 px-4 py-4 shadow-insetPanel">
+              <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
                 <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Top skills on this snapshot</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedSnapshot.summary.top_skills.slice(0, 5).map((skill) => (
                     <span
-                      className="rounded-full border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-3 py-1 text-xs text-osrs-text-soft"
+                      className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-xs text-osrs-text-soft"
                       key={skill.skill}
                     >
                       {skill.skill} {skill.level}
@@ -163,7 +163,7 @@ export function AccountDetailView(props: AccountDetailProps) {
             ) : null}
           </Panel>
 
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               eyebrow="Since last sync"
               subtitle="A lightweight trend read without leaving the account workspace."
@@ -182,7 +182,7 @@ export function AccountDetailView(props: AccountDetailProps) {
             {selectedSnapshotHistory.length > 0 ? (
               <div className="grid gap-3">
                 {selectedSnapshotHistory.slice(0, 4).map((snapshot) => (
-                  <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel" key={snapshot.id}>
+                  <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]" key={snapshot.id}>
                     <div className="flex items-center justify-between gap-3">
                       <strong className="text-osrs-text">Overall {snapshot.summary.overall_level}</strong>
                       <span className="text-xs uppercase tracking-[0.16em] text-osrs-text-soft">{formatStamp(snapshot.created_at)}</span>
@@ -194,7 +194,7 @@ export function AccountDetailView(props: AccountDetailProps) {
             ) : null}
           </Panel>
 
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader
               action={<Button onClick={onSaveAccountProgress}>{busyAction === "account-progress" ? "Saving..." : "Save account workspace"}</Button>}
               eyebrow="Planning context"
@@ -211,12 +211,12 @@ export function AccountDetailView(props: AccountDetailProps) {
         </div>
 
         <div className="space-y-6">
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader eyebrow="Account goals" title="Goal radar" subtitle="Goals and ranked actions currently pointing at this RSN." />
             {accountGoals.length > 0 ? (
               <div className="grid gap-3">
                 {accountGoals.map((goal) => (
-                  <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel" key={goal.id}>
+                  <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]" key={goal.id}>
                     <strong className="block text-osrs-text">{goal.title}</strong>
                     <p className="mt-2 text-sm text-osrs-text-soft">{goal.goal_type}</p>
                     <Button className="mt-3 w-full" onClick={() => onGeneratePlan(goal)} variant="secondary">
@@ -231,12 +231,12 @@ export function AccountDetailView(props: AccountDetailProps) {
             <Button className="w-full" onClick={onGoToGoals} variant="secondary">Open goals</Button>
           </Panel>
 
-          <Panel className="space-y-4">
+          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
             <SectionHeader eyebrow="Planner pressure" title="Account-specific actions" subtitle="These are the ranked actions that currently resolve directly onto this account." />
             {accountActionMatches.length > 0 ? (
               <div className="grid gap-3">
                 {accountActionMatches.slice(0, 3).map((action) => (
-                  <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel" key={`${action.action_type}-${action.title}`}>
+                  <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]" key={`${action.action_type}-${action.title}`}>
                     <strong className="block text-osrs-text">{action.title}</strong>
                     <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{action.summary}</p>
                   </div>
@@ -254,7 +254,7 @@ export function AccountDetailView(props: AccountDetailProps) {
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-4 shadow-insetPanel">
+    <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">{label}</p>
       <strong className="mt-3 block font-display text-2xl text-osrs-text">{value}</strong>
     </div>
@@ -273,10 +273,10 @@ function TextareaCard({
   value: string;
 }) {
   return (
-    <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.5),rgba(24,19,15,0.96))] p-4 shadow-insetPanel">
+    <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
       <strong className="block text-osrs-text">{label}</strong>
       <textarea
-        className="mt-3 min-h-32 w-full rounded-[14px] border border-osrs-border/70 bg-osrs-panel/55 px-4 py-3 text-sm leading-6 text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+        className="mt-3 min-h-32 w-full rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm leading-6 text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         value={value}

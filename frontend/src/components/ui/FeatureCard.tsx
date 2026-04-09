@@ -29,7 +29,7 @@ export function FeatureCard({
   return (
     <Panel
       tone="soft"
-      className={`cerebro-hover overflow-hidden border-osrs-border/70 bg-gradient-to-br ${accent}`}
+      className={`cerebro-hover overflow-hidden border-osrs-border/45 bg-gradient-to-br ${accent}`}
     >
       <div className="space-y-4">
         <div className="flex items-start justify-between gap-3">
@@ -38,7 +38,7 @@ export function FeatureCard({
             <h3 className="mt-2 font-display text-lg font-semibold text-osrs-text">{title}</h3>
           </div>
           {badge ? (
-            <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+            <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
               {badge}
             </span>
           ) : null}

@@ -78,7 +78,7 @@ function SupportingData({ action }: { action: NextAction }) {
 
   return (
     <div className="space-y-3">
-      <p className="rounded-[16px] border border-osrs-border-light/30 bg-osrs-gold/10 px-4 py-3 text-sm leading-6 text-osrs-text-soft">
+      <p className="rounded-[16px] border border-osrs-border/45 bg-[rgba(200,164,90,0.08)] px-4 py-3 text-sm leading-6 text-osrs-text-soft">
         {buildRecommendationSummary(action)}
       </p>
       <div className="grid gap-3 md:grid-cols-2">
@@ -87,7 +87,7 @@ function SupportingData({ action }: { action: NextAction }) {
           if (Array.isArray(value)) {
             return (
               <div
-                className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.42),rgba(24,19,15,0.96))] p-4 shadow-insetPanel"
+                className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 key={key}
               >
                 <strong className="block text-sm text-osrs-text">{label}</strong>
@@ -95,7 +95,7 @@ function SupportingData({ action }: { action: NextAction }) {
                   <div className="mt-3 flex flex-wrap gap-2">
                     {value.map((item, index) => (
                       <span
-                        className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs text-osrs-text-soft"
+                        className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-xs text-osrs-text-soft"
                         key={`${key}-${index}`}
                       >
                         {typeof item === "string" ? item.replaceAll("_", " ") : JSON.stringify(item)}
@@ -112,14 +112,14 @@ function SupportingData({ action }: { action: NextAction }) {
           if (value && typeof value === "object") {
             return (
               <div
-                className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.42),rgba(24,19,15,0.96))] p-4 shadow-insetPanel"
+                className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                 key={key}
               >
                 <strong className="block text-sm text-osrs-text">{label}</strong>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {Object.entries(value).map(([nestedKey, nestedValue]) => (
                     <span
-                      className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-xs text-osrs-text-soft"
+                      className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-xs text-osrs-text-soft"
                       key={`${key}-${nestedKey}`}
                     >
                       {formatSupportLabel(nestedKey)}: {formatSupportValue(nestedValue)}
@@ -132,7 +132,7 @@ function SupportingData({ action }: { action: NextAction }) {
 
           return (
             <div
-              className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(56,44,35,0.42),rgba(24,19,15,0.96))] p-4 shadow-insetPanel"
+              className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
               key={key}
             >
               <strong className="block text-sm text-osrs-text">{label}</strong>
@@ -174,7 +174,7 @@ export function RecommendationsView({
       />
 
       {actions.length === 0 ? (
-        <Panel>
+        <Panel className="border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
           <p className="text-sm leading-7 text-osrs-text-soft">
             Link an account to turn this board into a ranked progression room. Add a goal when you want a stronger planning anchor, not because the workspace is unusable without one.
           </p>
@@ -183,19 +183,19 @@ export function RecommendationsView({
         <div className="grid gap-4">
           {actions.map((action, index) => (
             <Panel
-              className={`space-y-4 ${index === 0 ? "border-osrs-border-light/70 shadow-glowGold" : ""}`}
+              className={`space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] ${index === 0 ? "border-osrs-border-light/70 shadow-glowGold" : ""}`}
               key={`${action.action_type}-${action.title}`}
             >
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-osrs-border-light/60 bg-osrs-gold/10 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                    <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                       {index === 0 ? "Top action" : `Option ${index + 1}`}
                     </span>
-                    <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                    <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                       {action.action_type}
                     </span>
-                    <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                    <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                       {action.priority}
                     </span>
                   </div>
@@ -203,7 +203,7 @@ export function RecommendationsView({
                   <p className="max-w-3xl text-sm leading-7 text-osrs-text-soft">{action.summary}</p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/70 px-4 py-3 text-center">
+                  <div className="rounded-[16px] border border-osrs-border/45 bg-black/20 px-4 py-3 text-center">
                     <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Score</p>
                     <strong className="font-display text-xl text-osrs-text">{action.score}</strong>
                   </div>
@@ -212,7 +212,7 @@ export function RecommendationsView({
               </div>
 
               {action.blockers.length > 0 ? (
-                <div className="rounded-[16px] border border-osrs-danger/35 bg-osrs-danger/10 px-4 py-4">
+                <div className="rounded-[16px] border border-osrs-danger/35 bg-[rgba(139,46,46,0.10)] px-4 py-4">
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current blockers</p>
                   <ul className="mt-2 space-y-2 text-sm text-osrs-text-soft">
                     {action.blockers.map((blocker) => (
