@@ -58,6 +58,10 @@ function formatQuestPoints(selectedProgress: AccountProgress | null) {
 
 export function DashboardPage(props: DashboardPageProps) {
   const {
+    busyAction,
+    newAccountRsn,
+    onChangeNewAccountRsn,
+    onQuickstartAccount,
     profile,
     nextActions,
     selectedAccount,
@@ -75,7 +79,11 @@ export function DashboardPage(props: DashboardPageProps) {
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
       />
       <TelemetryBoard
+        busyAction={busyAction}
+        newAccountRsn={newAccountRsn}
         nextActions={nextActions}
+        onChangeNewAccountRsn={onChangeNewAccountRsn}
+        onQuickstartAccount={onQuickstartAccount}
         progress={selectedProgress}
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
         snapshot={selectedSnapshot}

@@ -1532,7 +1532,10 @@ export function App() {
               <ProfileView
                 accounts={accounts}
                 busyAction={busyAction}
+                newAccountRsn={newAccountRsn}
+                onChangeNewAccountRsn={setNewAccountRsn}
                 onGoToAdvisor={() => navigateToView("ask-cerebro")}
+                onQuickstartAccount={handleQuickstartAccount}
                 onSaveProfile={handleSaveProfile}
                 profile={profile}
                 profileDraft={profileDraft}
