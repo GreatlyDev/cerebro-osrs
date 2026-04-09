@@ -49,7 +49,7 @@ function NavGroup({ items }: { items: SidebarNavItem[] }) {
       {items.map((item) => (
         <button
           key={item.id}
-          className={`cerebro-hover flex w-full items-center gap-3 rounded-[16px] border px-3 py-3 text-left ${
+          className={`cerebro-hover flex w-full items-center gap-3 rounded-[14px] border px-3 py-2.5 text-left ${
             item.active
               ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(212,175,55,0.16),rgba(48,40,30,0.18))] shadow-glowGold"
               : "border-osrs-border/50 bg-[linear-gradient(180deg,rgba(18,18,18,0.94),rgba(22,18,15,0.98))]"
@@ -58,14 +58,14 @@ function NavGroup({ items }: { items: SidebarNavItem[] }) {
           onClick={item.onClick}
           type="button"
         >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.42))] text-[0.64rem] uppercase tracking-[0.22em] text-osrs-gold shadow-[inset_0_1px_2px_rgba(255,255,255,0.06),0_6px_16px_rgba(0,0,0,0.24)]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] border border-osrs-border/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.42))] text-[0.6rem] uppercase tracking-[0.22em] text-osrs-gold shadow-[inset_0_1px_2px_rgba(255,255,255,0.05),0_6px_14px_rgba(0,0,0,0.22)]">
             {item.label.slice(0, 2)}
           </span>
           <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-2 font-display text-sm font-semibold uppercase tracking-[0.06em] text-osrs-text">
+            <span className="flex items-center gap-2 font-display text-[0.92rem] font-semibold uppercase tracking-[0.05em] text-osrs-text">
               {item.label}
             </span>
-            <span className="mt-0.5 block text-xs leading-5 text-osrs-text-soft">{item.description}</span>
+            <span className="mt-0.5 block text-[0.74rem] leading-5 text-osrs-text-soft">{item.description}</span>
           </span>
           {item.badge ? (
             <span className="rounded-full border border-osrs-border-light/50 bg-osrs-gold/10 px-2 py-0.5 text-[0.58rem] font-sans uppercase tracking-[0.16em] text-osrs-gold-soft">
@@ -92,7 +92,7 @@ export function SidebarNav({
 
   return (
     <div className="flex h-full flex-col gap-5">
-      <div className="rounded-[22px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(11,11,11,0.98),rgba(19,16,13,0.98))] p-4 shadow-osrs">
+      <div className="rounded-[20px] border border-osrs-border/55 bg-[linear-gradient(180deg,rgba(11,11,11,0.98),rgba(19,16,13,0.98))] p-4 shadow-osrs">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 items-center justify-center rounded-[14px] border border-osrs-border-light/60 bg-[linear-gradient(180deg,rgba(212,175,55,0.12),rgba(255,255,255,0.02))]">
             <svg className="h-5 w-5 text-osrs-gold" viewBox="0 0 100 100" fill="none">
@@ -113,7 +113,7 @@ export function SidebarNav({
         </div>
       </div>
 
-      <div className="rounded-[22px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(16,16,16,0.98),rgba(22,18,15,0.98))] p-4 shadow-osrs">
+      <div className="rounded-[20px] border border-osrs-border/55 bg-[linear-gradient(180deg,rgba(16,16,16,0.98),rgba(22,18,15,0.98))] p-4 shadow-osrs">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-[0.64rem] uppercase tracking-[0.22em] text-osrs-gold">Signed in</p>
@@ -130,7 +130,7 @@ export function SidebarNav({
             Active RSN
           </label>
           <select
-            className="w-full rounded-[14px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.44))] px-3 py-2.5 text-sm text-osrs-text shadow-insetPanel"
+            className="w-full rounded-[12px] border border-osrs-border/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.44))] px-3 py-2.5 text-sm text-osrs-text shadow-insetPanel"
             id="account-selector"
             onChange={(event) => onSelectAccount(event.target.value ? Number(event.target.value) : null)}
             value={selectedAccountId ?? ""}
