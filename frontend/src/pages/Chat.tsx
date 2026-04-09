@@ -2,9 +2,6 @@ import { useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import { Button } from "../components/ui/Button";
-import { PageHero } from "../components/ui/PageHero";
-import { Panel } from "../components/ui/Panel";
-import { SectionHeader } from "../components/ui/SectionHeader";
 import type { ChatExchange, ChatSession } from "../types";
 
 type ChatViewProps = {
@@ -54,173 +51,210 @@ export function ChatView({
   }, [selectedChatSessionId, visibleHistory.length]);
 
   return (
-    <div className="space-y-5">
-      <PageHero
-        chips={[
-          { label: "Active account", value: threadAccountLabel },
-          { label: "Open sessions", value: String(chatSessions.length) },
-          { label: "Advisor mode", value: intentLabel },
-        ]}
-        description="Ask about your stats, routes, gear, boss prep, profit options, unlocks, or longer-term planning. Goals help when they are relevant, but they are not the only lane Cerebro can reason through."
-        eyebrow="Advisor Chamber"
-        title="Ask Cerebro from the center of the workspace"
-      >
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
-            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Account context</p>
-            <p className="font-display text-lg text-osrs-text">{threadAccountLabel}</p>
+    <div className="space-y-10">
+      <section className="border-b border-white/8 pb-8">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
+              Advisor chamber // Live thread status
+            </p>
+            <h1 className="mt-2 max-w-4xl font-display text-[3.6rem] font-black uppercase tracking-[0.12em] text-white md:text-[4.7rem]">
+              Cerebro intelligence
+            </h1>
           </div>
-          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
-            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Thread focus</p>
-            <p className="font-display text-lg text-osrs-text">{focusLabel}</p>
-          </div>
-          <div className="rounded-[16px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(55,43,33,0.42),rgba(24,19,15,0.92))] px-4 py-3 shadow-insetPanel">
-            <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Conversation mode</p>
-            <p className="font-display text-lg text-osrs-text">{intentLabel}</p>
+          <div className="flex gap-10 xl:gap-12">
+            <div className="text-right">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-osrs-text-soft">Threads</p>
+              <strong className="mt-1.5 block font-display text-[2.4rem] font-bold tracking-[-0.05em] text-white">
+                {chatSessions.length}
+              </strong>
+            </div>
+            <div className="text-right">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-osrs-text-soft">Focus</p>
+              <strong className="mt-1.5 block font-display text-[2rem] font-bold uppercase tracking-[-0.03em] text-white">
+                {focusLabel}
+              </strong>
+            </div>
           </div>
         </div>
-        <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.3))] p-3">
-          <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-          <input
-            className="rounded-[14px] border border-osrs-border/50 bg-[#101210] px-4 py-3 text-sm text-osrs-text shadow-[inset_0_1px_0_rgba(255,255,255,0.02)] outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
-            onChange={(event) => setChatPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                onRunChatPrompt();
-              }
-            }}
-            placeholder="Ask about your account, task, route, boss prep, profit, or next move"
-            value={chatPrompt}
-          />
-          <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>
-            {busyAction === "chat" ? "Thinking..." : "Consult Advisor"}
-          </Button>
-        </div>
-        </div>
-      </PageHero>
+      </section>
 
-      <div className="grid gap-5 xl:grid-cols-[15rem_minmax(0,1fr)_19rem]">
-        <Panel className="space-y-3 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader
-            eyebrow="Quick prompts"
-            title={selectedSession ? "Keep the thread moving" : "Start from a known question"}
-            subtitle={
-              selectedSession
-                ? "These prompts shift with the current session so Cerebro can keep building on the same planning lane."
-                : "Use a strong starter question and Cerebro will begin building a grounded thread from there."
-            }
-          />
-          <div className="grid gap-2">
-            {quickPrompts.map((prompt) => (
-              <button
-                className="cerebro-hover rounded-[14px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.3))] px-4 py-3 text-left text-sm leading-6 text-osrs-text-soft"
-                key={prompt}
-                onClick={() => onRunChatPrompt(prompt)}
-                type="button"
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader
-            eyebrow="Live conversation"
-            title="Conversation"
-            subtitle="Cerebro should read like a real advisor thread, not a pile of one-off planner outputs."
-          />
-          <div className="max-h-[70vh] min-h-[28rem] space-y-3 overflow-y-auto pr-1">
-            {visibleHistory.length > 0 ? (
-              visibleHistory.map((exchange) => (
-                <div className="space-y-3" key={`${exchange.sessionId}-${exchange.prompt}`}>
-                  <div className="ml-auto max-w-[80%] rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(33,51,43,0.72),rgba(22,28,24,0.94))] px-4 py-3 shadow-insetPanel">
-                    <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">You</p>
-                    <p className="text-sm leading-7 text-osrs-text-soft">{exchange.prompt}</p>
+      <div className="grid gap-10 xl:grid-cols-[minmax(0,1.65fr)_24rem]">
+        <section className="space-y-8">
+          <div className="border border-white/8 bg-[#101010]">
+            <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.24em] text-white">Cerebro assistant</p>
+            </div>
+            <div className="space-y-0">
+              <div className="border-b border-white/8 px-5 py-5">
+                <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">System</p>
+                <p className="mt-3 text-[0.92rem] leading-7 text-osrs-text-soft">
+                  {selectedSession
+                    ? `Thread anchored on ${threadAccountLabel}. Cerebro is currently reading this lane as ${intentLabel.toLowerCase()}.`
+                    : `Ask about ${threadAccountLabel} and Cerebro will build a grounded OSRS thread from live account context.`}
+                </p>
+              </div>
+              <div className="max-h-[32rem] min-h-[24rem] space-y-4 overflow-y-auto px-5 py-5">
+                {visibleHistory.length > 0 ? (
+                  visibleHistory.map((exchange) => (
+                    <div className="space-y-4" key={`${exchange.sessionId}-${exchange.prompt}`}>
+                      <div className="ml-auto max-w-[82%] rounded-[14px] border border-white/8 bg-[#151816] px-4 py-3">
+                        <p className="mb-1 font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-text-soft">You</p>
+                        <p className="text-sm leading-7 text-osrs-text-soft">{exchange.prompt}</p>
+                      </div>
+                      <div className="max-w-[86%] rounded-[14px] border border-white/8 bg-[#121212] px-4 py-3">
+                        <p className="mb-1 font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Cerebro</p>
+                        <p className="text-sm leading-7 text-osrs-text-soft">{exchange.reply}</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-[14px] border border-dashed border-white/10 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+                    {chatReply || "No thread history yet. Start with a direct question and Cerebro will begin building context here."}
                   </div>
-                  <div className="max-w-[88%] rounded-[18px] border border-osrs-border-light/60 bg-[linear-gradient(180deg,rgba(58,45,31,0.88),rgba(30,24,18,0.98))] px-4 py-3 shadow-insetPanel">
-                    <p className="mb-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Advisor</p>
-                    <p className="text-sm leading-7 text-osrs-text-soft">{exchange.reply}</p>
+                )}
+                <div ref={conversationEndRef} />
+              </div>
+              <div className="border-t border-white/8 px-5 py-5">
+                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                  <input
+                    className="w-full border-0 bg-transparent px-0 py-0 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55"
+                    onChange={(event) => setChatPrompt(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        onRunChatPrompt();
+                      }
+                    }}
+                    placeholder="Query account data..."
+                    value={chatPrompt}
+                  />
+                  <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>
+                    {busyAction === "chat" ? "Thinking..." : "Ask Cerebro"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <section className="space-y-5">
+            <div className="flex items-center gap-4">
+              <p className="font-display text-[0.82rem] font-semibold uppercase tracking-[0.3em] text-white">Prompt lanes</p>
+              <div className="h-px flex-1 bg-white/8" />
+            </div>
+            <div className="grid gap-4 xl:grid-cols-3">
+              {advisorCapabilities.map((capability) => (
+                <div className="border border-white/8 bg-[#101010] p-4" key={capability.title}>
+                  <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">{capability.eyebrow}</p>
+                  <h3 className="mt-3 font-display text-[1.15rem] font-bold uppercase leading-tight text-white">
+                    {capability.title}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{capability.description}</p>
+                  <div className="mt-4 grid gap-2">
+                    {capability.prompts.slice(0, 3).map((prompt) => (
+                      <button
+                        className="rounded-[10px] border border-white/8 bg-[#131313] px-3 py-3 text-left text-sm leading-6 text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
+                        key={prompt}
+                        onClick={() => onRunChatPrompt(prompt)}
+                        type="button"
+                      >
+                        {prompt}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
-                {chatReply || "No session history yet. Start with a quick prompt and Cerebro will begin building conversation context here."}
+              ))}
+            </div>
+          </section>
+        </section>
+
+        <aside className="space-y-5">
+          <section className="border border-white/8 bg-[#101010]">
+            <div className="border-b border-white/8 px-5 py-4">
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.24em] text-white">Thread telemetry</p>
+            </div>
+            <div className="space-y-4 px-5 py-5 text-sm text-osrs-text-soft">
+              <div>
+                <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Account</p>
+                <p className="mt-2 font-display text-[1.2rem] uppercase text-white">{threadAccountLabel}</p>
               </div>
-            )}
-            <div ref={conversationEndRef} />
-          </div>
-        </Panel>
+              <div>
+                <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Focus</p>
+                <p className="mt-2 font-display text-[1.2rem] uppercase text-white">{focusLabel}</p>
+              </div>
+              <div>
+                <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Priority</p>
+                <p className="mt-2 font-display text-[1.2rem] uppercase text-white">{intentLabel}</p>
+              </div>
+              <div>
+                <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Best next move</p>
+                <p className="mt-2 text-sm leading-7 text-osrs-text-soft">{threadNextMove.body}</p>
+              </div>
+            </div>
+          </section>
 
-        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader
-            eyebrow="Session list"
-            title="Conversation threads"
-            subtitle="Switch sessions to keep different planning threads separate."
-          />
-          <div className="grid gap-2">
-            {chatSessions.length === 0 ? (
-              <p className="text-sm leading-6 text-osrs-text-soft">No sessions yet.</p>
-            ) : null}
-            {chatSessions.map((session) => {
-              const sessionState = normalizeSessionState(session.session_state);
-              return (
-                <button
-                  className={`cerebro-hover rounded-[14px] border px-4 py-3 text-left ${
-                    selectedChatSessionId === session.id
-                      ? "border-osrs-border-light/80 bg-[linear-gradient(135deg,rgba(200,164,90,0.18),rgba(20,20,20,0.36))] shadow-glowGold"
-                      : "border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))]"
-                  }`}
-                  key={session.id}
-                  onClick={() => setSelectedChatSessionId(session.id)}
-                  type="button"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <strong className="block font-display text-base text-osrs-text">{session.title}</strong>
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-[0.62rem] uppercase tracking-[0.16em] ${getIntentBadgeClass(
-                        sessionState,
-                      )}`}
-                    >
-                      {describeSessionIntent(sessionState)}
-                    </span>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-gold-soft">
-                      {describeSessionFocus(sessionState)}
-                    </span>
-                    <span className="rounded-full border border-osrs-border/80 bg-osrs-bg-soft/70 px-2.5 py-1 text-[0.65rem] uppercase tracking-[0.16em] text-osrs-text-soft">
-                      {describeSessionMode(sessionState)}
-                    </span>
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
-                    {describeSessionPreview(sessionState)}
-                  </p>
-                  {readStateString(sessionState, "last_goal_title") ? (
-                    <p className="mt-2 text-xs leading-5 text-osrs-text-soft">
-                      Goal: {readStateString(sessionState, "last_goal_title")}
-                    </p>
-                  ) : null}
-                  <span className="mt-1 block text-xs uppercase tracking-[0.16em] text-osrs-text-soft">
-                    Updated {new Date(session.updated_at).toLocaleString()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </Panel>
-      </div>
+          <section className="border border-white/8 bg-[#101010]">
+            <div className="border-b border-white/8 px-5 py-4">
+              <p className="font-mono text-[0.72rem] uppercase tracking-[0.24em] text-white">Conversation threads</p>
+            </div>
+            <div className="space-y-3 px-5 py-5">
+              {chatSessions.length === 0 ? (
+                <p className="text-sm leading-6 text-osrs-text-soft">No sessions yet.</p>
+              ) : null}
+              {chatSessions.map((session) => {
+                const sessionState = normalizeSessionState(session.session_state);
+                return (
+                  <button
+                    className={`w-full border px-4 py-3 text-left ${
+                      selectedChatSessionId === session.id
+                        ? "border-osrs-gold/40 bg-white/[0.03]"
+                        : "border-white/8 bg-[#131313]"
+                    }`}
+                    key={session.id}
+                    onClick={() => setSelectedChatSessionId(session.id)}
+                    type="button"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <strong className="block font-display text-base uppercase text-white">{session.title}</strong>
+                      <span
+                        className={`rounded-full border px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.16em] ${getIntentBadgeClass(
+                          sessionState,
+                        )}`}
+                      >
+                        {describeSessionIntent(sessionState)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{describeSessionPreview(sessionState)}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
 
-      <div className="grid gap-4 xl:grid-cols-3">
-        {advisorCapabilities.map((capability) => (
-          <Panel className="space-y-3 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4" key={capability.title}>
-            <SectionHeader eyebrow={capability.eyebrow} title={capability.title} subtitle={capability.description} />
-            <div className="grid gap-2">
-              {capability.prompts.map((prompt) => (
+          <section className="border border-white/8 bg-[#101010] px-5 py-5">
+            <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Current blockers</p>
+            <div className="mt-4 space-y-2">
+              {threadBlockers.length > 0 ? (
+                threadBlockers.map((blocker) => (
+                  <div className="border border-white/8 bg-[#131313] px-3 py-3 text-sm text-osrs-text-soft" key={blocker}>
+                    {blocker}
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm leading-6 text-osrs-text-soft">
+                  No hard blockers are dominating this thread yet.
+                </p>
+              )}
+            </div>
+          </section>
+
+          <section className="border border-white/8 bg-[#101010] px-5 py-5">
+            <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Quick prompts</p>
+            <div className="mt-4 grid gap-2">
+              {quickPrompts.slice(0, 4).map((prompt) => (
                 <button
-                  className="cerebro-hover rounded-[14px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-4 py-3 text-left text-sm leading-6 text-osrs-text-soft"
+                  className="border border-white/8 bg-[#131313] px-3 py-3 text-left text-sm leading-6 text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
                   key={prompt}
                   onClick={() => onRunChatPrompt(prompt)}
                   type="button"
@@ -229,55 +263,8 @@ export function ChatView({
                 </button>
               ))}
             </div>
-          </Panel>
-        ))}
-      </div>
-
-      <div className="grid gap-4 xl:grid-cols-5">
-        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader eyebrow="Thread account" title={threadAccountLabel} />
-          <p className="text-sm leading-6 text-osrs-text-soft">
-            Cerebro anchors direct stat, gear, route, and sync questions against this account when possible.
-          </p>
-        </Panel>
-        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader eyebrow="Current lane" title={focusLabel} />
-          <p className="text-sm leading-6 text-osrs-text-soft">
-            This is the main subject Cerebro thinks the current thread is orbiting right now.
-          </p>
-        </Panel>
-        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader eyebrow="Current priority" title={intentLabel} />
-          <p className="text-sm leading-6 text-osrs-text-soft">
-            Cerebro is using this planning intent to shape comparisons, follow-ups, and what it deprioritizes.
-          </p>
-        </Panel>
-        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader eyebrow="Best next move" title={threadNextMove.title} />
-          <p className="text-sm leading-6 text-osrs-text-soft">{threadNextMove.body}</p>
-        </Panel>
-        <Panel className="space-y-2 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))] p-4">
-          <SectionHeader
-            eyebrow="Current blockers"
-            title={threadBlockers.length > 0 ? threadBlockers[0] : "No hard blockers tracked"}
-          />
-          <div className="space-y-2">
-            {threadBlockers.length > 0 ? (
-              threadBlockers.map((blocker) => (
-                <div
-                  className="rounded-[12px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.32))] px-3 py-2 text-sm text-osrs-text-soft"
-                  key={blocker}
-                >
-                  {blocker}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm leading-6 text-osrs-text-soft">
-                The current lane looks actionable. Ask Cerebro which blocker to clear first when a tighter route needs cleanup.
-              </p>
-            )}
-          </div>
-        </Panel>
+          </section>
+        </aside>
       </div>
     </div>
   );
