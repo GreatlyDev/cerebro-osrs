@@ -140,14 +140,14 @@ export function RecommendationsView({
   const actions = nextActions?.actions ?? [];
 
   return (
-    <div className="space-y-10">
-      <section className="border-b border-white/8 pb-8">
-        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+    <div className="space-y-8">
+      <section className="border-b border-white/8 pb-7">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
               Recommendations // Ranked action room
             </p>
-            <h1 className="mt-2 max-w-5xl font-display text-[3.1rem] font-black tracking-[0.02em] text-white md:text-[4rem]">
+            <h1 className="mt-2 max-w-5xl font-display text-[2.8rem] font-black uppercase leading-[0.98] tracking-[0.08em] text-white md:text-[3.7rem]">
               See the next actions Cerebro is actually backing
             </h1>
             <p className="mt-4 max-w-3xl text-[0.98rem] leading-8 text-osrs-text-soft">
@@ -156,7 +156,7 @@ export function RecommendationsView({
               when you are simply reading the account.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5">
             <Button onClick={onGoToAdvisor} variant="secondary">
               Ask Cerebro
             </Button>
@@ -167,7 +167,7 @@ export function RecommendationsView({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <div className="border border-white/8 bg-[#101010] px-5 py-5">
           <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Active account</p>
           <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedAccountRsn ?? "None selected"}</p>
@@ -188,10 +188,10 @@ export function RecommendationsView({
           anchor, not because the workspace is unusable without one.
         </section>
       ) : (
-        <div className="grid gap-5">
+        <div className="grid gap-4">
           {actions.map((action, index) => (
             <section
-              className={`border bg-[#101010] px-6 py-6 ${
+              className={`border bg-[#101010] px-5 py-5 ${
                 index === 0 ? "border-osrs-gold/45 shadow-[0_0_0_1px_rgba(212,175,55,0.08)]" : "border-white/8"
               }`}
               key={`${action.action_type}-${action.title}`}
@@ -201,17 +201,17 @@ export function RecommendationsView({
                   <RecommendationThumb action={action} className="h-20 w-20 shrink-0" />
                   <div className="min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                      <span className="border border-white/8 bg-[#0b0b0b] px-2.5 py-1 font-mono text-[0.54rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                         {index === 0 ? "Top action" : `Option ${index + 1}`}
                       </span>
-                      <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                      <span className="border border-white/8 bg-[#0b0b0b] px-2.5 py-1 font-mono text-[0.54rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                         {action.action_type}
                       </span>
-                      <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                      <span className="border border-white/8 bg-[#0b0b0b] px-2.5 py-1 font-mono text-[0.54rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                         {action.priority}
                       </span>
                     </div>
-                    <h2 className="font-display text-[2rem] font-bold uppercase leading-tight text-white">{action.title}</h2>
+                    <h2 className="font-display text-[1.75rem] font-bold uppercase leading-tight tracking-[0.05em] text-white">{action.title}</h2>
                     <p className="max-w-3xl text-sm leading-7 text-osrs-text-soft">{action.summary}</p>
                   </div>
                 </div>

@@ -43,23 +43,23 @@ export function ProfileView({
   const pendingExistingAccount = accounts.find((account) => account.rsn.trim().toLowerCase() === normalizedNewRsn) ?? null;
 
   return (
-    <div className="space-y-10">
-      <section className="border-b border-white/8 pb-8">
-        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+    <div className="space-y-8">
+      <section className="border-b border-white/8 pb-7">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
               Profile // Workspace baseline
             </p>
-            <h1 className="mt-2 max-w-4xl font-display text-[3.1rem] font-black tracking-[0.02em] text-white md:text-[4rem]">
+            <h1 className="mt-2 max-w-5xl font-display text-[2.8rem] font-black uppercase leading-[0.98] tracking-[0.08em] text-white md:text-[3.7rem]">
               Set the planning baseline for your workspace
             </h1>
-            <p className="mt-4 max-w-3xl text-[0.98rem] leading-8 text-osrs-text-soft">
+            <p className="mt-4 max-w-3xl text-[0.96rem] leading-8 text-osrs-text-soft">
               These settings shape recommendation tone, default routing, and which account the rest of the
               workspace should naturally orient around. They inform Cerebro&apos;s advice, but they should not
               trap the assistant inside one planning style.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5">
             <Button onClick={onGoToAdvisor} variant="secondary">
               Ask Cerebro
             </Button>
@@ -70,9 +70,9 @@ export function ProfileView({
         </div>
       </section>
 
-      <div className="grid gap-10 xl:grid-cols-[minmax(0,1.4fr)_22rem]">
-        <section className="space-y-8">
-          <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
+        <section className="space-y-6">
+          <div className="grid gap-3 md:grid-cols-3">
             <div className="border border-white/8 bg-[#101010] px-5 py-5">
               <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Primary RSN</p>
               <p className="mt-3 font-display text-[1.35rem] uppercase text-white">
@@ -90,9 +90,11 @@ export function ProfileView({
           </div>
 
           <section className="border border-white/8 bg-[#101010] px-6 py-6">
-            <div className="mb-6">
+            <div className="mb-5 border-b border-white/8 pb-5">
               <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Workspace defaults</p>
-              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Recommendation profile</h2>
+              <h2 className="mt-3 font-display text-[1.18rem] font-bold uppercase tracking-[0.08em] text-white">
+                Recommendation profile
+              </h2>
               <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
                 These preferences follow you across recommendations, goals, and advisor replies.
               </p>
@@ -182,10 +184,10 @@ export function ProfileView({
           </section>
         </section>
 
-        <aside className="space-y-5">
+        <aside className="space-y-4">
           <section className="border border-white/8 bg-[#101010] px-5 py-5">
             <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Primary account</p>
-            <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Linked RSNs</h2>
+            <h2 className="mt-3 font-display text-[1.18rem] font-bold uppercase tracking-[0.08em] text-white">Linked RSNs</h2>
             <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
               Pick which linked account the rest of the workspace should naturally orient around.
             </p>

@@ -83,14 +83,14 @@ export function GoalsView({
   setNewGoalType,
 }: GoalsViewProps) {
   return (
-    <div className="space-y-10">
-      <section className="border-b border-white/8 pb-8">
-        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+    <div className="space-y-8">
+      <section className="border-b border-white/8 pb-7">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
               Goals // Workspace anchor
             </p>
-            <h1 className="mt-2 max-w-5xl font-display text-[3.1rem] font-black tracking-[0.02em] text-white md:text-[4rem]">
+            <h1 className="mt-2 max-w-5xl font-display text-[2.8rem] font-black uppercase leading-[0.98] tracking-[0.08em] text-white md:text-[3.7rem]">
               Anchor the workspace around a real target
             </h1>
             <p className="mt-4 max-w-3xl text-[0.98rem] leading-8 text-osrs-text-soft">
@@ -98,7 +98,7 @@ export function GoalsView({
               and momentum into a real progression plan.
             </p>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2.5">
             <Button onClick={onGoToRecommendations} variant="secondary">
               Open recommendations
             </Button>
@@ -106,7 +106,7 @@ export function GoalsView({
         </div>
       </section>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:grid-cols-3">
         <div className="border border-white/8 bg-[#101010] px-5 py-5">
           <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Active RSN</p>
           <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedAccountRsn ?? "None selected"}</p>
@@ -121,11 +121,11 @@ export function GoalsView({
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[25rem_minmax(0,1fr)]">
+      <div className="grid gap-5 xl:grid-cols-[24rem_minmax(0,1fr)]">
         <section className="border border-white/8 bg-[#101010] px-6 py-6">
-          <div className="mb-6">
+          <div className="mb-5 border-b border-white/8 pb-5">
             <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Create goal</p>
-            <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Start a new objective</h2>
+            <h2 className="mt-3 font-display text-[1.18rem] font-bold uppercase tracking-[0.08em] text-white">Start a new objective</h2>
             <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
               Use one strong goal to sharpen the planner before you branch into secondary targets.
             </p>
@@ -191,9 +191,9 @@ export function GoalsView({
 
         <div className="space-y-6">
           <section className="border border-white/8 bg-[#101010] px-6 py-6">
-            <div className="mb-6">
+            <div className="mb-5 border-b border-white/8 pb-5">
               <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Active board</p>
-              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Current goals</h2>
+              <h2 className="mt-3 font-display text-[1.18rem] font-bold uppercase tracking-[0.08em] text-white">Current goals</h2>
               <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
                 Open a goal page for the full planning surface, or generate a fresh plan from here.
               </p>
@@ -222,7 +222,7 @@ export function GoalsView({
                             </span>
                           ) : null}
                         </div>
-                        <h3 className="font-display text-2xl text-white">{goal.title}</h3>
+                        <h3 className="font-display text-[1.4rem] font-bold uppercase tracking-[0.05em] text-white">{goal.title}</h3>
                         <p className="text-sm leading-7 text-osrs-text-soft">
                           {goal.generated_plan
                             ? "A generated plan already exists for this goal. Open it for the dedicated planning page or refresh the plan from here."
@@ -245,9 +245,9 @@ export function GoalsView({
           </section>
 
           <section className="border border-white/8 bg-[#101010] px-6 py-6">
-            <div className="mb-6">
+            <div className="mb-5 border-b border-white/8 pb-5">
               <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Plan readout</p>
-              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Latest generated plan</h2>
+              <h2 className="mt-3 font-display text-[1.18rem] font-bold uppercase tracking-[0.08em] text-white">Latest generated plan</h2>
               <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
                 The latest generated plan stays visible here so the goal board still feels useful before you drill into a dedicated goal page.
               </p>
@@ -259,7 +259,7 @@ export function GoalsView({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Summary</p>
-                      <h3 className="mt-2 font-display text-2xl text-white">{selectedGoalPlan.summary}</h3>
+                      <h3 className="mt-2 font-display text-[1.4rem] font-bold uppercase tracking-[0.05em] text-white">{selectedGoalPlan.summary}</h3>
                     </div>
                     <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                       {selectedGoalPlan.status}
