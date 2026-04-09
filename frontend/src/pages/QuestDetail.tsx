@@ -1,7 +1,4 @@
 import { Button } from "../components/ui/Button";
-import { PageHero } from "../components/ui/PageHero";
-import { Panel } from "../components/ui/Panel";
-import { SectionHeader } from "../components/ui/SectionHeader";
 import type { NextAction, NextActionResponse, QuestDetail as QuestDetailType } from "../types";
 
 type QuestDetailProps = {
@@ -12,6 +9,19 @@ type QuestDetailProps = {
   selectedQuest: QuestDetailType | null;
 };
 
+function ListPanel({ items, title }: { items: string[]; title: string }) {
+  return (
+    <div className="border border-white/8 bg-[#111111] p-5">
+      <strong className="block font-display text-xl text-white">{title}</strong>
+      <ul className="mt-4 space-y-2 text-sm leading-7 text-osrs-text-soft">
+        {items.map((item) => (
+          <li key={item}>- {item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function QuestDetailView({
   onBackToDashboard,
   onBackToQuests,
@@ -20,11 +30,7 @@ export function QuestDetailView({
   selectedQuest,
 }: QuestDetailProps) {
   if (!selectedQuest) {
-    return (
-      <Panel>
-        <p className="text-sm leading-7 text-osrs-text-soft">No quest loaded.</p>
-      </Panel>
-    );
+    return <div className="border border-white/8 bg-[#101010] px-6 py-6 text-sm leading-7 text-osrs-text-soft">No quest loaded.</div>;
   }
 
   const relatedActions =
@@ -33,71 +39,83 @@ export function QuestDetailView({
     ) ?? [];
 
   return (
-    <div className="space-y-6">
-      <PageHero
-        action={<Button onClick={onBackToQuests} variant="secondary">All quests</Button>}
-        chips={[
-          { label: "Difficulty", value: selectedQuest.difficulty },
-          { label: "Category", value: selectedQuest.category },
-          { label: "Planner links", value: String(relatedActions.length) },
-        ]}
-        description={selectedQuest.short_description}
-        eyebrow="Quest Detail"
-        title={selectedQuest.name}
-      >
-        <div className="flex flex-wrap gap-3 text-sm text-osrs-text-soft">
-          <button
-            className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/70 px-3 py-1.5"
-            onClick={onBackToDashboard}
-            type="button"
-          >
-            Dashboard
-          </button>
+    <div className="space-y-10">
+      <section className="border-b border-white/8 pb-8">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
+              Quest // Detail view
+            </p>
+            <h1 className="mt-2 max-w-5xl font-display text-[3.1rem] font-black tracking-[0.02em] text-white md:text-[4rem]">
+              {selectedQuest.name}
+            </h1>
+            <p className="mt-4 max-w-3xl text-[0.98rem] leading-8 text-osrs-text-soft">{selectedQuest.short_description}</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Button onClick={onBackToQuests} variant="secondary">All quests</Button>
+            <Button onClick={onBackToDashboard} variant="secondary">Dashboard</Button>
+          </div>
         </div>
-      </PageHero>
+      </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_24rem]">
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Difficulty</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedQuest.difficulty}</p>
+        </div>
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Category</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedQuest.category}</p>
+        </div>
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Planner links</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{relatedActions.length}</p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_22rem]">
         <div className="space-y-6">
-          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-            <SectionHeader
-              eyebrow="Why it matters"
-              subtitle={selectedQuest.why_it_matters}
-              title="Quest overview"
-            />
+          <section className="border border-white/8 bg-[#101010] px-6 py-6">
+            <div className="mb-6">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Why it matters</p>
+              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Quest overview</h2>
+              <p className="mt-2 text-sm leading-7 text-osrs-text-soft">{selectedQuest.why_it_matters}</p>
+            </div>
             <div className="grid gap-4 md:grid-cols-2">
               <ListPanel items={selectedQuest.requirements} title="Requirements" />
               <ListPanel items={selectedQuest.rewards} title="Rewards" />
             </div>
-          </Panel>
+          </section>
 
-          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-            <SectionHeader
-              eyebrow="Next steps"
-              subtitle="A clean place for richer guide content later without crowding the catalog."
-              title="Walkthrough lane"
-            />
+          <section className="border border-white/8 bg-[#101010] px-6 py-6">
+            <div className="mb-6">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Next steps</p>
+              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Walkthrough lane</h2>
+              <p className="mt-2 text-sm leading-7 text-osrs-text-soft">A clean place for richer guide content later without crowding the catalog.</p>
+            </div>
             <ol className="space-y-3 text-sm leading-7 text-osrs-text-soft">
               {selectedQuest.next_steps.map((step, index) => (
                 <li className="flex gap-3" key={step}>
-                  <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-osrs-border-light/70 bg-osrs-gold/10 text-xs text-osrs-gold-soft">
+                  <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center border border-white/8 bg-[#0b0b0b] text-xs text-osrs-gold-soft">
                     {index + 1}
                   </span>
                   <span>{step}</span>
                 </li>
               ))}
             </ol>
-          </Panel>
+          </section>
         </div>
 
-        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-          <SectionHeader eyebrow="Planner links" title="Related actions" subtitle="Ranked quest pressure and follow-through for this unlock." />
+        <section className="border border-white/8 bg-[#101010] px-6 py-6">
+          <div className="mb-6">
+            <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Planner links</p>
+            <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Related actions</h2>
+            <p className="mt-2 text-sm leading-7 text-osrs-text-soft">Ranked quest pressure and follow-through for this unlock.</p>
+          </div>
           {relatedActions.length > 0 ? (
             relatedActions.map((action) => (
-              <div
-                className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.32))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-                key={`${action.action_type}-${action.title}`}
-              >
-                <strong className="block text-osrs-text">{action.title}</strong>
+              <div className="border border-white/8 bg-[#111111] px-4 py-4" key={`${action.action_type}-${action.title}`}>
+                <strong className="block text-white">{action.title}</strong>
                 <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{action.summary}</p>
                 <Button className="mt-3 w-full" onClick={() => onOpenNextAction(action)} variant="secondary">
                   Open from planner
@@ -105,25 +123,10 @@ export function QuestDetailView({
               </div>
             ))
           ) : (
-            <p className="text-sm leading-7 text-osrs-text-soft">
-              No active ranked action is currently attached to this quest.
-            </p>
+            <p className="text-sm leading-7 text-osrs-text-soft">No active ranked action is currently attached to this quest.</p>
           )}
-        </Panel>
+        </section>
       </div>
-    </div>
-  );
-}
-
-function ListPanel({ items, title }: { items: string[]; title: string }) {
-  return (
-    <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-      <strong className="block font-display text-xl text-osrs-text">{title}</strong>
-      <ul className="mt-4 space-y-2 text-sm leading-7 text-osrs-text-soft">
-        {items.map((item) => (
-          <li key={item}>- {item}</li>
-        ))}
-      </ul>
     </div>
   );
 }
