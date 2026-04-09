@@ -1,7 +1,4 @@
 import { Button } from "../components/ui/Button";
-import { PageHero } from "../components/ui/PageHero";
-import { Panel } from "../components/ui/Panel";
-import { SectionHeader } from "../components/ui/SectionHeader";
 import type { NextActionResponse, QuestDetail, QuestSummary } from "../types";
 
 type QuestsViewProps = {
@@ -28,55 +25,74 @@ export function QuestsView({
   const recommendedQuestActions = nextActions?.actions.filter((action) => action.action_type === "quest") ?? [];
 
   return (
-    <div className="space-y-6">
-      <PageHero
-        action={
+    <div className="space-y-10">
+      <section className="border-b border-white/8 pb-8">
+        <div className="flex flex-col gap-8 xl:flex-row xl:items-start xl:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
+              Quests // Unlock board
+            </p>
+            <h1 className="mt-2 max-w-5xl font-display text-[3.1rem] font-black tracking-[0.02em] text-white md:text-[4rem]">
+              Unlock-first quest planning
+            </h1>
+            <p className="mt-4 max-w-3xl text-[0.98rem] leading-8 text-osrs-text-soft">
+              Use the live quest catalog as an unlock board, then open a dedicated quest page when you want requirements,
+              rewards, blockers, and follow-up value.
+            </p>
+          </div>
           <input
-            className="w-full min-w-[14rem] rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
+            className="w-full min-w-[18rem] max-w-sm border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
             onChange={(event) => setQuestSearch(event.target.value)}
             placeholder="Search quests"
             value={questSearch}
           />
-        }
-        chips={[
-          { label: "Catalog entries", value: String(filteredQuests.length) },
-          { label: "Quest pressure", value: String(recommendedQuestActions.length) },
-          { label: "Detail mode", value: "Dedicated pages" },
-        ]}
-        description="Use the live quest catalog as an unlock board, then open a dedicated quest page when you want requirements, rewards, blockers, and follow-up value."
-        eyebrow="Quest Helper"
-        title="Unlock-first quest planning"
-      />
+        </div>
+      </section>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_24rem]">
-        <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-          <SectionHeader
-            eyebrow="Catalog"
-            subtitle="Browse the structured quest catalog and open any entry into its own richer page."
-            title="Quest board"
-          />
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Catalog entries</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{filteredQuests.length}</p>
+        </div>
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Quest pressure</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{recommendedQuestActions.length}</p>
+        </div>
+        <div className="border border-white/8 bg-[#101010] px-5 py-5">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Detail mode</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">Dedicated pages</p>
+        </div>
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_22rem]">
+        <section className="border border-white/8 bg-[#101010] px-6 py-6">
+          <div className="mb-6">
+            <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Catalog</p>
+            <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Quest board</h2>
+            <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+              Browse the structured quest catalog and open any entry into its own richer page.
+            </p>
+          </div>
+
           {filteredQuests.length === 0 ? (
-            <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+            <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
               No quests matched that search. Clear the filter or try a broader term to reopen the catalog.
             </div>
           ) : (
             <div className="grid gap-3">
               {filteredQuests.map((quest) => (
-                <div
-                  className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.02),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-                  key={quest.id}
-                >
+                <div className="border border-white/8 bg-[#111111] p-4" key={quest.id}>
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                        <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
                           {quest.difficulty}
                         </span>
-                        <span className="rounded-full border border-osrs-border/45 bg-black/20 px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                        <span className="border border-white/8 bg-[#0b0b0b] px-3 py-1 text-[0.68rem] uppercase tracking-[0.18em] text-osrs-text-soft">
                           {quest.category}
                         </span>
                       </div>
-                      <h3 className="font-display text-2xl text-osrs-text">{quest.name}</h3>
+                      <h3 className="font-display text-2xl text-white">{quest.name}</h3>
                       <p className="text-sm leading-7 text-osrs-text-soft">{quest.recommendation_reason}</p>
                     </div>
                     <Button onClick={() => onLoadQuest(quest.id)} variant="secondary">
@@ -87,24 +103,25 @@ export function QuestsView({
               ))}
             </div>
           )}
-        </Panel>
+        </section>
 
         <div className="space-y-6">
-          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-            <SectionHeader
-              eyebrow="Selected quest"
-              subtitle="This keeps a cleaner preview in view before you move into the dedicated quest page."
-              title="Quest preview"
-            />
+          <section className="border border-white/8 bg-[#101010] px-6 py-6">
+            <div className="mb-6">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Selected quest</p>
+              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Quest preview</h2>
+              <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+                This keeps a cleaner preview in view before you move into the dedicated quest page.
+              </p>
+            </div>
+
             {selectedQuest ? (
               <div className="space-y-4">
-                <div className="rounded-[18px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
-                  <h3 className="font-display text-2xl text-osrs-text">{selectedQuest.name}</h3>
-                  <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
-                    {selectedQuest.short_description}
-                  </p>
+                <div className="border border-white/8 bg-[#111111] p-5">
+                  <h3 className="font-display text-2xl text-white">{selectedQuest.name}</h3>
+                  <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{selectedQuest.short_description}</p>
                 </div>
-                <div className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                <div className="border border-white/8 bg-[#111111] p-4">
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Why it matters</p>
                   <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{selectedQuest.why_it_matters}</p>
                 </div>
@@ -113,36 +130,36 @@ export function QuestsView({
                 </Button>
               </div>
             ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
                 No quest is selected yet. Open one from the catalog and Cerebro will load the dedicated unlock page.
               </div>
             )}
-          </Panel>
+          </section>
 
-          <Panel className="space-y-4 border-osrs-border/45 bg-[linear-gradient(180deg,rgba(12,12,12,0.98),rgba(15,13,11,0.98))]">
-            <SectionHeader
-              eyebrow="Planner pull"
-              subtitle="These are the quest-shaped ranked actions currently surfacing from the planner."
-              title="Quest pressure points"
-            />
+          <section className="border border-white/8 bg-[#101010] px-6 py-6">
+            <div className="mb-6">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Planner pull</p>
+              <h2 className="mt-3 font-display text-[1.5rem] font-bold text-white">Quest pressure points</h2>
+              <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+                These are the quest-shaped ranked actions currently surfacing from the planner.
+              </p>
+            </div>
+
             {recommendedQuestActions.length > 0 ? (
               <div className="grid gap-3">
                 {recommendedQuestActions.slice(0, 3).map((action) => (
-                  <div
-                    className="rounded-[16px] border border-osrs-border/45 bg-[linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.34))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
-                    key={`${action.action_type}-${action.title}`}
-                  >
-                    <strong className="block text-base text-osrs-text">{action.title}</strong>
+                  <div className="border border-white/8 bg-[#111111] px-4 py-4" key={`${action.action_type}-${action.title}`}>
+                    <strong className="block text-base uppercase text-white">{action.title}</strong>
                     <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{action.summary}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="rounded-[16px] border border-dashed border-osrs-border/45 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+              <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
                 No ranked quest actions are active yet. Create a goal and sync an account to make the quest board sharper.
               </div>
             )}
-          </Panel>
+          </section>
         </div>
       </div>
     </div>
