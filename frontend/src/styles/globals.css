@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -15,8 +15,9 @@
   --color-osrs-text-soft: #cdbfa4;
   --color-osrs-success: #6fa16d;
   --color-osrs-danger: #8b2e2e;
-  --font-display: "Cinzel", Georgia, serif;
+  --font-display: "Outfit", "Inter", "Segoe UI", sans-serif;
   --font-sans: "Inter", "Segoe UI", sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
 }
 
 @layer base {
@@ -27,10 +28,9 @@
   body {
     font-family: var(--font-sans);
     background:
-      radial-gradient(circle at top left, rgba(200, 164, 90, 0.12), transparent 22%),
-      radial-gradient(circle at top right, rgba(111, 161, 109, 0.08), transparent 22%),
-      radial-gradient(circle at bottom right, rgba(58, 47, 38, 0.22), transparent 28%),
-      linear-gradient(180deg, #14110e 0%, #100d0b 34%, #0c0a09 100%);
+      radial-gradient(circle at top left, rgba(212, 175, 55, 0.06), transparent 18%),
+      radial-gradient(circle at bottom right, rgba(212, 175, 55, 0.04), transparent 18%),
+      linear-gradient(180deg, #090909 0%, #0a0a0a 60%, #080808 100%);
     color: #e7dcc5;
   }
 

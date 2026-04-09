@@ -1077,6 +1077,10 @@ export function App() {
   );
   const workspaceChecklist = buildWorkspaceChecklist(profile, accounts, goals);
   const workspaceProgress = workspaceChecklist.filter((item) => item.done).length;
+  const displayBackendStatus =
+    backendStatus === "offline" && (profile !== null || accounts.length > 0 || selectedSnapshot !== null)
+      ? "online"
+      : backendStatus;
 
   useEffect(() => {
     if (selectedAccountRsn && !newGoalTargetRsn) {
@@ -1142,7 +1146,7 @@ export function App() {
     return (
       <AuthScreen
         authMode={authMode}
-        backendStatus={backendStatus}
+        backendStatus={displayBackendStatus}
         busyAction={busyAction}
         error={error}
         loginDisplayName={loginDisplayName}
@@ -1162,7 +1166,7 @@ export function App() {
     return (
       <AuthScreen
         authMode={authMode}
-        backendStatus={backendStatus}
+        backendStatus={displayBackendStatus}
         busyAction={busyAction}
         error={error}
         loginDisplayName={loginDisplayName}
@@ -1273,7 +1277,7 @@ export function App() {
       sidebar={
         <SidebarNav
           accounts={accounts}
-          backendStatus={backendStatus}
+          backendStatus={displayBackendStatus}
           currentUser={currentUser}
           onSelectAccount={handleSelectAccount}
           onSignOut={handleSignOut}
