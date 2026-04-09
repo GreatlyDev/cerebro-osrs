@@ -404,6 +404,9 @@ function buildQuickPrompts(
     prompts.push("What one change would reduce friction across the whole account?");
     prompts.push("What part of this account is quietly carrying everything?");
     prompts.push("What would make this account feel more legendary without becoming tedious?");
+    prompts.push("What kind of progress would make this account feel calmer and easier to manage?");
+    prompts.push("What part of this account looks impressive but is doing less than it seems?");
+    prompts.push("What one unlock would make the account feel more effortless day to day?");
     prompts.push("What current strength is being wasted by a missing unlock?");
     prompts.push("What boring task would create disproportionate future value?");
     prompts.push("What lane is closest to compounding if I bridge one missing piece?");
@@ -513,6 +516,9 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
           "What one change would reduce friction across the whole account?",
           "What part of this account is quietly carrying everything?",
           "What would make this account feel more legendary without becoming tedious?",
+          "What kind of progress would make this account feel calmer and easier to manage?",
+          "What part of this account looks impressive but is doing less than it seems?",
+          "What one unlock would make the account feel more effortless day to day?",
           "What current strength is being wasted by a missing unlock?",
           "What boring task would create disproportionate future value?",
           "What lane is closest to compounding if I bridge one missing piece?",

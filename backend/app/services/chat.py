@@ -5335,6 +5335,102 @@ class ChatService:
         if any(
             phrase in normalized
             for phrase in (
+                "what kind of progress would make this account feel calmer and easier to manage",
+                "what progress would make this account feel calmer and easier to manage",
+                "what would make this account feel calmer and easier to manage",
+                "what would make this account feel calmer to manage",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The kind of progress that would make this account feel calmer and easier to manage is progress that resolves support friction like {unlock_label} into something you can trust without thinking about it. "
+                    "That kind of cleanup lowers the mental load of every later session."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel calmer is progress that removes the drag still sitting in {weakest_label.lower()}. "
+                    "That is usually what turns an account from fiddly into dependable."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The kind of progress that would make this account feel calmer is progress that lets your {strongest_label.lower()} lane run with less setup and less second-guessing. "
+                    "That usually does more for account quality than another isolated spike."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what part of this account looks impressive but is doing less than it seems",
+                "what part of the account looks impressive but is doing less than it seems",
+                "what on this account looks impressive but is not pulling enough weight",
+                "what looks impressive on this account but is not carrying enough",
+            )
+        ):
+            if strongest_category is not None and weakest_category is not None and strongest_category != weakest_category:
+                strongest_label = strongest_category[0].title()
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The part of the account that may look more impressive than it is truly carrying right now is your {strongest_label.lower()} lane if it still has unresolved drag in {weakest_label.lower()}. "
+                    "That is usually where numbers look good but the account still does not feel fully online."
+                )
+
+            if top_skill_name and isinstance(top_skill_level, int):
+                return (
+                    f"The part of the account that may be looking more impressive than it is carrying right now is your {top_skill_name.lower()} progress if it has not been converted into broader utility yet. "
+                    "A strong number is still better when it unlocks smoother play, not just admiration."
+                )
+
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"What may be looking more impressive than it is carrying right now is any visible progress that still leaves support work like {unlock_label} unresolved. "
+                    "That kind of imbalance often reads stronger than it feels."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
+                "what one unlock would make the account feel more effortless day to day",
+                "what unlock would make the account feel more effortless day to day",
+                "what one unlock would make this account feel more effortless day to day",
+                "what unlock would make this account feel more effortless",
+            )
+        ):
+            if progress is not None and progress.active_unlocks:
+                unlock_label = progress.active_unlocks[0]
+                return (
+                    f"The one unlock most likely to make this account feel more effortless day to day is the one that turns support friction like {unlock_label} into a durable convenience. "
+                    "Those are the unlocks that quietly improve every session instead of only one lane."
+                )
+
+            if weakest_category is not None:
+                weakest_label = weakest_category[0].title()
+                return (
+                    f"The unlock most likely to make this account feel more effortless is one that relieves the drag in {weakest_label.lower()}. "
+                    "That kind of unlock tends to make the whole account feel lighter, not just stronger."
+                )
+
+            if strongest_category is not None:
+                strongest_label = strongest_category[0].title()
+                return (
+                    f"The unlock most likely to make this account feel more effortless is one that lets your {strongest_label.lower()} lane plug into more of the game with less setup. "
+                    "That is usually where everyday quality of life improves the fastest."
+                )
+
+            return None
+
+        if any(
+            phrase in normalized
+            for phrase in (
                 "what routine fits this account best",
                 "what routine should i build around this account",
                 "what repeatable should i build around this account",
