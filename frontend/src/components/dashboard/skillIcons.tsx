@@ -22,6 +22,7 @@ const skillIconMap: Record<string, string> = {
   firemaking: "/skills/firemaking.png",
   woodcutting: "/skills/woodcutting.png",
   farming: "/skills/farming.png",
+  sailing: "/skills/sailing.png",
 };
 
 export function getSkillIconPath(skill: string): string | null {
