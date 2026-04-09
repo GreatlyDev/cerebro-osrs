@@ -11,6 +11,7 @@ import type {
 import { AdvisorConsole } from "../components/dashboard/AdvisorConsole";
 import { FeatureGrid } from "../components/dashboard/FeatureGrid";
 import { HeroPanel } from "../components/dashboard/HeroPanel";
+import { TelemetryBoard } from "../components/dashboard/TelemetryBoard";
 import { WorkspaceSetupPanel } from "../components/dashboard/WorkspaceSetupPanel";
 
 type DashboardPageProps = {
@@ -178,6 +179,12 @@ export function DashboardPage(props: DashboardPageProps) {
         displayName={profile?.display_name ?? currentUser.display_name}
         questPoints={formatQuestPoints(selectedProgress)}
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
+      />
+      <TelemetryBoard
+        nextActions={nextActions}
+        progress={selectedProgress}
+        selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
+        snapshot={selectedSnapshot}
       />
       <WorkspaceSetupPanel
         accountCount={accountCount}
