@@ -383,6 +383,49 @@ export function App() {
   }, []);
 
   useEffect(() => {
+    if (!authReady || typeof window === "undefined") {
+      return;
+    }
+
+    let cancelled = false;
+
+    const refreshBackendStatus = async () => {
+      try {
+        const healthResponse = await api.getHealth();
+        if (cancelled) {
+          return;
+        }
+        setBackendStatus(healthResponse.status === "ok" ? "online" : "offline");
+        if (healthResponse.status === "ok") {
+          setError((currentError) =>
+            currentError === "Unable to reach Cerebro." ? null : currentError,
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          setBackendStatus("offline");
+        }
+      }
+    };
+
+    const intervalId = window.setInterval(() => {
+      void refreshBackendStatus();
+    }, 15000);
+
+    const handleFocus = () => {
+      void refreshBackendStatus();
+    };
+
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [authReady]);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("cerebro.activeView", activeView);
     }

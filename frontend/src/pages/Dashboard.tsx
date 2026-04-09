@@ -176,7 +176,6 @@ export function DashboardPage(props: DashboardPageProps) {
       <HeroPanel
         bankValue={formatBankValue(selectedProgress)}
         combatLevel={selectedSnapshot?.summary.combat_level ?? null}
-        displayName={profile?.display_name ?? currentUser.display_name}
         overallLevel={selectedSnapshot?.summary.overall_level ?? null}
         questPoints={formatQuestPoints(selectedProgress)}
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
