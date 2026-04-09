@@ -542,6 +542,7 @@ export function App() {
       setAccounts(accountsResponse.items);
       setGoals(goalsResponse.items);
       setNextActions(nextActionsResponse);
+      setBackendStatus("online");
 
       if (accountsResponse.items.length > 0) {
         const latestAccount =

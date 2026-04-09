@@ -11,7 +11,7 @@ function skillFill(level: number) {
   if (level >= 99) {
     return 100;
   }
-  return Math.max(6, Math.min(100, Math.round((level / 99) * 100)));
+  return Math.max(8, Math.min(100, Math.round((level / 99) * 100)));
 }
 
 export function TelemetryBoard({
@@ -21,116 +21,120 @@ export function TelemetryBoard({
   nextActions,
 }: TelemetryBoardProps) {
   const topAction = nextActions?.top_action ?? null;
-  const topSkills = snapshot?.summary.top_skills?.slice(0, 6) ?? [];
-  const profile = snapshot?.summary.progression_profile;
-  const completedQuests = progress?.completed_quests.length ?? 0;
+  const topSkills = snapshot?.summary.top_skills?.slice(0, 4) ?? [];
   const trackedUnlocks = progress?.active_unlocks.length ?? 0;
 
-  const spotlightTitle = topAction?.title ?? (selectedAccountRsn ? `${selectedAccountRsn} telemetry synced` : "Workspace telemetry");
-  const spotlightSummary =
+  const featuredTitle = topAction?.title?.toUpperCase() ?? (selectedAccountRsn ? `${selectedAccountRsn.toUpperCase()} ACCOUNT LIVE` : "ACCOUNT TELEMETRY READY");
+  const featuredSummary =
     topAction?.summary ??
     (selectedAccountRsn
-      ? "Live account context is available. Use this board to keep the account's strongest signals in view while Cerebro guides the next move."
-      : "Select and sync an account to unlock the full telemetry board.");
+      ? "Live account telemetry is available. Use the board below to keep the clearest opportunities in view."
+      : "Select and sync an account to turn this board into a live telemetry surface.");
 
   return (
-    <section className="space-y-6">
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(18rem,0.9fr)]">
-        <div className="relative overflow-hidden rounded-[28px] border border-osrs-border/70 bg-[radial-gradient(circle_at_top_right,rgba(212,175,55,0.12),transparent_24%),linear-gradient(135deg,rgba(19,19,19,0.98),rgba(24,20,17,0.98)_62%,rgba(48,40,30,0.86))] p-7 shadow-osrs">
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.18))]" />
-          <div className="relative space-y-6">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-osrs-border-light/80 bg-osrs-gold/10 px-3 py-1 text-[0.64rem] uppercase tracking-[0.2em] text-osrs-gold-soft">
-                Critical movement
-              </span>
-              <span className="text-[0.66rem] uppercase tracking-[0.22em] text-osrs-text-soft">
-                {selectedAccountRsn ? `Live telemetry // ${selectedAccountRsn}` : "Live telemetry"}
+    <section className="space-y-10">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
+        <div className="relative min-h-[31rem] overflow-hidden border border-osrs-border/35 bg-[radial-gradient(circle_at_78%_28%,rgba(212,175,55,0.12),transparent_34%),linear-gradient(180deg,rgba(8,8,8,1),rgba(12,12,12,0.98))] px-8 py-8">
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.82),rgba(0,0,0,0.35))]" />
+          <div className="relative flex h-full flex-col justify-between">
+            <div>
+              <span className="inline-flex border border-osrs-gold/85 px-3 py-1 text-[0.66rem] uppercase tracking-[0.24em] text-osrs-gold">
+                Critical achievement
               </span>
             </div>
-            <div className="space-y-3">
-              <h2 className="max-w-4xl font-display text-[2rem] font-semibold uppercase leading-tight text-osrs-text md:text-[3.2rem]">
-                {spotlightTitle}
+            <div className="max-w-3xl space-y-5">
+              <h2 className="font-sans text-[3.2rem] font-black uppercase leading-[0.96] tracking-[-0.04em] text-white md:text-[4.2rem]">
+                {featuredTitle}
               </h2>
-              <p className="max-w-3xl text-sm leading-7 text-osrs-text-soft md:text-base">
-                {spotlightSummary}
-              </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="rounded-[18px] border border-osrs-border/60 bg-black/20 px-4 py-3.5">
-                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Highest skill</p>
-                <p className="mt-2 font-display text-xl text-osrs-text">
-                  {profile?.highest_skill ?? topSkills[0]?.skill ?? "Unknown"}
-                </p>
-              </div>
-              <div className="rounded-[18px] border border-osrs-border/60 bg-black/20 px-4 py-3.5">
-                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Quest completions</p>
-                <p className="mt-2 font-display text-xl text-osrs-text">{completedQuests}</p>
-              </div>
-              <div className="rounded-[18px] border border-osrs-border/60 bg-black/20 px-4 py-3.5">
-                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Live unlock threads</p>
-                <p className="mt-2 font-display text-xl text-osrs-text">{trackedUnlocks}</p>
+              <p className="max-w-2xl text-[0.95rem] leading-7 text-osrs-text-soft">{featuredSummary}</p>
+              <div className="flex flex-wrap gap-x-8 gap-y-2 font-mono text-[0.8rem] uppercase tracking-[0.08em] text-osrs-gold">
+                <span>{selectedAccountRsn ?? "workspace-wide"}</span>
+                <span>{trackedUnlocks} unlock threads tracked</span>
+                <span>{topSkills.length} live skill surfaces</span>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="space-y-3 rounded-[24px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(18,18,18,0.98),rgba(26,22,18,0.96))] p-5 shadow-osrs">
-          <div>
-            <p className="text-[0.64rem] uppercase tracking-[0.22em] text-osrs-gold">Live telemetry</p>
-            <p className="mt-2 text-sm leading-6 text-osrs-text-soft">
-              Keep the account's cleanest signals visible while you move through Cerebro.
-            </p>
+        <div className="space-y-4">
+          <div className="border border-osrs-border/35 bg-[#121212] p-4">
+            <p className="text-[0.64rem] uppercase tracking-[0.24em] text-osrs-gold">Cerebro intelligence</p>
+            <div className="mt-4 space-y-4">
+              <div className="border-b border-osrs-border/25 pb-4">
+                <p className="text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">System</p>
+                <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+                  {selectedAccountRsn
+                    ? `${selectedAccountRsn} is synced. Cerebro can already read stats, blockers, unlocks, and what the account actually needs next.`
+                    : "Select an account to ground Cerebro in live telemetry."}
+                </p>
+              </div>
+              <div className="space-y-3">
+                <p className="text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Readout</p>
+                <div className="flex items-center justify-between gap-4 text-sm text-osrs-text-soft">
+                  <span>Combat level</span>
+                  <strong className="font-sans text-[1.8rem] font-bold tracking-[-0.04em] text-white">
+                    {snapshot?.summary.combat_level ?? "--"}
+                  </strong>
+                </div>
+                <div className="flex items-center justify-between gap-4 text-sm text-osrs-text-soft">
+                  <span>Total level</span>
+                  <strong className="font-sans text-[1.8rem] font-bold tracking-[-0.04em] text-white">
+                    {snapshot?.summary.overall_level ?? "--"}
+                  </strong>
+                </div>
+              </div>
+            </div>
           </div>
+
           <div className="space-y-3">
-            <div className="rounded-[18px] border border-osrs-border/70 bg-white/[0.02] px-4 py-4">
-              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Combat level</p>
-              <p className="mt-2 font-display text-3xl text-osrs-text">{snapshot?.summary.combat_level ?? "Unknown"}</p>
-            </div>
-            <div className="rounded-[18px] border border-osrs-border/70 bg-white/[0.02] px-4 py-4">
-              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">Total level</p>
-              <p className="mt-2 font-display text-3xl text-osrs-text">{snapshot?.summary.overall_level ?? "Unknown"}</p>
-            </div>
-            <div className="rounded-[18px] border border-osrs-border/70 bg-white/[0.02] px-4 py-4">
-              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">90+ skills</p>
-              <p className="mt-2 font-display text-3xl text-osrs-text">
-                {profile?.total_skills_at_90_plus ?? 0}
-              </p>
-            </div>
+            <p className="text-[0.64rem] uppercase tracking-[0.28em] text-osrs-text">Strategic recommendations</p>
+            {(nextActions?.actions ?? []).slice(0, 3).map((action) => (
+              <div key={`${action.action_type}-${action.title}`} className="border border-osrs-border/35 bg-[#121212] p-4">
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 h-11 w-11 shrink-0 border border-osrs-border/25 bg-black/50" />
+                  <div className="min-w-0">
+                    <p className="font-sans text-[1rem] font-bold uppercase leading-tight text-white">{action.title}</p>
+                    <p className="mt-1 text-sm leading-6 text-osrs-text-soft">{action.summary}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <section className="space-y-4">
+      <section className="space-y-6">
         <div className="flex items-center gap-5">
-          <h3 className="font-display text-sm uppercase tracking-[0.34em] text-osrs-text">Active skill tracking</h3>
-          <div className="h-px flex-1 bg-osrs-border/70" />
+          <h3 className="font-sans text-[0.86rem] font-semibold uppercase tracking-[0.34em] text-white">Skill progress</h3>
+          <div className="h-px flex-1 bg-osrs-border/35" />
         </div>
-        <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {topSkills.length > 0 ? (
             topSkills.map((skill) => (
-              <div
-                className="group flex items-center gap-4 rounded-[20px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(20,20,20,0.98),rgba(24,21,18,0.98))] px-4 py-4 transition-all duration-200 hover:border-osrs-border-light/80 hover:translate-y-[-2px]"
-                key={skill.skill}
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-[12px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(0,0,0,0.45))] shadow-[inset_0_1px_2px_rgba(255,255,255,0.08),0_8px_18px_rgba(0,0,0,0.25)]">
-                  <span className="font-mono text-xs uppercase tracking-[0.12em] text-osrs-gold">
-                    {skill.skill.slice(0, 2)}
-                  </span>
+              <div key={skill.skill} className="border border-osrs-border/35 bg-[#121212] p-5">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center border border-osrs-border/30 bg-[#161616] shadow-[inset_2px_2px_4px_rgba(255,255,255,0.03),inset_-2px_-2px_4px_rgba(0,0,0,0.45)]">
+                    <span className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">
+                      {skill.skill.slice(0, 2)}
+                    </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3 text-[0.64rem] uppercase tracking-[0.2em] text-osrs-text-soft">
+                      <span>{skill.skill}</span>
+                      <span>{skill.level}</span>
+                    </div>
+                    <p className="mt-2 font-sans text-[1.1rem] font-bold tracking-[-0.03em] text-white">
+                      {skill.experience.toLocaleString()} XP
+                    </p>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-3 text-[0.66rem] uppercase tracking-[0.18em] text-osrs-text-soft">
-                    <span>{skill.skill}</span>
-                    <span>{skill.level}</span>
-                  </div>
-                  <p className="mt-1 font-display text-lg text-osrs-text">{skill.experience.toLocaleString()} XP</p>
-                  <div className="mt-3 h-[2px] w-full bg-osrs-border/40">
-                    <div className="h-full bg-osrs-gold transition-all duration-300" style={{ width: `${skillFill(skill.level)}%` }} />
-                  </div>
+                <div className="mt-4 h-[2px] w-full bg-osrs-border/30">
+                  <div className="h-full bg-osrs-gold" style={{ width: `${skillFill(skill.level)}%` }} />
                 </div>
               </div>
             ))
           ) : (
-            <div className="rounded-[20px] border border-dashed border-osrs-border/70 bg-black/10 px-5 py-6 text-sm text-osrs-text-soft lg:col-span-2 2xl:col-span-3">
+            <div className="border border-dashed border-osrs-border/35 bg-[#111111] px-5 py-6 text-sm leading-6 text-osrs-text-soft md:col-span-2 xl:col-span-4">
               Sync an account to unlock the live skill telemetry board.
             </div>
           )}
