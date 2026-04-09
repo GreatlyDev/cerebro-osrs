@@ -67,11 +67,11 @@ export function DashboardUtilityRail({
 
   return (
     <div className="space-y-4">
-      <section className="overflow-hidden rounded-[22px] border border-osrs-border/35 bg-[#121212]">
+      <section className="overflow-hidden border border-osrs-border/35 bg-[#121212]">
         <div className="flex items-center justify-between border-b border-osrs-border/35 px-4 py-3">
           <div>
             <p className="text-[0.64rem] uppercase tracking-[0.22em] text-osrs-gold">Cerebro assistant</p>
-            <p className="mt-1 font-display text-xl uppercase leading-tight text-osrs-text">Cerebro intelligence</p>
+            <p className="mt-1 font-sans text-[1.15rem] font-bold uppercase leading-tight tracking-[0.04em] text-white">Cerebro intelligence</p>
           </div>
           <span className="h-2.5 w-2.5 rounded-full bg-osrs-success shadow-[0_0_12px_rgba(111,161,109,0.75)]" />
         </div>
@@ -120,11 +120,11 @@ export function DashboardUtilityRail({
         <div className="space-y-3">
           {recommendationCards.length > 0 ? (
             recommendationCards.map((action) => (
-              <div key={`${action.action_type}-${action.title}`} className="rounded-[18px] border border-osrs-border/35 bg-[#121212] p-4">
+              <div key={`${action.action_type}-${action.title}`} className="border border-osrs-border/35 bg-[#121212] p-4">
                 <div className="flex items-start gap-3">
-                  <div className="mt-1 h-10 w-10 shrink-0 rounded-[6px] border border-osrs-border/35 bg-black/40" />
+                  <div className="mt-1 h-10 w-10 shrink-0 border border-osrs-border/35 bg-black/40" />
                   <div className="min-w-0">
-                    <p className="font-display text-[1.02rem] uppercase leading-tight text-osrs-text">{action.title}</p>
+                    <p className="font-sans text-[0.96rem] font-bold uppercase leading-tight text-white">{action.title}</p>
                     <p className="mt-1 text-sm leading-6 text-osrs-text-soft">{action.summary}</p>
                   </div>
                 </div>
@@ -138,7 +138,7 @@ export function DashboardUtilityRail({
         </div>
       </section>
 
-      <section className="rounded-[18px] border border-osrs-border/35 bg-[#121212] p-4">
+      <section className="border border-osrs-border/35 bg-[#121212] p-4">
         <p className="text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Account pulse</p>
         <div className="mt-3 space-y-2 text-sm text-osrs-text-soft">
           <div className="flex items-center justify-between gap-3">

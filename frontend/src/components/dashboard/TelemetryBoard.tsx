@@ -1,4 +1,5 @@
 import type { AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
+import { getSkillIconPath } from "./skillIcons";
 
 type TelemetryBoardProps = {
   selectedAccountRsn: string | null;
@@ -34,8 +35,8 @@ export function TelemetryBoard({
   return (
     <section className="space-y-10">
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1fr)_18rem]">
-        <div className="relative min-h-[31rem] overflow-hidden border border-osrs-border/35 bg-[radial-gradient(circle_at_78%_28%,rgba(212,175,55,0.12),transparent_34%),linear-gradient(180deg,rgba(8,8,8,1),rgba(12,12,12,0.98))] px-8 py-8">
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.82),rgba(0,0,0,0.35))]" />
+        <div className="relative min-h-[34rem] overflow-hidden border border-osrs-border/35 bg-[radial-gradient(circle_at_78%_28%,rgba(212,175,55,0.12),transparent_34%),linear-gradient(180deg,rgba(6,6,6,1),rgba(10,10,10,0.98))] px-10 py-10">
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.9),rgba(0,0,0,0.46))]" />
           <div className="relative flex h-full flex-col justify-between">
             <div>
               <span className="inline-flex border border-osrs-gold/85 px-3 py-1 text-[0.66rem] uppercase tracking-[0.24em] text-osrs-gold">
@@ -43,7 +44,7 @@ export function TelemetryBoard({
               </span>
             </div>
             <div className="max-w-3xl space-y-5">
-              <h2 className="font-sans text-[3.2rem] font-black uppercase leading-[0.96] tracking-[-0.04em] text-white md:text-[4.2rem]">
+              <h2 className="font-sans text-[3.4rem] font-black uppercase leading-[0.93] tracking-[-0.05em] text-white md:text-[4.6rem]">
                 {featuredTitle}
               </h2>
               <p className="max-w-2xl text-[0.95rem] leading-7 text-osrs-text-soft">{featuredSummary}</p>
@@ -89,7 +90,7 @@ export function TelemetryBoard({
           <div className="space-y-3">
             <p className="text-[0.64rem] uppercase tracking-[0.28em] text-osrs-text">Strategic recommendations</p>
             {(nextActions?.actions ?? []).slice(0, 3).map((action) => (
-              <div key={`${action.action_type}-${action.title}`} className="border border-osrs-border/35 bg-[#121212] p-4">
+              <div key={`${action.action_type}-${action.title}`} className="border border-osrs-border/35 bg-[#101010] p-4">
                 <div className="flex items-start gap-3">
                   <div className="mt-1 h-11 w-11 shrink-0 border border-osrs-border/25 bg-black/50" />
                   <div className="min-w-0">
@@ -114,9 +115,17 @@ export function TelemetryBoard({
               <div key={skill.skill} className="border border-osrs-border/35 bg-[#121212] p-5">
                 <div className="flex items-center gap-4">
                   <div className="flex h-12 w-12 items-center justify-center border border-osrs-border/30 bg-[#161616] shadow-[inset_2px_2px_4px_rgba(255,255,255,0.03),inset_-2px_-2px_4px_rgba(0,0,0,0.45)]">
-                    <span className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">
-                      {skill.skill.slice(0, 2)}
-                    </span>
+                    {getSkillIconPath(skill.skill) ? (
+                      <img
+                        alt={`${skill.skill} icon`}
+                        className="h-7 w-7 object-contain"
+                        src={getSkillIconPath(skill.skill) ?? undefined}
+                      />
+                    ) : (
+                      <span className="font-mono text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">
+                        {skill.skill.slice(0, 2)}
+                      </span>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3 text-[0.64rem] uppercase tracking-[0.2em] text-osrs-text-soft">
