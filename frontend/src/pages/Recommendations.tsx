@@ -198,7 +198,7 @@ export function RecommendationsView({
             >
               <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                 <div className="flex min-w-0 gap-5">
-                  <RecommendationThumb action={action} className="h-20 w-20 shrink-0" />
+                  <RecommendationThumb action={action} className="h-24 w-24 shrink-0" />
                   <div className="min-w-0 space-y-3">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="border border-white/8 bg-[#0b0b0b] px-2.5 py-1 font-mono text-[0.54rem] uppercase tracking-[0.18em] text-osrs-gold-soft">

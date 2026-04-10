@@ -41,6 +41,10 @@ export function ProfileView({
 }: ProfileViewProps) {
   const normalizedNewRsn = newAccountRsn.trim().toLowerCase();
   const pendingExistingAccount = accounts.find((account) => account.rsn.trim().toLowerCase() === normalizedNewRsn) ?? null;
+  const fieldClassName =
+    "w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40";
+  const selectClassName =
+    "w-full appearance-none border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm uppercase tracking-[0.08em] text-osrs-text outline-none focus:border-osrs-gold/40";
 
   return (
     <div className="space-y-8">
@@ -101,60 +105,72 @@ export function ProfileView({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <input
-                className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
-                onChange={(event) =>
-                  setProfileDraft((current) => ({
-                    ...current,
-                    display_name: event.target.value,
-                  }))
-                }
-                placeholder="Display name"
-                value={profileDraft.display_name}
-              />
-              <input
-                className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
-                onChange={(event) =>
-                  setProfileDraft((current) => ({
-                    ...current,
-                    primary_account_rsn: event.target.value,
-                  }))
-                }
-                placeholder="Primary account RSN"
-                value={profileDraft.primary_account_rsn}
-              />
-              <select
-                className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none focus:border-osrs-gold/40"
-                onChange={(event) =>
-                  setProfileDraft((current) => ({
-                    ...current,
-                    play_style: event.target.value,
-                  }))
-                }
-                value={profileDraft.play_style}
-              >
-                <option value="balanced">Balanced</option>
-                <option value="afk">AFK</option>
-                <option value="profitable">Profitable</option>
-              </select>
-              <select
-                className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none focus:border-osrs-gold/40"
-                onChange={(event) =>
-                  setProfileDraft((current) => ({
-                    ...current,
-                    goals_focus: event.target.value,
-                  }))
-                }
-                value={profileDraft.goals_focus}
-              >
-                <option value="progression">Progression</option>
-                <option value="quest cape">Quest Cape</option>
-                <option value="bossing">Bossing</option>
-              </select>
+              <label className="space-y-2">
+                <span className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Display tag</span>
+                <input
+                  className={fieldClassName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      display_name: event.target.value,
+                    }))
+                  }
+                  placeholder="Display name"
+                  value={profileDraft.display_name}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Primary RSN</span>
+                <input
+                  className={fieldClassName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      primary_account_rsn: event.target.value,
+                    }))
+                  }
+                  placeholder="Primary account RSN"
+                  value={profileDraft.primary_account_rsn}
+                />
+              </label>
+              <label className="space-y-2">
+                <span className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Play style</span>
+                <select
+                  className={selectClassName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      play_style: event.target.value,
+                    }))
+                  }
+                  value={profileDraft.play_style}
+                >
+                  <option value="balanced">Balanced</option>
+                  <option value="afk">AFK</option>
+                  <option value="profitable">Profitable</option>
+                </select>
+              </label>
+              <label className="space-y-2">
+                <span className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Default lane</span>
+                <select
+                  className={selectClassName}
+                  onChange={(event) =>
+                    setProfileDraft((current) => ({
+                      ...current,
+                      goals_focus: event.target.value,
+                    }))
+                  }
+                  value={profileDraft.goals_focus}
+                >
+                  <option value="progression">Progression</option>
+                  <option value="quest cape">Quest Cape</option>
+                  <option value="bossing">Bossing</option>
+                </select>
+              </label>
             </div>
 
             <div className="mt-4 grid gap-3">
-              <label className="flex items-center gap-3 border border-white/8 bg-[#121212] px-4 py-4 text-sm text-osrs-text-soft">
+              <label className="flex items-center gap-3 border border-white/8 bg-[#121212] px-4 py-4 text-sm text-osrs-text-soft transition-colors hover:border-osrs-gold/28">
                 <input
                   checked={profileDraft.prefers_afk_methods}
                   onChange={(event) =>
@@ -163,11 +179,15 @@ export function ProfileView({
                       prefers_afk_methods: event.target.checked,
                     }))
                   }
+                  className="h-4 w-4 rounded-none border-white/20 bg-black text-osrs-gold focus:ring-osrs-gold/30"
                   type="checkbox"
                 />
-                <span>Prefer AFK methods</span>
+                <div>
+                  <span className="block font-mono text-[0.62rem] uppercase tracking-[0.18em] text-white">Prefer AFK methods</span>
+                  <span className="mt-1 block text-xs leading-5 text-osrs-text-soft">Bias the planner toward lighter sessions and idle-friendly methods.</span>
+                </div>
               </label>
-              <label className="flex items-center gap-3 border border-white/8 bg-[#121212] px-4 py-4 text-sm text-osrs-text-soft">
+              <label className="flex items-center gap-3 border border-white/8 bg-[#121212] px-4 py-4 text-sm text-osrs-text-soft transition-colors hover:border-osrs-gold/28">
                 <input
                   checked={profileDraft.prefers_profitable_methods}
                   onChange={(event) =>
@@ -176,9 +196,13 @@ export function ProfileView({
                       prefers_profitable_methods: event.target.checked,
                     }))
                   }
+                  className="h-4 w-4 rounded-none border-white/20 bg-black text-osrs-gold focus:ring-osrs-gold/30"
                   type="checkbox"
                 />
-                <span>Prefer profitable methods</span>
+                <div>
+                  <span className="block font-mono text-[0.62rem] uppercase tracking-[0.18em] text-white">Prefer profitable methods</span>
+                  <span className="mt-1 block text-xs leading-5 text-osrs-text-soft">Keep gp-positive or self-funding routes higher in Cerebro&apos;s advice.</span>
+                </div>
               </label>
             </div>
           </section>

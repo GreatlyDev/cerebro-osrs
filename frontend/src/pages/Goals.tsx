@@ -82,6 +82,9 @@ export function GoalsView({
   setNewGoalTitle,
   setNewGoalType,
 }: GoalsViewProps) {
+  const fieldClassName =
+    "w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40";
+
   return (
     <div className="space-y-8">
       <section className="border-b border-white/8 pb-7">
@@ -132,19 +135,25 @@ export function GoalsView({
           </div>
 
           <div className="space-y-3">
-            <input
-              className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
-              onChange={(event) => setNewGoalTitle(event.target.value)}
-              placeholder="Goal title"
-              value={newGoalTitle}
-            />
-            <input
-              className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
-              list="goal-type-suggestions"
-              onChange={(event) => setNewGoalType(event.target.value)}
-              placeholder="Goal type"
-              value={newGoalType}
-            />
+            <label className="space-y-2">
+              <span className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Goal title</span>
+              <input
+                className={fieldClassName}
+                onChange={(event) => setNewGoalTitle(event.target.value)}
+                placeholder="Goal title"
+                value={newGoalTitle}
+              />
+            </label>
+            <label className="space-y-2">
+              <span className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Goal type</span>
+              <input
+                className={fieldClassName}
+                list="goal-type-suggestions"
+                onChange={(event) => setNewGoalType(event.target.value)}
+                placeholder="Goal type"
+                value={newGoalType}
+              />
+            </label>
             <datalist id="goal-type-suggestions">
               {COMMON_GOAL_TYPES.map((goalType) => (
                 <option key={goalType} value={goalType} />
@@ -153,7 +162,7 @@ export function GoalsView({
             <div className="flex flex-wrap gap-2">
               {COMMON_GOAL_TYPES.map((goalType) => (
                 <button
-                  className={`border px-3 py-1.5 text-xs uppercase tracking-[0.16em] transition ${
+                  className={`border px-3 py-2 text-[0.64rem] uppercase tracking-[0.18em] transition ${
                     newGoalType === goalType
                       ? "border-osrs-gold/45 bg-white/[0.03] text-osrs-gold-soft"
                       : "border-white/8 bg-[#0b0b0b] text-osrs-text-soft hover:border-white/14 hover:text-white"
@@ -166,12 +175,15 @@ export function GoalsView({
                 </button>
               ))}
             </div>
-            <input
-              className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
-              onChange={(event) => setNewGoalTargetRsn(event.target.value)}
-              placeholder="Target RSN (optional)"
-              value={newGoalTargetRsn}
-            />
+            <label className="space-y-2">
+              <span className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Target RSN</span>
+              <input
+                className={fieldClassName}
+                onChange={(event) => setNewGoalTargetRsn(event.target.value)}
+                placeholder="Target RSN (optional)"
+                value={newGoalTargetRsn}
+              />
+            </label>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
