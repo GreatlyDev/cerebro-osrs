@@ -51,27 +51,27 @@ export function ChatView({
   }, [selectedChatSessionId, visibleHistory.length]);
 
   return (
-    <div className="space-y-10">
-      <section className="border-b border-white/8 pb-8">
+    <div className="space-y-8">
+      <section className="border-b border-white/8 pb-7">
         <div className="flex flex-col gap-8 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
               Advisor chamber // Live thread status
             </p>
-            <h1 className="mt-2 max-w-4xl font-display text-[3.6rem] font-black uppercase tracking-[0.12em] text-white md:text-[4.7rem]">
+            <h1 className="mt-2 max-w-4xl font-display text-[3rem] font-black uppercase tracking-[0.12em] text-white md:text-[4.1rem]">
               Cerebro intelligence
             </h1>
           </div>
-          <div className="flex gap-10 xl:gap-12">
+          <div className="flex gap-8 xl:gap-10">
             <div className="text-right">
               <p className="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-osrs-text-soft">Threads</p>
-              <strong className="mt-1.5 block font-display text-[2.4rem] font-bold tracking-[-0.05em] text-white">
+              <strong className="mt-1.5 block font-display text-[2.1rem] font-bold tracking-[-0.05em] text-white">
                 {chatSessions.length}
               </strong>
             </div>
             <div className="text-right">
               <p className="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-osrs-text-soft">Focus</p>
-              <strong className="mt-1.5 block font-display text-[2rem] font-bold uppercase tracking-[-0.03em] text-white">
+              <strong className="mt-1.5 block font-display text-[1.7rem] font-bold uppercase tracking-[-0.03em] text-white">
                 {focusLabel}
               </strong>
             </div>
@@ -79,8 +79,8 @@ export function ChatView({
         </div>
       </section>
 
-      <div className="grid gap-10 xl:grid-cols-[minmax(0,1.65fr)_24rem]">
-        <section className="space-y-8">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.65fr)_23rem]">
+        <section className="space-y-6">
           <div className="border border-white/8 bg-[#101010]">
             <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
@@ -99,18 +99,18 @@ export function ChatView({
                 {visibleHistory.length > 0 ? (
                   visibleHistory.map((exchange) => (
                     <div className="space-y-4" key={`${exchange.sessionId}-${exchange.prompt}`}>
-                      <div className="ml-auto max-w-[82%] rounded-[14px] border border-white/8 bg-[#151816] px-4 py-3">
+                      <div className="ml-auto max-w-[82%] border border-white/8 bg-[#151816] px-4 py-3">
                         <p className="mb-1 font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-text-soft">You</p>
                         <p className="text-sm leading-7 text-osrs-text-soft">{exchange.prompt}</p>
                       </div>
-                      <div className="max-w-[86%] rounded-[14px] border border-white/8 bg-[#121212] px-4 py-3">
+                      <div className="max-w-[86%] border border-white/8 bg-[#121212] px-4 py-3">
                         <p className="mb-1 font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Cerebro</p>
                         <p className="text-sm leading-7 text-osrs-text-soft">{exchange.reply}</p>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="rounded-[14px] border border-dashed border-white/10 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
+                  <div className="border border-dashed border-white/10 bg-black/20 px-4 py-5 text-sm leading-6 text-osrs-text-soft">
                     {chatReply || "No thread history yet. Start with a direct question and Cerebro will begin building context here."}
                   </div>
                 )}
@@ -138,7 +138,7 @@ export function ChatView({
             </div>
           </div>
 
-          <section className="space-y-5">
+          <section className="space-y-4">
             <div className="flex items-center gap-4">
               <p className="font-display text-[0.82rem] font-semibold uppercase tracking-[0.3em] text-white">Prompt lanes</p>
               <div className="h-px flex-1 bg-white/8" />
@@ -147,7 +147,7 @@ export function ChatView({
               {advisorCapabilities.map((capability) => (
                 <div className="border border-white/8 bg-[#101010] p-4" key={capability.title}>
                   <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">{capability.eyebrow}</p>
-                  <h3 className="mt-3 font-display text-[1.15rem] font-bold uppercase leading-tight text-white">
+                  <h3 className="mt-3 font-display text-[1rem] font-bold uppercase leading-tight tracking-[0.06em] text-white">
                     {capability.title}
                   </h3>
                   <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{capability.description}</p>

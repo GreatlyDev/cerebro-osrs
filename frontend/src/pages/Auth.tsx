@@ -56,8 +56,8 @@ export function AuthView(props: AuthViewProps) {
           <span className={`h-2.5 w-2.5 rounded-full ${props.backendStatus === "online" ? "bg-osrs-success" : props.backendStatus === "offline" ? "bg-osrs-danger" : "bg-osrs-gold"}`} />
         </aside>
 
-        <main className="mx-auto grid min-h-screen w-full max-w-[1760px] gap-10 px-6 py-10 xl:grid-cols-[minmax(0,1fr)_26rem] xl:px-14 xl:py-14">
-          <section className="flex min-h-[32rem] flex-col justify-between border border-white/8 bg-[radial-gradient(circle_at_76%_24%,rgba(212,175,55,0.05),transparent_30%),linear-gradient(180deg,#090909_0%,#0b0b0b_100%)] px-8 py-8 xl:px-12 xl:py-12">
+        <main className="mx-auto grid min-h-screen w-full max-w-[1700px] gap-8 px-6 py-8 xl:grid-cols-[minmax(0,1fr)_24rem] xl:px-12 xl:py-12">
+          <section className="flex min-h-[30rem] flex-col justify-between border border-white/8 bg-[radial-gradient(circle_at_76%_24%,rgba(212,175,55,0.05),transparent_30%),linear-gradient(180deg,#090909_0%,#0b0b0b_100%)] px-8 py-8 xl:px-10 xl:py-10">
             <div className="space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <p className="font-mono text-[0.62rem] uppercase tracking-[0.42em] text-osrs-text-soft/75">
@@ -71,7 +71,7 @@ export function AuthView(props: AuthViewProps) {
                 </div>
               </div>
               <div>
-                <h1 className="font-display text-[4.4rem] font-black uppercase tracking-[0.14em] text-white md:text-[5.5rem] xl:text-[6.3rem]">
+                <h1 className="font-display text-[4rem] font-black uppercase tracking-[0.14em] text-white md:text-[5rem] xl:text-[5.8rem]">
                   Cerebro
                 </h1>
                 <p className="mt-4 font-mono text-[0.72rem] uppercase tracking-[0.34em] text-osrs-text-soft">
@@ -80,12 +80,12 @@ export function AuthView(props: AuthViewProps) {
               </div>
             </div>
 
-            <div className="grid gap-8 xl:grid-cols-[minmax(0,1.2fr)_18rem]">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_17rem]">
               <div className="space-y-5">
                 <div className="inline-flex border border-osrs-gold/80 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.24em] text-osrs-gold">
                   {isRegister ? "Create workspace" : "Access workspace"}
                 </div>
-                <h2 className="max-w-4xl font-display text-[2.7rem] font-black uppercase leading-[0.94] tracking-[0.02em] text-white md:text-[3.9rem]">
+                <h2 className="max-w-4xl font-display text-[2.5rem] font-black uppercase leading-[0.94] tracking-[0.08em] text-white md:text-[3.5rem]">
                   {isRegister ? "Build your own Cerebro command room" : "Re-enter your Cerebro command room"}
                 </h2>
                 <p className="max-w-2xl text-[0.98rem] leading-8 text-osrs-text-soft">
@@ -93,7 +93,7 @@ export function AuthView(props: AuthViewProps) {
                 </p>
               </div>
 
-              <div className="space-y-4 border border-white/8 bg-[#101010] p-5">
+              <div className="space-y-4 border border-white/8 bg-[#101010] p-4">
                 <div>
                   <p className="font-mono text-[0.58rem] uppercase tracking-[0.22em] text-osrs-gold">Workspace readout</p>
                   <div className="mt-4 space-y-3 text-sm text-osrs-text-soft">
@@ -122,7 +122,7 @@ export function AuthView(props: AuthViewProps) {
             </div>
           </section>
 
-          <section className="border border-white/8 bg-[#101010] px-6 py-6 xl:px-7 xl:py-7">
+          <section className="border border-white/8 bg-[#101010] px-5 py-5 xl:px-6 xl:py-6">
             <div className="space-y-6">
               <div className="inline-flex w-full rounded-full border border-white/8 bg-black/30 p-1">
                 <button
