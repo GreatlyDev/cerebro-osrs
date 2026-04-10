@@ -124,10 +124,12 @@ export function AuthView(props: AuthViewProps) {
 
           <section className="border border-white/8 bg-[#101010] px-5 py-5 xl:px-6 xl:py-6">
             <div className="space-y-6">
-              <div className="inline-flex w-full rounded-full border border-white/8 bg-black/30 p-1">
+              <div className="grid w-full grid-cols-2 border border-white/8 bg-[#0b0b0b]">
                 <button
-                  className={`flex-1 rounded-full px-4 py-2.5 text-sm uppercase tracking-[0.12em] ${
-                    props.authMode === "login" ? "bg-white text-black" : "text-osrs-text-soft"
+                  className={`border-r border-white/8 px-4 py-3 text-[0.72rem] uppercase tracking-[0.18em] transition-colors ${
+                    props.authMode === "login"
+                      ? "bg-[#141414] text-osrs-gold-soft"
+                      : "bg-transparent text-osrs-text-soft hover:text-white"
                   }`}
                   onClick={() => props.setAuthMode("login")}
                   type="button"
@@ -135,8 +137,10 @@ export function AuthView(props: AuthViewProps) {
                   Sign in
                 </button>
                 <button
-                  className={`flex-1 rounded-full px-4 py-2.5 text-sm uppercase tracking-[0.12em] ${
-                    props.authMode === "register" ? "bg-white text-black" : "text-osrs-text-soft"
+                  className={`px-4 py-3 text-[0.72rem] uppercase tracking-[0.18em] transition-colors ${
+                    props.authMode === "register"
+                      ? "bg-[#141414] text-osrs-gold-soft"
+                      : "bg-transparent text-osrs-text-soft hover:text-white"
                   }`}
                   onClick={() => props.setAuthMode("register")}
                   type="button"

@@ -127,7 +127,7 @@ export function ChatView({
                         onRunChatPrompt();
                       }
                     }}
-                    placeholder="Query account data..."
+                    placeholder="Ask Cerebro about this account..."
                     value={chatPrompt}
                   />
                   <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>
@@ -154,7 +154,7 @@ export function ChatView({
                   <div className="mt-4 grid gap-2">
                     {capability.prompts.slice(0, 3).map((prompt) => (
                       <button
-                        className="rounded-[10px] border border-white/8 bg-[#131313] px-3 py-3 text-left text-sm leading-6 text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
+                        className="border border-white/8 bg-[#131313] px-3 py-3 text-left text-sm leading-6 text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
                         key={prompt}
                         onClick={() => onRunChatPrompt(prompt)}
                         type="button"
@@ -218,7 +218,7 @@ export function ChatView({
                     <div className="flex items-start justify-between gap-3">
                       <strong className="block font-display text-base uppercase text-white">{session.title}</strong>
                       <span
-                        className={`rounded-full border px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.16em] ${getIntentBadgeClass(
+                        className={`border px-2.5 py-1 font-mono text-[0.56rem] uppercase tracking-[0.16em] ${getIntentBadgeClass(
                           sessionState,
                         )}`}
                       >

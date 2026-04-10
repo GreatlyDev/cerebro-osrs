@@ -69,7 +69,7 @@ export function RecommendationThumb({ action, className = "" }: { action: NextAc
     <div
       className={`flex items-center justify-center overflow-hidden border border-white/8 bg-[radial-gradient(circle_at_35%_30%,rgba(212,175,55,0.22),transparent_38%),linear-gradient(180deg,#141414_0%,#0a0a0a_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] ${className}`.trim()}
     >
-      {skill ? <SkillIcon className="h-12 w-12 object-cover" skill={skill} /> : <ActionGlyph actionType={action.action_type} />}
+      {skill ? <SkillIcon className="h-16 w-16 object-cover" skill={skill} /> : <ActionGlyph actionType={action.action_type} />}
     </div>
   );
 }

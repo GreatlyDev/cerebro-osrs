@@ -94,13 +94,13 @@ export function TelemetryBoard({
               <div className="flex h-full flex-col justify-between gap-4">
                 <div className="flex flex-1 items-center justify-center border border-white/8 bg-[radial-gradient(circle_at_50%_26%,rgba(212,175,55,0.18),transparent_38%),linear-gradient(180deg,#111111_0%,#090909_100%)] p-6">
                   {topAction ? (
-                    <RecommendationThumb action={topAction} className="h-40 w-40" />
+                    <RecommendationThumb action={topAction} className="h-48 w-48" />
                   ) : topSkill ? (
-                    <div className="flex h-40 w-40 items-center justify-center border border-white/8 bg-[#121212]">
-                      <SkillIcon className="h-28 w-28 object-cover" skill={topSkill.skill} />
+                    <div className="flex h-48 w-48 items-center justify-center border border-white/8 bg-[#121212]">
+                      <SkillIcon className="h-36 w-36 object-cover" skill={topSkill.skill} />
                     </div>
                   ) : (
-                    <div className="flex h-40 w-40 items-center justify-center border border-dashed border-white/10 bg-[#111111] font-mono text-[0.62rem] uppercase tracking-[0.2em] text-osrs-text-soft">
+                    <div className="flex h-48 w-48 items-center justify-center border border-dashed border-white/10 bg-[#111111] font-mono text-[0.62rem] uppercase tracking-[0.2em] text-osrs-text-soft">
                       Awaiting feed
                     </div>
                   )}
@@ -177,7 +177,7 @@ export function TelemetryBoard({
                       value={newAccountRsn}
                     />
                     <button
-                      className="inline-flex min-h-[2.85rem] items-center justify-center rounded-[10px] border border-osrs-gold/55 bg-[linear-gradient(180deg,rgba(48,38,22,0.92),rgba(22,18,12,0.98))] px-4 py-2.5 text-sm font-semibold uppercase tracking-[0.08em] text-osrs-gold-soft transition hover:border-osrs-gold/75 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+                      className="inline-flex min-h-[2.7rem] items-center justify-center rounded-[4px] border border-osrs-gold/45 bg-[linear-gradient(180deg,rgba(30,23,12,0.92),rgba(15,12,8,0.98))] px-4 py-2.5 text-[0.72rem] font-semibold uppercase tracking-[0.2em] text-osrs-gold-soft transition hover:border-osrs-gold/75 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
                       disabled={!newAccountRsn.trim() || busyAction === "quickstart-account"}
                       onClick={onQuickstartAccount}
                       type="button"
@@ -205,7 +205,7 @@ export function TelemetryBoard({
                   key={`${action.action_type}-${action.title}`}
                   className="flex items-center gap-4 border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45"
                 >
-                  <RecommendationThumb action={action} className="h-20 w-20 shrink-0" />
+                  <RecommendationThumb action={action} className="h-24 w-24 shrink-0" />
                   <div className="min-w-0">
                     <p className="font-display text-[1.02rem] font-bold uppercase leading-tight text-white">{action.title}</p>
                     <p className="mt-1 text-[0.78rem] leading-6 text-osrs-text-soft">{action.summary}</p>
@@ -227,8 +227,8 @@ export function TelemetryBoard({
             topSkills.map((skill) => (
               <div key={skill.skill} className="border border-white/8 bg-[#101010] px-6 py-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-20 w-20 items-center justify-center overflow-hidden border border-white/8 bg-[#151515] shadow-[inset_2px_2px_4px_rgba(255,255,255,0.03),inset_-2px_-2px_4px_rgba(0,0,0,0.45)]">
-                    <SkillIcon className="h-16 w-16 object-cover" skill={skill.skill} />
+                  <div className="flex h-24 w-24 items-center justify-center overflow-hidden border border-white/8 bg-[#151515] shadow-[inset_2px_2px_4px_rgba(255,255,255,0.03),inset_-2px_-2px_4px_rgba(0,0,0,0.45)]">
+                    <SkillIcon className="h-20 w-20 object-cover" skill={skill.skill} />
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3 font-mono text-[0.62rem] uppercase tracking-[0.18em] text-osrs-text-soft">

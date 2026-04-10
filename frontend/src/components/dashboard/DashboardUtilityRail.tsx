@@ -97,7 +97,7 @@ export function DashboardUtilityRail({
                   onAskAdvisor();
                 }
               }}
-              placeholder="Query account data..."
+              placeholder="Ask about this account..."
               value={advisorPrompt}
             />
           </div>
@@ -113,7 +113,7 @@ export function DashboardUtilityRail({
           {recommendationCards.length > 0 ? (
             recommendationCards.map((action) => (
               <div key={`${action.action_type}-${action.title}`} className="flex items-center gap-3 border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45">
-                <RecommendationThumb action={action} className="h-[4.5rem] w-[4.5rem] shrink-0" />
+                <RecommendationThumb action={action} className="h-24 w-24 shrink-0" />
                 <div className="min-w-0">
                   <p className="font-display text-[0.95rem] font-bold uppercase leading-tight tracking-[0.05em] text-white">{action.title}</p>
                   <p className="mt-1 text-[0.76rem] leading-6 text-osrs-text-soft">{action.summary}</p>

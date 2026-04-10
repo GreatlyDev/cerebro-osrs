@@ -26,15 +26,15 @@ export type { SidebarNavItem };
 
 const iconPaths: Record<string, string> = {
   dashboard: "M4 5h7v6H4zm9 0h7v6h-7zM4 13h7v6H4zm9 0h7v6h-7z",
-  advisor: "M4 5h16v10H8l-4 4z",
-  "gear optimizer": "M13.5 3.5 20.5 10.5 10.5 20.5H3.5v-7z M12.5 6.5l4.8 4.8",
+  advisor: "M4 6.5h16v9H8l-4 4z M8 11h8 M8 8.5h5",
+  "gear optimizer": "M8 5.5h8l2 3v8l-2 2H8l-2-2v-8z M10 10h4 M10 13h4",
   "quest helper": "M7 3.5h8.5L19 7v13.5H7z M15.5 3.5V7H19 M10 11h6 M10 14h6 M10 17h4",
-  "money makers": "M8 7.5h8M8 12h8M8 16.5h8 M6 5h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2",
-  "goal planner": "M12 4a8 8 0 1 0 8 8 M12 4v8l4 2.5 M12 8h7",
-  "saved builds": "M7 6h10v4H7z M5 12h14v6H5z",
-  inventory: "M7 5h10l2 3v10H5V8z M8 10h8 M8 14h8",
+  "money makers": "M7 8h10M6 12h12M8 16h8 M12 5v14",
+  "goal planner": "M12 4 14.5 9.5 20 12l-5.5 2.5L12 20l-2.5-5.5L4 12l5.5-2.5z M12 8v4",
+  "saved builds": "M6 6h12v12H6z M9 6v12 M15 6v12 M6 12h12",
+  inventory: "M6 7h12v10H6z M9 7V5h6v2 M9 12h6 M9 15h6",
   skills: "M6 18h3V9H6zm5 0h3V5h-3zm5 0h3v-7h-3z",
-  recommendations: "m12 4 2.1 4.8L19 10l-3.5 3 1 5-4.5-2.6L7.5 18l1-5L5 10l4.9-1.2z M12 8.5v4",
+  recommendations: "M5 12h14 M12 5l7 7-7 7 M12 5 5 12l7 7",
   teleports: "M12 3c-4.4 0-8 3.28-8 7.33C4 15.78 12 21 12 21s8-5.22 8-10.67C20 6.28 16.4 3 12 3zm0 10a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z",
   profile: "M12 12c2.76 0 5-2.24 5-5S14.76 2 12 2 7 4.24 7 7s2.24 5 5 5zm0 2c-3.33 0-6 1.67-6 4v2h12v-2c0-2.33-2.67-4-6-4z",
 };
@@ -64,8 +64,8 @@ function NavButton({ item }: { item: SidebarNavItem }) {
       title={item.label}
       type="button"
     >
-      <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-        <path d={iconPath} fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <svg className="h-5.5 w-5.5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+        <path d={iconPath} fill="none" stroke="currentColor" strokeWidth="1.65" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       {item.active ? <span className="absolute -left-[9px] top-1/2 h-8 w-px -translate-y-1/2 bg-osrs-gold" /> : null}
       {item.badge ? (
