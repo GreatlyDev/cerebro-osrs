@@ -54,7 +54,7 @@ function NavButton({ item }: { item: SidebarNavItem }) {
 
   return (
     <button
-      className={`group relative flex h-11 w-11 items-center justify-center rounded-[8px] border transition-all duration-200 ${
+      className={`group relative flex h-10 w-10 items-center justify-center rounded-[8px] border transition-all duration-200 ${
         item.active
           ? "border-white/12 bg-white/[0.04] text-osrs-gold"
           : "border-transparent bg-transparent text-osrs-text-soft hover:border-white/8 hover:bg-white/[0.03] hover:text-white"
@@ -88,25 +88,30 @@ export function SidebarNav({
   secondaryItems,
 }: SidebarNavProps) {
   const selectedAccount = accounts.find((account) => account.id === selectedAccountId) ?? null;
-  const allItems = [...primaryItems, ...secondaryItems];
 
   return (
-    <div className="flex h-full flex-col items-center justify-between py-4">
-      <div className="flex flex-col items-center gap-8">
-        <div className="flex h-11 w-11 items-center justify-center rounded-[8px] border border-white/8 bg-[#101010]">
+    <div className="flex h-full flex-col items-center justify-between py-3">
+      <div className="flex flex-col items-center gap-6">
+        <div className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-white/8 bg-[#101010]">
           <svg className="h-6 w-6 text-white" viewBox="0 0 100 100" fill="none" aria-hidden="true">
             <path d="M50 5 L95 40 L50 95 L5 40 Z" stroke="currentColor" strokeWidth="4" />
             <path d="M50 25 L75 45 L50 75 L25 45 Z" fill="currentColor" />
           </svg>
         </div>
-        <div className="flex flex-col items-center gap-4">
-          {allItems.map((item) => (
+        <div className="flex flex-col items-center gap-3">
+          {primaryItems.map((item) => (
+            <NavButton item={item} key={item.id} />
+          ))}
+        </div>
+        <div className="h-px w-8 bg-white/8" />
+        <div className="flex flex-col items-center gap-3">
+          {secondaryItems.map((item) => (
             <NavButton item={item} key={item.id} />
           ))}
         </div>
       </div>
 
-      <div className="flex w-full flex-col items-center gap-3">
+      <div className="flex w-full flex-col items-center gap-2.5">
         <span className={`h-2.5 w-2.5 rounded-full ${statusDotClass(backendStatus)}`} title={`Backend ${backendStatus}`} />
         <div className="w-full rounded-[8px] border border-white/8 bg-[#101010] px-2 py-2">
           <label className="sr-only" htmlFor="sidebar-account-selector">
@@ -128,13 +133,13 @@ export function SidebarNav({
           </select>
         </div>
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-white/8 bg-[#101010] font-mono text-[0.55rem] uppercase tracking-[0.14em] text-osrs-text-soft"
+          className="flex h-9 w-9 items-center justify-center rounded-[8px] border border-white/8 bg-[#101010] font-mono text-[0.52rem] uppercase tracking-[0.14em] text-osrs-text-soft"
           title={`${currentUser.display_name} / ${currentUser.email}`}
         >
           {currentUser.display_name.slice(0, 2)}
         </div>
         <button
-          className="flex h-10 w-10 items-center justify-center rounded-[8px] border border-white/8 bg-[#101010] font-mono text-[0.52rem] uppercase tracking-[0.14em] text-osrs-text-soft transition-colors hover:border-white/12 hover:text-white"
+          className="flex h-9 w-9 items-center justify-center rounded-[8px] border border-white/8 bg-[#101010] font-mono text-[0.5rem] uppercase tracking-[0.14em] text-osrs-text-soft transition-colors hover:border-white/12 hover:text-white"
           onClick={onSignOut}
           title="Sign out"
           type="button"

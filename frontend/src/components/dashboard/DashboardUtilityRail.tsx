@@ -136,24 +136,24 @@ export function DashboardUtilityRail({
       </div>
 
       <section className="border border-white/8 bg-[#101010] px-5 py-5">
-        <div className="space-y-3 text-sm text-osrs-text-soft">
-          <div className="flex items-center justify-between gap-3">
-            <span>Tracked account</span>
-            <strong className="font-display text-base uppercase text-white">{selectedAccount?.rsn ?? "none"}</strong>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="border border-white/8 bg-[#0c0c0c] px-3 py-3">
+            <p className="font-mono text-[0.52rem] uppercase tracking-[0.18em] text-osrs-text-soft">Account</p>
+            <strong className="mt-2 block font-display text-[0.95rem] uppercase text-white">{selectedAccount?.rsn ?? "none"}</strong>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span>Goals</span>
-            <strong className="font-display text-base text-white">{goals.length}</strong>
+          <div className="border border-white/8 bg-[#0c0c0c] px-3 py-3">
+            <p className="font-mono text-[0.52rem] uppercase tracking-[0.18em] text-osrs-text-soft">Goals</p>
+            <strong className="mt-2 block font-display text-[0.95rem] text-white">{goals.length}</strong>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span>Top skill</span>
-            <strong className="font-display text-base uppercase text-white">
+          <div className="border border-white/8 bg-[#0c0c0c] px-3 py-3">
+            <p className="font-mono text-[0.52rem] uppercase tracking-[0.18em] text-osrs-text-soft">Top skill</p>
+            <strong className="mt-2 block font-display text-[0.95rem] uppercase text-white">
               {selectedSnapshot?.summary.progression_profile?.highest_skill ?? "unknown"}
             </strong>
           </div>
-          <div className="flex items-center justify-between gap-3">
-            <span>Unlock threads</span>
-            <strong className="font-display text-base text-white">{selectedProgress?.active_unlocks.length ?? 0}</strong>
+          <div className="border border-white/8 bg-[#0c0c0c] px-3 py-3">
+            <p className="font-mono text-[0.52rem] uppercase tracking-[0.18em] text-osrs-text-soft">Unlocks</p>
+            <strong className="mt-2 block font-display text-[0.95rem] text-white">{selectedProgress?.active_unlocks.length ?? 0}</strong>
           </div>
         </div>
       </section>
