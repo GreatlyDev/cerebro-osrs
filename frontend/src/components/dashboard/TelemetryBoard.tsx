@@ -32,6 +32,7 @@ export function TelemetryBoard({
 }: TelemetryBoardProps) {
   const topAction = nextActions?.top_action ?? null;
   const topSkills = snapshot?.summary.top_skills?.slice(0, 4) ?? [];
+  const topSkill = topSkills[0] ?? null;
   const normalizedNewRsn = newAccountRsn.trim().toLowerCase();
   const hasPendingExistingRsn = Boolean(
     normalizedNewRsn &&
@@ -54,18 +55,70 @@ export function TelemetryBoard({
       <div className="grid gap-8 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
         <div className="border border-white/8 bg-[radial-gradient(circle_at_78%_24%,rgba(212,175,55,0.08),transparent_34%),linear-gradient(180deg,#050505_0%,#090909_100%)] px-10 py-10">
           <div className="relative min-h-[29rem] overflow-hidden border border-white/8 bg-[linear-gradient(90deg,rgba(0,0,0,0.95),rgba(0,0,0,0.55)),radial-gradient(circle_at_74%_32%,rgba(212,175,55,0.1),transparent_46%)] px-10 py-10">
-            <div className="flex h-full flex-col justify-between">
-              <div>
-                <span className="inline-flex border border-osrs-gold/85 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.24em] text-osrs-gold">
-                  Critical movement
-                </span>
+            <div className="grid h-full gap-8 xl:grid-cols-[minmax(0,1.1fr)_18rem]">
+              <div className="flex h-full flex-col justify-between">
+                <div>
+                  <span className="inline-flex border border-osrs-gold/85 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.24em] text-osrs-gold">
+                    Critical movement
+                  </span>
+                </div>
+                <div className="space-y-5">
+                  <h2 className="max-w-3xl font-display text-[3.4rem] font-black uppercase leading-[0.94] tracking-[0.02em] text-white md:text-[4.4rem]">
+                    {featuredTitle}
+                  </h2>
+                  <p className="max-w-2xl text-[0.96rem] leading-7 text-osrs-text-soft">{featuredSummary}</p>
+                  <p className="font-mono text-[0.78rem] uppercase tracking-[0.12em] text-osrs-gold">{featuredMeta}</p>
+                  <div className="grid gap-3 pt-2 sm:grid-cols-3">
+                    <div className="border border-white/8 bg-black/30 px-4 py-3">
+                      <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Top skill</p>
+                      <p className="mt-2 font-display text-[1.05rem] font-bold uppercase text-white">
+                        {topSkill?.skill ?? "Awaiting sync"}
+                      </p>
+                    </div>
+                    <div className="border border-white/8 bg-black/30 px-4 py-3">
+                      <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Action type</p>
+                      <p className="mt-2 font-display text-[1.05rem] font-bold uppercase text-white">
+                        {topAction?.action_type ?? "Readout"}
+                      </p>
+                    </div>
+                    <div className="border border-white/8 bg-black/30 px-4 py-3">
+                      <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Momentum</p>
+                      <p className="mt-2 font-display text-[1.05rem] font-bold uppercase text-white">
+                        {(progress?.active_unlocks.length ?? 0) > 0 ? "Live" : "Stable"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-5">
-                <h2 className="max-w-3xl font-display text-[3.4rem] font-black uppercase leading-[0.94] tracking-[0.02em] text-white md:text-[4.4rem]">
-                  {featuredTitle}
-                </h2>
-                <p className="max-w-2xl text-[0.96rem] leading-7 text-osrs-text-soft">{featuredSummary}</p>
-                <p className="font-mono text-[0.78rem] uppercase tracking-[0.12em] text-osrs-gold">{featuredMeta}</p>
+
+              <div className="flex h-full flex-col justify-between gap-4">
+                <div className="flex flex-1 items-center justify-center border border-white/8 bg-[radial-gradient(circle_at_50%_26%,rgba(212,175,55,0.18),transparent_38%),linear-gradient(180deg,#111111_0%,#090909_100%)] p-6">
+                  {topAction ? (
+                    <RecommendationThumb action={topAction} className="h-40 w-40" />
+                  ) : topSkill ? (
+                    <div className="flex h-40 w-40 items-center justify-center border border-white/8 bg-[#121212]">
+                      <SkillIcon className="h-28 w-28 object-cover" skill={topSkill.skill} />
+                    </div>
+                  ) : (
+                    <div className="flex h-40 w-40 items-center justify-center border border-dashed border-white/10 bg-[#111111] font-mono text-[0.62rem] uppercase tracking-[0.2em] text-osrs-text-soft">
+                      Awaiting feed
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div className="border border-white/8 bg-black/30 px-4 py-3">
+                    <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Combat</p>
+                    <p className="mt-2 font-display text-[1.35rem] font-bold uppercase text-white">
+                      {snapshot?.summary.combat_level ?? "--"}
+                    </p>
+                  </div>
+                  <div className="border border-white/8 bg-black/30 px-4 py-3">
+                    <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Total</p>
+                    <p className="mt-2 font-display text-[1.35rem] font-bold uppercase text-white">
+                      {snapshot?.summary.overall_level ?? "--"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
