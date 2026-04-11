@@ -193,6 +193,14 @@ function getSuggestedGoalTitle(goalType: string, accountRsn: string | null): str
   return `${prefix}Quest Cape Plan`.trim();
 }
 
+function buildChatSessionTitle(prompt: string): string {
+  const trimmed = prompt.trim().replace(/\s+/g, " ");
+  if (!trimmed) {
+    return "Cerebro Thread";
+  }
+  return trimmed.length > 42 ? `${trimmed.slice(0, 42).trimEnd()}...` : trimmed;
+}
+
 function formatListDraft(value: string[]): string {
   return value.join("\n");
 }
@@ -376,11 +384,24 @@ export function App() {
   const [loginPassword, setLoginPassword] = useState("");
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");
 
   useEffect(() => {
     void initializeApplication();
   }, []);
+
+  useEffect(() => {
+    if (!notice) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setNotice(null);
+    }, 4200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [notice]);
 
   useEffect(() => {
     if (!authReady || typeof window === "undefined") {
@@ -493,6 +514,7 @@ export function App() {
   async function initializeApplication() {
     setLoading(true);
     setError(null);
+    setNotice(null);
     setBackendStatus("checking");
     try {
       const healthResponse = await api.getHealth();
@@ -720,6 +742,7 @@ export function App() {
         primary_account_rsn: updatedProfile.primary_account_rsn ?? "",
       }));
       await loadDashboard();
+      setNotice(`Linked and synced ${account.rsn}. Cerebro is now centered on that account.`);
       navigateToView("goals");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to finish the quick account setup.");
@@ -746,10 +769,11 @@ export function App() {
         unlocked_transports: formatListDraft(progress?.unlocked_transports ?? []),
         owned_gear: formatListDraft(progress?.owned_gear ?? []),
         active_unlocks: formatListDraft(progress?.active_unlocks ?? []),
-      });
-      setSelectedAccountId(account.id);
-      await loadDashboard();
-    } catch (err) {
+        });
+        setSelectedAccountId(account.id);
+        await loadDashboard();
+        setNotice(`Synced ${account.rsn}. Live telemetry is up to date.`);
+      } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to sync account.");
     } finally {
       setBusyAction(null);
@@ -784,11 +808,12 @@ export function App() {
         target_account_rsn: newGoalTargetRsn.trim() || null,
       });
       setNewGoalTitle("");
-      setNewGoalTargetRsn("");
-      const plan = await api.generateGoalPlan(goal.id);
-      setSelectedGoalPlan(plan);
-      await loadDashboard();
-      navigateToView("goals");
+        setNewGoalTargetRsn("");
+        const plan = await api.generateGoalPlan(goal.id);
+        setSelectedGoalPlan(plan);
+        await loadDashboard();
+        setNotice(`Created ${goal.title} and generated a fresh plan.`);
+        navigateToView("goals");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create goal.");
     } finally {
@@ -808,11 +833,12 @@ export function App() {
         title,
         goal_type: goalType,
         target_account_rsn: targetRsn,
-      });
-      const plan = await api.generateGoalPlan(goal.id);
-      setSelectedGoalPlan(plan);
-      await loadDashboard();
-      navigateToView("goals");
+        });
+        const plan = await api.generateGoalPlan(goal.id);
+        setSelectedGoalPlan(plan);
+        await loadDashboard();
+        setNotice(`Created ${goal.title}. Cerebro can now plan against a real target.`);
+        navigateToView("goals");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create the first goal.");
     } finally {
@@ -827,19 +853,22 @@ export function App() {
     }
     setBusyAction("chat");
     setError(null);
-    try {
-      let session =
-        chatSessions.find((item) => item.id === selectedChatSessionId) ?? chatSessions[0];
-      if (!session) {
-        session = await api.createChatSession("Frontend Prompt");
-        setChatSessions((current) => [session, ...current]);
-      }
-      setSelectedChatSessionId(session.id);
-      const reply = await api.sendChatMessage(session.id, prompt);
-      const sessionsResponse = await api.listChatSessions();
-      setChatSessions(sessionsResponse.items);
-      setChatReply(reply.assistant_message.content);
-      setChatHistory((current) => [
+      try {
+        let session =
+          chatSessions.find((item) => item.id === selectedChatSessionId) ?? chatSessions[0];
+        if (!session) {
+          session = await api.createChatSession(buildChatSessionTitle(prompt));
+          setChatSessions((current) => [session, ...current]);
+        }
+        setSelectedChatSessionId(session.id);
+        const reply = await api.sendChatMessage(session.id, prompt);
+        const sessionsResponse = await api.listChatSessions();
+        setChatSessions(sessionsResponse.items);
+        setChatReply(reply.assistant_message.content);
+        if (promptOverride === undefined) {
+          setChatPrompt("");
+        }
+        setChatHistory((current) => [
         ...current,
         {
           prompt,
@@ -1018,10 +1047,11 @@ export function App() {
         goals_focus: profileDraft.goals_focus,
         prefers_afk_methods: profileDraft.prefers_afk_methods,
         prefers_profitable_methods: profileDraft.prefers_profitable_methods,
-      });
-      setProfile(updated);
-      await loadDashboard();
-      navigateToView("profile");
+        });
+        setProfile(updated);
+        await loadDashboard();
+        setNotice("Saved your workspace profile. Cerebro will lean on these defaults going forward.");
+        navigateToView("profile");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to update profile.");
     } finally {
@@ -1311,6 +1341,7 @@ export function App() {
       }
     >
       {error ? <div className="banner error-banner">{error}</div> : null}
+      {notice ? <div className="banner success-banner">{notice}</div> : null}
       {loading ? <div className="banner">Loading Cerebro surfaces...</div> : null}
 
       {!loading ? (
