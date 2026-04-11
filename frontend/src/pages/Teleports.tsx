@@ -26,6 +26,9 @@ export function TeleportsView({
   teleportPreference,
   teleportRoute,
 }: TeleportsViewProps) {
+  const selectClassName =
+    "border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm uppercase tracking-[0.08em] text-osrs-text outline-none focus:border-osrs-gold/40";
+
   return (
     <div className="space-y-10">
       <section className="border-b border-white/8 pb-8">
@@ -43,7 +46,7 @@ export function TeleportsView({
           </div>
           <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
             <select
-              className="border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none focus:border-osrs-gold/40"
+              className={selectClassName}
               onChange={(event) => setTeleportDestination(event.target.value)}
               value={teleportDestination}
             >
@@ -53,7 +56,7 @@ export function TeleportsView({
               <option value="fairy ring network">Fairy Ring Network</option>
             </select>
             <select
-              className="border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none focus:border-osrs-gold/40"
+              className={selectClassName}
               onChange={(event) => setTeleportPreference(event.target.value)}
               value={teleportPreference}
             >
@@ -68,10 +71,17 @@ export function TeleportsView({
         </div>
       </section>
 
+      {!selectedAccountRsn ? (
+        <section className="border border-white/8 bg-[#101010] px-5 py-5 text-sm leading-7 text-osrs-text-soft">
+          Route planning is strongest when Cerebro can see your actual unlocks. Without a synced account, this page will
+          still suggest routes, but they will be broader and less personalized.
+        </section>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="border border-white/8 bg-[#101010] px-5 py-5">
           <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Active account</p>
-          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedAccountRsn ?? "None selected"}</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedAccountRsn ?? "Workspace-wide"}</p>
         </div>
         <div className="border border-white/8 bg-[#101010] px-5 py-5">
           <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Destination</p>
@@ -124,7 +134,8 @@ export function TeleportsView({
             </div>
           ) : (
             <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
-              No route calculated yet. Pick a destination and run the route finder to see travel options for your current account context.
+              No route calculated yet. Pick a destination and run the route finder to surface the cleanest path for your
+              current account context.
             </div>
           )}
         </section>
@@ -141,7 +152,7 @@ export function TeleportsView({
           <div className="space-y-3 text-sm text-osrs-text-soft">
             <div className="border border-white/8 bg-[#111111] px-4 py-4">
               <strong className="block text-white">Account</strong>
-              <p className="mt-2">{selectedAccountRsn ?? "none selected"}</p>
+              <p className="mt-2">{selectedAccountRsn ?? "workspace-wide read"}</p>
             </div>
             <div className="border border-white/8 bg-[#111111] px-4 py-4">
               <strong className="block text-white">Destination</strong>

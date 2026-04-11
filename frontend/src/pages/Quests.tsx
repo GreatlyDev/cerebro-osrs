@@ -49,6 +49,13 @@ export function QuestsView({
         </div>
       </section>
 
+      {recommendedQuestActions.length === 0 ? (
+        <section className="border border-white/8 bg-[#101010] px-5 py-5 text-sm leading-7 text-osrs-text-soft">
+          The quest catalog is still useful without an active planner lane. Once you sync an account or anchor a goal,
+          Cerebro will start surfacing much sharper unlock pressure here.
+        </section>
+      ) : null}
+
       <div className="grid gap-3 md:grid-cols-3">
         <div className="border border-white/8 bg-[#101010] px-5 py-5">
           <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Catalog entries</p>
@@ -154,13 +161,14 @@ export function QuestsView({
                   </div>
                 ))}
               </div>
-            ) : (
-              <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
-                No ranked quest actions are active yet. Create a goal and sync an account to make the quest board sharper.
-              </div>
-            )}
-          </section>
-        </div>
+          ) : (
+            <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
+              No ranked quest actions are active yet. Sync an account or anchor one goal and this board will start
+              pulling the unlocks that matter most.
+            </div>
+          )}
+        </section>
+      </div>
       </div>
     </div>
   );

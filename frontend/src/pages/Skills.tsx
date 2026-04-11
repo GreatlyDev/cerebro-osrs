@@ -45,10 +45,17 @@ export function SkillsView({
         </div>
       </section>
 
+      {!selectedAccountRsn ? (
+        <section className="border border-white/8 bg-[#101010] px-5 py-5 text-sm leading-7 text-osrs-text-soft">
+          You can browse the full skill atlas without a selected account, but synced account context is what turns these
+          methods into genuinely personalized training advice.
+        </section>
+      ) : null}
+
       <div className="grid gap-3 md:grid-cols-3">
         <div className="border border-white/8 bg-[#101010] px-5 py-5">
           <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Active account</p>
-          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedAccountRsn ?? "None selected"}</p>
+          <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{selectedAccountRsn ?? "Workspace-wide"}</p>
         </div>
         <div className="border border-white/8 bg-[#101010] px-5 py-5">
           <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Catalog size</p>
@@ -149,7 +156,8 @@ export function SkillsView({
             </div>
           ) : (
             <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
-              No skill is loaded yet. Open any catalog card and Cerebro will take you into a dedicated skill detail page with live methods.
+              No skill is loaded yet. Open any catalog card and Cerebro will load a dedicated skill page with level bands,
+              requirements, and account-aware methods.
             </div>
           )}
         </section>
