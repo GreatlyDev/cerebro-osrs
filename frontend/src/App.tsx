@@ -900,6 +900,7 @@ export function App() {
       surfaceLabel: utilityRailContext.surfaceLabel,
       suggestedPrompt: chatPrompt.trim() || (utilityRailContext.prompts[0] ?? null),
     });
+    setSelectedChatSessionId(null);
     navigateToView("ask-cerebro");
     void handleRunChatPrompt();
   }
@@ -909,6 +910,7 @@ export function App() {
       surfaceLabel: utilityRailContext.surfaceLabel,
       suggestedPrompt: prompt,
     });
+    setSelectedChatSessionId(null);
     setChatPrompt(prompt);
     navigateToView("ask-cerebro");
     void handleRunChatPrompt(prompt);

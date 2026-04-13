@@ -39,18 +39,29 @@ export function ChatView({
       ? null
       : chatSessions.find((session) => session.id === selectedChatSessionId) ?? null;
   const sessionState = normalizeSessionState(selectedSession?.session_state);
-  const focusLabel = describeSessionFocus(sessionState);
-  const intentLabel = describeSessionIntent(sessionState);
+  const focusLabel =
+    selectedSession !== null
+      ? describeSessionFocus(sessionState)
+      : entryContextLabel
+        ? humanizeEntryContext(entryContextLabel)
+        : describeSessionFocus(sessionState);
+  const intentLabel =
+    selectedSession !== null
+      ? describeSessionIntent(sessionState)
+      : entryContextLabel
+        ? "Surface follow-up"
+        : describeSessionIntent(sessionState);
   const threadAccountLabel =
     readStateString(sessionState, "last_account_rsn") ?? selectedAccountRsn ?? "No account anchored yet";
   const threadNextMove = describeThreadNextMove(sessionState);
   const threadBlockers = readStateStringArray(sessionState, "last_blockers");
+  const entryContextPrompts = buildEntryContextPrompts(entryContextLabel, entryContextPrompt, selectedAccountRsn);
   const visibleHistory =
     selectedChatSessionId === null
       ? []
       : chatHistory.filter((exchange) => exchange.sessionId === selectedChatSessionId);
-  const quickPrompts = buildQuickPrompts(sessionState, selectedAccountRsn);
-  const advisorCapabilities = buildAdvisorCapabilities(sessionState);
+  const quickPrompts = buildQuickPrompts(sessionState, selectedAccountRsn, entryContextPrompts);
+  const advisorCapabilities = buildAdvisorCapabilities(sessionState, entryContextLabel, entryContextPrompts);
 
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -309,8 +320,9 @@ function normalizeSessionState(value: unknown): Record<string, unknown> {
 function buildQuickPrompts(
   state: Record<string, unknown>,
   selectedAccountRsn: string | null,
+  prioritizedPrompts: string[] = [],
 ): string[] {
-  const prompts: string[] = [];
+  const prompts: string[] = [...prioritizedPrompts];
   const goalTitle = readStateString(state, "last_goal_title");
   const questId = readStateString(state, "last_quest_id");
   const bossId = readStateString(state, "last_boss_id");
@@ -444,7 +456,11 @@ function buildQuickPrompts(
   return deduped.slice(0, 6);
 }
 
-function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
+function buildAdvisorCapabilitiesInternal(
+  state: Record<string, unknown>,
+  entryContextLabel: string | null,
+  entryContextPrompts: string[],
+): Array<{
   eyebrow: string;
   title: string;
   description: string;
@@ -467,7 +483,7 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       ? `What should I do if I want both profit and progression?`
       : "What's the tradeoff?";
 
-  return [
+  const capabilities = [
     {
       eyebrow: "Account read",
       title: "Ask for an account readout",
@@ -587,6 +603,93 @@ function buildAdvisorCapabilities(state: Record<string, unknown>): Array<{
       ],
     },
   ];
+
+  if (entryContextLabel && entryContextPrompts.length > 0) {
+    capabilities.unshift({
+      eyebrow: "Current surface",
+      title: `Start from ${humanizeEntryContext(entryContextLabel)}`,
+      description:
+        "Use the page you came from as the starting lane so Cerebro stays grounded in the exact surface you were already inspecting.",
+      prompts: entryContextPrompts,
+    });
+  }
+
+  return capabilities;
+}
+
+function buildAdvisorCapabilities(
+  state: Record<string, unknown>,
+  entryContextLabel: string | null,
+  entryContextPrompts: string[],
+): Array<{
+  eyebrow: string;
+  title: string;
+  description: string;
+  prompts: string[];
+}> {
+  return buildAdvisorCapabilitiesInternal(state, entryContextLabel, entryContextPrompts);
+}
+
+function buildEntryContextPrompts(
+  entryContextLabel: string | null,
+  entryContextPrompt: string | null,
+  selectedAccountRsn: string | null,
+): string[] {
+  if (!entryContextLabel) {
+    return entryContextPrompt ? [entryContextPrompt] : [];
+  }
+
+  const normalizedLabel = entryContextLabel.toLowerCase();
+  const prompts: string[] = [];
+
+  if (entryContextPrompt) {
+    prompts.push(entryContextPrompt);
+  }
+
+  if (normalizedLabel.includes("skill")) {
+    prompts.push("How should I train this skill from here?");
+    prompts.push("What would make this skill worth prioritizing right now?");
+  } else if (normalizedLabel.includes("quest")) {
+    prompts.push("Is this quest actually worth pushing right now?");
+    prompts.push("What is the cleanest way to close the blockers around this quest?");
+  } else if (normalizedLabel.includes("gear")) {
+    prompts.push("Is this upgrade actually worth it right now?");
+    prompts.push("What should come before this gear lane?");
+  } else if (normalizedLabel.includes("teleport") || normalizedLabel.includes("route")) {
+    prompts.push("What route unlock would reduce the most friction right now?");
+    prompts.push("What travel unlock should come next after this?");
+  } else if (normalizedLabel.includes("goal")) {
+    prompts.push("What is the smartest way to use this goal right now?");
+    prompts.push("What blocker is slowing this goal down the most?");
+  } else if (normalizedLabel.includes("recommendation") || normalizedLabel.includes("action")) {
+    prompts.push("Why is this recommendation ranked so highly?");
+    prompts.push("What would make this recommendation change?");
+  } else if (normalizedLabel.includes("account")) {
+    prompts.push(`What stands out most about ${selectedAccountRsn ?? "this account"} right now?`);
+    prompts.push("What should this account fix first?");
+  } else if (normalizedLabel.includes("profile")) {
+    prompts.push("How should I tune this profile so Cerebro gives me better advice?");
+    prompts.push("What planning baseline fits this workspace best?");
+  } else if (normalizedLabel.includes("dashboard") || normalizedLabel.includes("workspace")) {
+    prompts.push("What should I focus on first from this workspace?");
+    prompts.push("What stands out most from the current dashboard read?");
+  }
+
+  const deduped: string[] = [];
+  const seen = new Set<string>();
+  for (const prompt of prompts) {
+    const normalized = prompt.trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    deduped.push(prompt);
+  }
+  return deduped.slice(0, 4);
+}
+
+function humanizeEntryContext(label: string): string {
+  return label.replace(/\broom\b/i, "view").replace(/\s+/g, " ").trim();
 }
 
 function readStateString(state: Record<string, unknown>, key: string): string | null {
