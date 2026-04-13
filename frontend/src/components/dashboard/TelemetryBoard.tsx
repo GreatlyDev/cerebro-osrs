@@ -1,10 +1,12 @@
 import type { AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
+import { Button } from "../ui/Button";
 import { RecommendationThumb } from "./RecommendationThumb";
 import { SkillIcon } from "./skillIcons";
 
 type TelemetryBoardProps = {
   busyAction: string | null;
   newAccountRsn: string;
+  onAskAdvisor: (prompt: string) => void;
   onChangeNewAccountRsn: (value: string) => void;
   onQuickstartAccount: () => void;
   selectedAccountRsn: string | null;
@@ -23,6 +25,7 @@ function skillFill(level: number) {
 export function TelemetryBoard({
   busyAction,
   newAccountRsn,
+  onAskAdvisor,
   onChangeNewAccountRsn,
   onQuickstartAccount,
   selectedAccountRsn,
@@ -68,6 +71,20 @@ export function TelemetryBoard({
                   </h2>
                   <p className="max-w-2xl text-[0.96rem] leading-7 text-osrs-text-soft">{featuredSummary}</p>
                   <p className="font-mono text-[0.78rem] uppercase tracking-[0.12em] text-osrs-gold">{featuredMeta}</p>
+                  <div className="pt-1">
+                    <Button
+                      onClick={() =>
+                        onAskAdvisor(
+                          topAction
+                            ? `Why is ${topAction.title} the best next move for this account right now?`
+                            : "What should I actually focus on first on this account right now?",
+                        )
+                      }
+                      variant="secondary"
+                    >
+                      Ask Cerebro why this matters
+                    </Button>
+                  </div>
                   <div className="grid gap-3 pt-2 sm:grid-cols-3">
                     <div className="border border-white/8 bg-black/30 px-4 py-3">
                       <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Top skill</p>
@@ -203,12 +220,23 @@ export function TelemetryBoard({
               {(nextActions?.actions ?? []).slice(0, 3).map((action) => (
                 <div
                   key={`${action.action_type}-${action.title}`}
-                  className="flex items-center gap-4 border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45"
+                  className="border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45"
                 >
-                  <RecommendationThumb action={action} className="h-24 w-24 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="font-display text-[1.02rem] font-bold uppercase leading-tight text-white">{action.title}</p>
-                    <p className="mt-1 text-[0.78rem] leading-6 text-osrs-text-soft">{action.summary}</p>
+                  <div className="flex items-center gap-4">
+                    <RecommendationThumb action={action} className="h-24 w-24 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="font-display text-[1.02rem] font-bold uppercase leading-tight text-white">{action.title}</p>
+                      <p className="mt-1 text-[0.78rem] leading-6 text-osrs-text-soft">{action.summary}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <Button
+                      className="w-full"
+                      onClick={() => onAskAdvisor(`Why should I do ${action.title} before the other recommendations?`)}
+                      variant="secondary"
+                    >
+                      Ask why this action
+                    </Button>
                   </div>
                 </div>
               ))}

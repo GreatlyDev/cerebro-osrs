@@ -27,6 +27,7 @@ type DashboardPageProps = {
   chatHistory: ChatExchange[];
   chatPrompt: string;
   chatReply: string;
+  onAskAdvisor: (prompt: string) => void;
   onPromptChange: (value: string) => void;
   onRunChatPrompt: (promptOverride?: string) => void;
   onOpenNextAction: (action: NextAction) => void;
@@ -64,6 +65,7 @@ export function DashboardPage(props: DashboardPageProps) {
     currentUser,
     goals,
     newAccountRsn,
+    onAskAdvisor,
     onChangeNewAccountRsn,
     onGoToGoals,
     onGoToProfile,
@@ -92,6 +94,7 @@ export function DashboardPage(props: DashboardPageProps) {
         busyAction={busyAction}
         newAccountRsn={newAccountRsn}
         nextActions={nextActions}
+        onAskAdvisor={onAskAdvisor}
         onChangeNewAccountRsn={onChangeNewAccountRsn}
         onQuickstartAccount={onQuickstartAccount}
         progress={selectedProgress}

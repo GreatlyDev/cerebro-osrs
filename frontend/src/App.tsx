@@ -1364,6 +1364,7 @@ export function App() {
               goals={goals}
               newAccountRsn={newAccountRsn}
               nextActions={nextActions}
+              onAskAdvisor={openAdvisorWithPrompt}
               onChangeNewAccountRsn={setNewAccountRsn}
               onGoToAdvisor={() => navigateToView("ask-cerebro")}
               onGoToGear={() => navigateToView("gear")}
@@ -1391,7 +1392,7 @@ export function App() {
                 accountGoals={goals.filter((goal) => goal.target_account_rsn === selectedAccount?.rsn)}
                 busyAction={busyAction}
                 nextActions={nextActions}
-                onAskAdvisor={() => navigateToView("ask-cerebro")}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToGoals={() => navigateToView("goals")}
@@ -1493,7 +1494,7 @@ export function App() {
             {activeView === "recommendations" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <RecommendationsView
                 nextActions={nextActions}
-                onGoToAdvisor={() => openAdvisorWithPrompt("What should I actually act on first from this recommendation stack?")}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onOpenNextAction={handleOpenNextAction}
                 onGoToGoals={() => navigateToView("goals")}
                 selectedAccountRsn={selectedAccountRsn}

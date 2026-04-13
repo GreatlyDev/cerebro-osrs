@@ -5,7 +5,7 @@ import type { NextAction, NextActionResponse } from "../types";
 type RecommendationsPageProps = {
   nextActions: NextActionResponse | null;
   selectedAccountRsn: string | null;
-  onGoToAdvisor: () => void;
+  onAskAdvisor: (prompt: string) => void;
   onGoToGoals: () => void;
   onOpenNextAction: (action: NextAction) => void;
 };
@@ -133,7 +133,7 @@ function SupportingData({ action }: { action: NextAction }) {
 export function RecommendationsView({
   nextActions,
   selectedAccountRsn,
-  onGoToAdvisor,
+  onAskAdvisor,
   onGoToGoals,
   onOpenNextAction,
 }: RecommendationsPageProps) {
@@ -157,7 +157,10 @@ export function RecommendationsView({
             </p>
           </div>
           <div className="flex flex-wrap gap-2.5">
-            <Button onClick={onGoToAdvisor} variant="secondary">
+            <Button
+              onClick={() => onAskAdvisor("What should I actually act on first from this recommendation stack?")}
+              variant="secondary"
+            >
               Ask Cerebro
             </Button>
             <Button onClick={onGoToGoals} variant="secondary">
@@ -220,7 +223,15 @@ export function RecommendationsView({
                     <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Score</p>
                     <strong className="font-display text-xl text-white">{action.score}</strong>
                   </div>
-                  <Button onClick={() => onOpenNextAction(action)}>Open</Button>
+                  <div className="flex flex-col gap-2">
+                    <Button onClick={() => onOpenNextAction(action)}>Open</Button>
+                    <Button
+                      onClick={() => onAskAdvisor(`Why is ${action.title} ranked this highly for my account right now?`)}
+                      variant="secondary"
+                    >
+                      Ask why
+                    </Button>
+                  </div>
                 </div>
               </div>
 

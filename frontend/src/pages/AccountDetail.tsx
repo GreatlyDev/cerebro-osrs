@@ -14,7 +14,7 @@ type AccountDetailProps = {
   accountGoals: Goal[];
   busyAction: string | null;
   nextActions: NextActionResponse | null;
-  onAskAdvisor: () => void;
+  onAskAdvisor: (prompt: string) => void;
   onBackToDashboard: () => void;
   onGeneratePlan: (goal: Goal) => void;
   onGoToGoals: () => void;
@@ -140,7 +140,12 @@ export function AccountDetailView(props: AccountDetailProps) {
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
-            <Button onClick={onAskAdvisor} variant="secondary">Ask Cerebro</Button>
+            <Button
+              onClick={() => onAskAdvisor(`What stands out most about ${selectedAccount.rsn} right now?`)}
+              variant="secondary"
+            >
+              Ask Cerebro
+            </Button>
             <Button onClick={() => onSetPrimaryAccount(selectedAccount)} variant="secondary">
               {busyAction === `primary-${selectedAccount.id}` ? "Saving..." : "Set primary"}
             </Button>
@@ -195,6 +200,15 @@ export function AccountDetailView(props: AccountDetailProps) {
                 </div>
               </div>
             ) : null}
+            <div className="mt-4">
+              <Button
+                className="w-full"
+                onClick={() => onAskAdvisor(`What should ${selectedAccount.rsn} fix first on this account?`)}
+                variant="secondary"
+              >
+                Ask what this account should fix first
+              </Button>
+            </div>
           </section>
 
           <section className="border border-white/8 bg-[#101010] px-6 py-6">
