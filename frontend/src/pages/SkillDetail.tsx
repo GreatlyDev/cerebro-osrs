@@ -3,6 +3,7 @@ import { Button } from "../components/ui/Button";
 import type { SkillRecommendationResponse } from "../types";
 
 type SkillDetailProps = {
+  onAskAdvisor: (prompt: string) => void;
   onBackToDashboard: () => void;
   onBackToSkills: () => void;
   onReloadSkill: (skillKey: string) => void;
@@ -11,6 +12,7 @@ type SkillDetailProps = {
 };
 
 export function SkillDetailView({
+  onAskAdvisor,
   onBackToDashboard,
   onBackToSkills,
   onReloadSkill,
@@ -38,6 +40,14 @@ export function SkillDetailView({
           </div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={onBackToSkills} variant="secondary">All skills</Button>
+            <Button
+              onClick={() =>
+                onAskAdvisor(`How should I approach ${skillRecommendations.skill} from here on this account?`)
+              }
+              variant="secondary"
+            >
+              Ask Cerebro
+            </Button>
             <Button onClick={() => onReloadSkill(skillRecommendations.skill)}>Refresh skill</Button>
             <Button onClick={onBackToDashboard} variant="secondary">Dashboard</Button>
           </div>
@@ -121,6 +131,19 @@ export function SkillDetailView({
                 </p>
               </div>
             </div>
+          </div>
+          <div className="mt-4">
+            <Button
+              className="w-full"
+              onClick={() =>
+                onAskAdvisor(
+                  `What is the smartest next training move after ${skillRecommendations.recommendations[0]?.method ?? skillRecommendations.skill} for this account?`,
+                )
+              }
+              variant="secondary"
+            >
+              Ask about the next training move
+            </Button>
           </div>
         </section>
       </div>

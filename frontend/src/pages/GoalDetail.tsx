@@ -4,6 +4,7 @@ import type { Goal, GoalPlanResponse, NextAction, NextActionResponse, Profile } 
 type GoalDetailProps = {
   busyAction: string | null;
   nextActions: NextActionResponse | null;
+  onAskAdvisor: (prompt: string) => void;
   onBackToDashboard: () => void;
   onGeneratePlan: (goal: Goal) => void;
   onGoToGoals: () => void;
@@ -52,6 +53,7 @@ export function GoalDetailView(props: GoalDetailProps) {
   const {
     busyAction,
     nextActions,
+    onAskAdvisor,
     onBackToDashboard,
     onGeneratePlan,
     onGoToGoals,
@@ -88,6 +90,12 @@ export function GoalDetailView(props: GoalDetailProps) {
           </div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={onGoToGoals} variant="secondary">All goals</Button>
+            <Button
+              onClick={() => onAskAdvisor(`What is the smartest path to make progress on ${selectedGoal.title} right now?`)}
+              variant="secondary"
+            >
+              Ask Cerebro
+            </Button>
             <Button onClick={() => onGeneratePlan(selectedGoal)}>
               {busyAction === `plan-${selectedGoal.id}` ? "Generating..." : "Refresh plan"}
             </Button>
@@ -206,6 +214,15 @@ export function GoalDetailView(props: GoalDetailProps) {
           ) : (
             <p className="text-sm leading-7 text-osrs-text-soft">No goal-specific ranked actions yet.</p>
           )}
+          <div className="mt-4">
+            <Button
+              className="w-full"
+              onClick={() => onAskAdvisor(`What is the biggest blocker keeping ${selectedGoal.title} from moving faster?`)}
+              variant="secondary"
+            >
+              Ask about the biggest blocker
+            </Button>
+          </div>
         </section>
       </div>
     </div>

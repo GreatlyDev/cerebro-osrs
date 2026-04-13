@@ -3,6 +3,7 @@ import type { GearRecommendationResponse } from "../types";
 
 type GearDetailProps = {
   gearRecommendations: GearRecommendationResponse | null;
+  onAskAdvisor: (prompt: string) => void;
   onBackToDashboard: () => void;
   onBackToGear: () => void;
   onReloadGear: () => void;
@@ -11,6 +12,7 @@ type GearDetailProps = {
 
 export function GearDetailView({
   gearRecommendations,
+  onAskAdvisor,
   onBackToDashboard,
   onBackToGear,
   onReloadGear,
@@ -37,6 +39,14 @@ export function GearDetailView({
           </div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={onBackToGear} variant="secondary">All gear</Button>
+            <Button
+              onClick={() =>
+                onAskAdvisor(`What should I prioritize in this ${gearRecommendations.combat_style} loadout next?`)
+              }
+              variant="secondary"
+            >
+              Ask Cerebro
+            </Button>
             <Button onClick={onReloadGear}>Refresh upgrades</Button>
             <Button onClick={onBackToDashboard} variant="secondary">Dashboard</Button>
           </div>
@@ -105,6 +115,19 @@ export function GearDetailView({
               <strong className="block text-white">Budget tier</strong>
               <p className="mt-2 text-sm text-osrs-text-soft">{gearRecommendations.budget_tier}</p>
             </div>
+          </div>
+          <div className="mt-4">
+            <Button
+              className="w-full"
+              onClick={() =>
+                onAskAdvisor(
+                  `Is ${gearRecommendations.recommendations[0]?.item_name ?? "the top upgrade"} actually worth prioritizing for this account right now?`,
+                )
+              }
+              variant="secondary"
+            >
+              Ask about this top upgrade
+            </Button>
           </div>
         </section>
       </div>

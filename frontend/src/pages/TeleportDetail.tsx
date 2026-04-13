@@ -2,6 +2,7 @@ import { Button } from "../components/ui/Button";
 import type { TeleportRouteResponse } from "../types";
 
 type TeleportDetailProps = {
+  onAskAdvisor: (prompt: string) => void;
   onBackToDashboard: () => void;
   onBackToTeleports: () => void;
   onReloadTeleport: () => void;
@@ -10,6 +11,7 @@ type TeleportDetailProps = {
 };
 
 export function TeleportDetailView({
+  onAskAdvisor,
   onBackToDashboard,
   onBackToTeleports,
   onReloadTeleport,
@@ -35,6 +37,14 @@ export function TeleportDetailView({
           </div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={onBackToTeleports} variant="secondary">All routes</Button>
+            <Button
+              onClick={() =>
+                onAskAdvisor(`How valuable is ${teleportRoute.destination} travel setup for this account right now?`)
+              }
+              variant="secondary"
+            >
+              Ask Cerebro
+            </Button>
             <Button onClick={onReloadTeleport}>Refresh route</Button>
             <Button onClick={onBackToDashboard} variant="secondary">Dashboard</Button>
           </div>
@@ -75,6 +85,19 @@ export function TeleportDetailView({
                 ))}
               </ul>
             ) : null}
+          </div>
+          <div className="mt-5">
+            <Button
+              className="w-full"
+              onClick={() =>
+                onAskAdvisor(
+                  `What unlock should I push after ${teleportRoute.recommended_route.method} if I want smoother movement overall?`,
+                )
+              }
+              variant="secondary"
+            >
+              Ask about the next travel unlock
+            </Button>
           </div>
         </section>
 

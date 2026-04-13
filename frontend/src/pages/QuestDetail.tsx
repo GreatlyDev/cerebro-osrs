@@ -2,6 +2,7 @@ import { Button } from "../components/ui/Button";
 import type { NextAction, NextActionResponse, QuestDetail as QuestDetailType } from "../types";
 
 type QuestDetailProps = {
+  onAskAdvisor: (prompt: string) => void;
   onBackToDashboard: () => void;
   onBackToQuests: () => void;
   onOpenNextAction: (action: NextAction) => void;
@@ -23,6 +24,7 @@ function ListPanel({ items, title }: { items: string[]; title: string }) {
 }
 
 export function QuestDetailView({
+  onAskAdvisor,
   onBackToDashboard,
   onBackToQuests,
   onOpenNextAction,
@@ -53,6 +55,12 @@ export function QuestDetailView({
           </div>
           <div className="flex flex-wrap gap-3">
             <Button onClick={onBackToQuests} variant="secondary">All quests</Button>
+            <Button
+              onClick={() => onAskAdvisor(`Am I actually ready for ${selectedQuest.name} and what matters most first?`)}
+              variant="secondary"
+            >
+              Ask Cerebro
+            </Button>
             <Button onClick={onBackToDashboard} variant="secondary">Dashboard</Button>
           </div>
         </div>
@@ -94,7 +102,7 @@ export function QuestDetailView({
               <p className="mt-2 text-sm leading-7 text-osrs-text-soft">A clean place for richer guide content later without crowding the catalog.</p>
             </div>
             <ol className="space-y-3 text-sm leading-7 text-osrs-text-soft">
-              {selectedQuest.next_steps.map((step, index) => (
+            {selectedQuest.next_steps.map((step, index) => (
                 <li className="flex gap-3" key={step}>
                   <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center border border-white/8 bg-[#0b0b0b] text-xs text-osrs-gold-soft">
                     {index + 1}
@@ -103,6 +111,15 @@ export function QuestDetailView({
                 </li>
               ))}
             </ol>
+            <div className="mt-5">
+              <Button
+                className="w-full"
+                onClick={() => onAskAdvisor(`What would make ${selectedQuest.name} easier or more worth doing on this account?`)}
+                variant="secondary"
+              >
+                Ask about quest value and readiness
+              </Button>
+            </div>
           </section>
         </div>
 

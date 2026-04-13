@@ -1413,6 +1413,7 @@ export function App() {
               <GoalDetailPageView
                 busyAction={busyAction}
                 nextActions={nextActions}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToGoals={() => navigateToView("goals")}
@@ -1432,6 +1433,7 @@ export function App() {
 
             {skillDetailKey !== null ? (
               <SkillDetailView
+                onAskAdvisor={openAdvisorWithPrompt}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToSkills={() => navigateToView("skills")}
                 onReloadSkill={(skillKey) => void handleLoadSkill(skillKey)}
@@ -1443,6 +1445,7 @@ export function App() {
             {gearDetailOpen ? (
               <GearDetailView
                 gearRecommendations={gearRecommendations}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToGear={() => navigateToView("gear")}
                 onReloadGear={handleLoadGear}
@@ -1452,6 +1455,7 @@ export function App() {
 
             {teleportDetailOpen ? (
               <TeleportDetailView
+                onAskAdvisor={openAdvisorWithPrompt}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToTeleports={() => navigateToView("teleports")}
                 onReloadTeleport={handleLoadTeleport}
@@ -1462,6 +1466,7 @@ export function App() {
 
             {questDetailId !== null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <QuestDetailView
+                onAskAdvisor={openAdvisorWithPrompt}
                 onBackToDashboard={() => navigateToView("dashboard")}
                 onBackToQuests={() => navigateToView("quests")}
                 onOpenNextAction={handleOpenNextAction}
