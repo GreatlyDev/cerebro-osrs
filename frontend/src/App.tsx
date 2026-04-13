@@ -925,6 +925,11 @@ export function App() {
     navigateToView("ask-cerebro");
   }
 
+  function handleSelectChatSession(sessionId: number) {
+    setAdvisorEntryContext(null);
+    setSelectedChatSessionId(sessionId);
+  }
+
   function openAdvisorWithPrompt(prompt?: string) {
     setAdvisorEntryContext({
       surfaceLabel: utilityRailContext.surfaceLabel,
@@ -1671,9 +1676,9 @@ export function App() {
                 chatSessions={chatSessions}
                 entryContextLabel={advisorEntryContext?.surfaceLabel ?? null}
                 entryContextPrompt={advisorEntryContext?.suggestedPrompt ?? null}
+                onSelectChatSession={handleSelectChatSession}
                 onRunChatPrompt={handleRunChatPrompt}
                 selectedChatSessionId={selectedChatSessionId}
-                setSelectedChatSessionId={setSelectedChatSessionId}
                 setChatPrompt={setChatPrompt}
                 selectedAccountRsn={selectedAccountRsn}
               />

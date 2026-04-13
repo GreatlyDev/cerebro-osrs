@@ -1,6 +1,4 @@
 import { useEffect, useRef } from "react";
-import type { Dispatch, SetStateAction } from "react";
-
 import { Button } from "../components/ui/Button";
 import type { ChatExchange, ChatSession } from "../types";
 
@@ -12,11 +10,11 @@ type ChatViewProps = {
   chatSessions: ChatSession[];
   entryContextLabel: string | null;
   entryContextPrompt: string | null;
+  onSelectChatSession: (sessionId: number) => void;
   onRunChatPrompt: (promptOverride?: string) => void;
   selectedAccountRsn: string | null;
   selectedChatSessionId: number | null;
-  setSelectedChatSessionId: Dispatch<SetStateAction<number | null>>;
-  setChatPrompt: Dispatch<SetStateAction<string>>;
+  setChatPrompt: (value: string) => void;
 };
 
 export function ChatView({
@@ -27,10 +25,10 @@ export function ChatView({
   chatSessions,
   entryContextLabel,
   entryContextPrompt,
+  onSelectChatSession,
   onRunChatPrompt,
   selectedAccountRsn,
   selectedChatSessionId,
-  setSelectedChatSessionId,
   setChatPrompt,
 }: ChatViewProps) {
   const conversationEndRef = useRef<HTMLDivElement | null>(null);
@@ -39,29 +37,35 @@ export function ChatView({
       ? null
       : chatSessions.find((session) => session.id === selectedChatSessionId) ?? null;
   const sessionState = normalizeSessionState(selectedSession?.session_state);
+  const activeEntryContextLabel = selectedSession === null ? entryContextLabel : null;
+  const activeEntryContextPrompt = selectedSession === null ? entryContextPrompt : null;
   const focusLabel =
     selectedSession !== null
       ? describeSessionFocus(sessionState)
-      : entryContextLabel
-        ? humanizeEntryContext(entryContextLabel)
+      : activeEntryContextLabel
+        ? humanizeEntryContext(activeEntryContextLabel)
         : describeSessionFocus(sessionState);
   const intentLabel =
     selectedSession !== null
       ? describeSessionIntent(sessionState)
-      : entryContextLabel
+      : activeEntryContextLabel
         ? "Surface follow-up"
         : describeSessionIntent(sessionState);
   const threadAccountLabel =
     readStateString(sessionState, "last_account_rsn") ?? selectedAccountRsn ?? "No account anchored yet";
   const threadNextMove = describeThreadNextMove(sessionState);
   const threadBlockers = readStateStringArray(sessionState, "last_blockers");
-  const entryContextPrompts = buildEntryContextPrompts(entryContextLabel, entryContextPrompt, selectedAccountRsn);
+  const entryContextPrompts = buildEntryContextPrompts(
+    activeEntryContextLabel,
+    activeEntryContextPrompt,
+    selectedAccountRsn,
+  );
   const visibleHistory =
     selectedChatSessionId === null
       ? []
       : chatHistory.filter((exchange) => exchange.sessionId === selectedChatSessionId);
   const quickPrompts = buildQuickPrompts(sessionState, selectedAccountRsn, entryContextPrompts);
-  const advisorCapabilities = buildAdvisorCapabilities(sessionState, entryContextLabel, entryContextPrompts);
+  const advisorCapabilities = buildAdvisorCapabilities(sessionState, activeEntryContextLabel, entryContextPrompts);
 
   useEffect(() => {
     conversationEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -112,25 +116,25 @@ export function ChatView({
                     : `Ask about ${threadAccountLabel} and Cerebro will build a grounded OSRS thread from live account context.`}
                 </p>
               </div>
-              {!selectedSession && entryContextLabel ? (
+              {!selectedSession && activeEntryContextLabel ? (
                 <div className="border-b border-white/8 px-5 py-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Entry context</p>
                       <p className="mt-3 text-[0.92rem] leading-7 text-osrs-text-soft">
-                        You opened Cerebro from the {entryContextLabel}. Keep the first question anchored there and the
-                        thread will start with better context.
+                        You opened Cerebro from the {activeEntryContextLabel}. Keep the first question anchored there
+                        and the thread will start with better context.
                       </p>
                     </div>
-                    {entryContextPrompt ? (
-                      <Button onClick={() => onRunChatPrompt(entryContextPrompt)} variant="secondary">
+                    {activeEntryContextPrompt ? (
+                      <Button onClick={() => onRunChatPrompt(activeEntryContextPrompt)} variant="secondary">
                         Use kickoff
                       </Button>
                     ) : null}
                   </div>
-                  {entryContextPrompt ? (
+                  {activeEntryContextPrompt ? (
                     <div className="mt-4 border border-white/8 bg-[#131313] px-4 py-4 text-sm leading-6 text-osrs-text-soft">
-                      {entryContextPrompt}
+                      {activeEntryContextPrompt}
                     </div>
                   ) : null}
                 </div>
@@ -227,6 +231,12 @@ export function ChatView({
                 <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Priority</p>
                 <p className="mt-2 font-display text-[1.2rem] uppercase text-white">{intentLabel}</p>
               </div>
+              {selectedSession && entryContextLabel ? (
+                <div>
+                  <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Started from</p>
+                  <p className="mt-2 text-sm leading-7 text-osrs-text-soft">{humanizeEntryContext(entryContextLabel)}</p>
+                </div>
+              ) : null}
               <div>
                 <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Best next move</p>
                 <p className="mt-2 text-sm leading-7 text-osrs-text-soft">{threadNextMove.body}</p>
@@ -252,7 +262,7 @@ export function ChatView({
                         : "border-white/8 bg-[#131313]"
                     }`}
                     key={session.id}
-                    onClick={() => setSelectedChatSessionId(session.id)}
+                    onClick={() => onSelectChatSession(session.id)}
                     type="button"
                   >
                     <div className="flex items-start justify-between gap-3">
