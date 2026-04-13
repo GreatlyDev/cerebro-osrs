@@ -3,6 +3,8 @@ import { RecommendationThumb } from "./RecommendationThumb";
 import { Button } from "../ui/Button";
 
 type DashboardUtilityRailProps = {
+  activeSurfaceLabel: string;
+  advisorPlaceholder: string;
   selectedAccount: Account | null;
   selectedProgress: AccountProgress | null;
   selectedSnapshotDelta: {
@@ -17,6 +19,8 @@ type DashboardUtilityRailProps = {
   onAdvisorPromptChange: (value: string) => void;
   onAskAdvisor: () => void;
   onOpenAdvisor: () => void;
+  onRunAdvisorPrompt: (prompt: string) => void;
+  surfacePrompts: string[];
 };
 
 function buildSystemMessage(selectedAccount: Account | null, selectedSnapshot: AccountSnapshot | null) {
@@ -49,6 +53,8 @@ function buildAdvisorMessage(
 }
 
 export function DashboardUtilityRail({
+  activeSurfaceLabel,
+  advisorPlaceholder,
   selectedAccount,
   selectedProgress,
   selectedSnapshotDelta,
@@ -61,6 +67,8 @@ export function DashboardUtilityRail({
   onAdvisorPromptChange,
   onAskAdvisor,
   onOpenAdvisor,
+  onRunAdvisorPrompt,
+  surfacePrompts,
 }: DashboardUtilityRailProps) {
   const recommendationCards = (nextActions?.actions ?? []).slice(0, 3);
   const systemMessage = buildSystemMessage(selectedAccount, selectedSnapshot);
@@ -87,6 +95,29 @@ export function DashboardUtilityRail({
             </div>
             <p className="mt-3 text-[0.92rem] leading-7 text-osrs-text-soft">{advisorMessage}</p>
           </div>
+          <div className="border-b border-white/8 px-5 py-5">
+            <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Current surface</p>
+            <div className="mt-3 flex items-center justify-between gap-3">
+              <strong className="font-display text-[1.05rem] uppercase text-white">{activeSurfaceLabel}</strong>
+              <span className="font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                page-aware
+              </span>
+            </div>
+            {surfacePrompts.length > 0 ? (
+              <div className="mt-4 grid gap-2">
+                {surfacePrompts.slice(0, 2).map((prompt) => (
+                  <button
+                    className="border border-white/8 bg-[#131313] px-3 py-3 text-left text-sm leading-6 text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
+                    key={prompt}
+                    onClick={() => onRunAdvisorPrompt(prompt)}
+                    type="button"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <div className="px-5 py-5">
             <input
               className="w-full border-0 bg-transparent px-0 py-0 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55"
@@ -97,7 +128,7 @@ export function DashboardUtilityRail({
                   onAskAdvisor();
                 }
               }}
-              placeholder="Ask about this account..."
+              placeholder={advisorPlaceholder}
               value={advisorPrompt}
             />
           </div>

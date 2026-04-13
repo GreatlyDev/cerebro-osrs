@@ -201,6 +201,12 @@ function buildChatSessionTitle(prompt: string): string {
   return trimmed.length > 42 ? `${trimmed.slice(0, 42).trimEnd()}...` : trimmed;
 }
 
+type UtilityRailContext = {
+  surfaceLabel: string;
+  promptPlaceholder: string;
+  prompts: string[];
+};
+
 function formatListDraft(value: string[]): string {
   return value.join("\n");
 }
@@ -888,6 +894,12 @@ export function App() {
     void handleRunChatPrompt();
   }
 
+  function handleRunAdvisorPromptFromRail(prompt: string) {
+    setChatPrompt(prompt);
+    navigateToView("ask-cerebro");
+    void handleRunChatPrompt(prompt);
+  }
+
   function handleOpenAdvisorFromRail() {
     navigateToView("ask-cerebro");
   }
@@ -1121,6 +1133,150 @@ export function App() {
     backendStatus === "offline" && (profile !== null || accounts.length > 0 || selectedSnapshot !== null)
       ? "online"
       : backendStatus;
+  const utilityRailContext: UtilityRailContext = (() => {
+    if (accountDetailId !== null && selectedAccount) {
+      return {
+        surfaceLabel: `${selectedAccount.rsn} account room`,
+        promptPlaceholder: `Ask about ${selectedAccount.rsn}...`,
+        prompts: [
+          `What stands out most about ${selectedAccount.rsn} right now?`,
+          `What should ${selectedAccount.rsn} fix first?`,
+        ],
+      };
+    }
+
+    if (goalDetailId !== null && selectedGoal) {
+      return {
+        surfaceLabel: `${selectedGoal.title} goal`,
+        promptPlaceholder: `Ask about ${selectedGoal.title}...`,
+        prompts: [
+          `What is the biggest blocker keeping ${selectedGoal.title} from moving faster?`,
+          `What is the smartest path to make progress on ${selectedGoal.title} right now?`,
+        ],
+      };
+    }
+
+    if (questDetailId !== null && selectedQuest) {
+      return {
+        surfaceLabel: `${selectedQuest.name} quest`,
+        promptPlaceholder: `Ask about ${selectedQuest.name}...`,
+        prompts: [
+          `Am I actually ready for ${selectedQuest.name}?`,
+          `What would make ${selectedQuest.name} easier or more worth doing on this account?`,
+        ],
+      };
+    }
+
+    if (skillDetailKey !== null && skillRecommendations) {
+      return {
+        surfaceLabel: `${skillRecommendations.skill} skill`,
+        promptPlaceholder: `Ask about ${skillRecommendations.skill}...`,
+        prompts: [
+          `How should I approach ${skillRecommendations.skill} from here on this account?`,
+          `What is the smartest next training move after ${skillRecommendations.recommendations[0]?.method ?? skillRecommendations.skill}?`,
+        ],
+      };
+    }
+
+    if (gearDetailOpen && gearRecommendations) {
+      return {
+        surfaceLabel: `${gearRecommendations.combat_style} gear`,
+        promptPlaceholder: `Ask about this ${gearRecommendations.combat_style} loadout...`,
+        prompts: [
+          `What should I prioritize in this ${gearRecommendations.combat_style} loadout next?`,
+          `Is ${gearRecommendations.recommendations[0]?.item_name ?? "the top upgrade"} actually worth prioritizing right now?`,
+        ],
+      };
+    }
+
+    if (teleportDetailOpen && teleportRoute) {
+      return {
+        surfaceLabel: `${teleportRoute.destination} route`,
+        promptPlaceholder: `Ask about ${teleportRoute.destination} travel...`,
+        prompts: [
+          `How valuable is ${teleportRoute.destination} travel setup for this account right now?`,
+          `What unlock should I push after ${teleportRoute.recommended_route.method} if I want smoother movement overall?`,
+        ],
+      };
+    }
+
+    switch (activeView) {
+      case "skills":
+        return {
+          surfaceLabel: "skills atlas",
+          promptPlaceholder: "Ask which skill deserves attention...",
+          prompts: [
+            "What skill should I train next on this account?",
+            "What part of my account is under leveraged right now?",
+          ],
+        };
+      case "quests":
+        return {
+          surfaceLabel: "quest board",
+          promptPlaceholder: "Ask about unlocks and quest value...",
+          prompts: [
+            "Which quest unlock matters most on this account right now?",
+            "What quest chain should I care about next?",
+          ],
+        };
+      case "gear":
+        return {
+          surfaceLabel: "gear ladder",
+          promptPlaceholder: "Ask about upgrades and loadouts...",
+          prompts: [
+            `What gear upgrade matters most for my ${gearCombatStyle} setup right now?`,
+            `What should I prioritize in my ${gearCombatStyle} gear progression next?`,
+          ],
+        };
+      case "teleports":
+        return {
+          surfaceLabel: "route board",
+          promptPlaceholder: "Ask about travel and unlock burden...",
+          prompts: [
+            `Is ${teleportDestination} worth unlocking for this account right now?`,
+            "What travel unlock would reduce the most friction across my account?",
+          ],
+        };
+      case "goals":
+        return {
+          surfaceLabel: "goal board",
+          promptPlaceholder: "Ask about goals and plan direction...",
+          prompts: [
+            goals.length > 0
+              ? "Which of my goals deserves the most attention right now?"
+              : "What kind of goal should I create first for this account?",
+            "What goal would make Cerebro most useful for me right now?",
+          ],
+        };
+      case "recommendations":
+        return {
+          surfaceLabel: "action board",
+          promptPlaceholder: "Ask why these actions are surfacing...",
+          prompts: [
+            "What should I actually act on first from this recommendation stack?",
+            "What recommendation here matters most and why?",
+          ],
+        };
+      case "profile":
+        return {
+          surfaceLabel: "workspace profile",
+          promptPlaceholder: "Ask how to tune your workspace...",
+          prompts: [
+            "How should I tune this profile so Cerebro gives me better advice?",
+            "What workspace default would make the biggest difference right now?",
+          ],
+        };
+      default:
+        return {
+          surfaceLabel: "workspace",
+          promptPlaceholder: "Ask about this account...",
+          prompts: [
+            "What should I actually focus on first on this account right now?",
+            "What changed that matters most for this workspace?",
+          ],
+        };
+    }
+  })();
 
   useEffect(() => {
     if (selectedAccountRsn && !newGoalTargetRsn) {
@@ -1327,11 +1483,13 @@ export function App() {
         />
       }
       utilityRail={
-        activeView === "dashboard"
+        activeView === "dashboard" || activeView === "ask-cerebro"
           ? undefined
           : (
             <DashboardUtilityRail
+              activeSurfaceLabel={utilityRailContext.surfaceLabel}
               advisorPrompt={chatPrompt}
+              advisorPlaceholder={utilityRailContext.promptPlaceholder}
               busyAction={busyAction}
               chatSessionCount={chatSessions.length}
               goals={goals}
@@ -1339,10 +1497,12 @@ export function App() {
               onAdvisorPromptChange={setChatPrompt}
               onAskAdvisor={handleAskAdvisorFromRail}
               onOpenAdvisor={handleOpenAdvisorFromRail}
+              onRunAdvisorPrompt={handleRunAdvisorPromptFromRail}
               selectedAccount={selectedAccount}
               selectedProgress={selectedProgress}
               selectedSnapshot={selectedSnapshot}
               selectedSnapshotDelta={snapshotDelta}
+              surfacePrompts={utilityRailContext.prompts}
             />
           )
       }
