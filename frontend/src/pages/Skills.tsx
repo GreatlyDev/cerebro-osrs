@@ -1,9 +1,11 @@
 import { SkillIcon } from "../components/dashboard/skillIcons";
+import { Button } from "../components/ui/Button";
 import type { SkillCatalogItem, SkillRecommendationResponse } from "../types";
 
 type SkillsViewProps = {
   busyAction: string | null;
   filteredSkills: SkillCatalogItem[];
+  onAskAdvisor: (prompt: string) => void;
   onLoadSkill: (skillKey: string) => void;
   selectedAccountRsn: string | null;
   setSkillSearch: (value: string) => void;
@@ -14,6 +16,7 @@ type SkillsViewProps = {
 export function SkillsView({
   busyAction,
   filteredSkills,
+  onAskAdvisor,
   onLoadSkill,
   selectedAccountRsn,
   setSkillSearch,
@@ -36,12 +39,20 @@ export function SkillsView({
               Cerebro&apos;s backend recommendation layer.
             </p>
           </div>
-          <input
-            className="w-full min-w-[18rem] max-w-sm border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
-            onChange={(event) => setSkillSearch(event.target.value)}
-            placeholder="Search skills"
-            value={skillSearch}
-          />
+          <div className="flex w-full flex-col gap-3 xl:max-w-sm">
+            <input
+              className="w-full min-w-[18rem] border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
+              onChange={(event) => setSkillSearch(event.target.value)}
+              placeholder="Search skills"
+              value={skillSearch}
+            />
+            <Button
+              onClick={() => onAskAdvisor("What skill should I train next on this account?")}
+              variant="secondary"
+            >
+              Ask Cerebro about training
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -136,6 +147,19 @@ export function SkillsView({
                       {skillRecommendations.current_level ?? "unknown"}
                     </p>
                   </div>
+                </div>
+                <div className="mt-4">
+                  <Button
+                    className="w-full"
+                    onClick={() =>
+                      onAskAdvisor(
+                        `How should I train ${skillRecommendations.skill} next on this account?`,
+                      )
+                    }
+                    variant="secondary"
+                  >
+                    Ask about this skill lane
+                  </Button>
                 </div>
               </div>
               <div className="grid gap-3">

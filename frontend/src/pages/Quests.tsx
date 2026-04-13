@@ -5,6 +5,7 @@ type QuestsViewProps = {
   busyAction: string | null;
   filteredQuests: QuestSummary[];
   nextActions: NextActionResponse | null;
+  onAskAdvisor: (prompt: string) => void;
   onLoadQuest: (questId: string) => void;
   onOpenSelectedQuest: () => void;
   questSearch: string;
@@ -16,6 +17,7 @@ export function QuestsView({
   busyAction,
   filteredQuests,
   nextActions,
+  onAskAdvisor,
   onLoadQuest,
   onOpenSelectedQuest,
   questSearch,
@@ -40,12 +42,20 @@ export function QuestsView({
               rewards, blockers, and follow-up value.
             </p>
           </div>
-          <input
-            className="w-full min-w-[18rem] max-w-sm border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
-            onChange={(event) => setQuestSearch(event.target.value)}
-            placeholder="Search quests"
-            value={questSearch}
-          />
+          <div className="flex w-full flex-col gap-3 xl:max-w-sm">
+            <input
+              className="w-full min-w-[18rem] border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
+              onChange={(event) => setQuestSearch(event.target.value)}
+              placeholder="Search quests"
+              value={questSearch}
+            />
+            <Button
+              onClick={() => onAskAdvisor("Which quest unlock matters most on this account right now?")}
+              variant="secondary"
+            >
+              Ask Cerebro about unlocks
+            </Button>
+          </div>
         </div>
       </section>
 
@@ -132,6 +142,13 @@ export function QuestsView({
                   <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Why it matters</p>
                   <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{selectedQuest.why_it_matters}</p>
                 </div>
+                <Button
+                  className="w-full"
+                  onClick={() => onAskAdvisor(`How valuable is ${selectedQuest.name} for this account right now?`)}
+                  variant="secondary"
+                >
+                  Ask about this quest
+                </Button>
                 <Button className="w-full" onClick={onOpenSelectedQuest}>
                   Open quest page
                 </Button>

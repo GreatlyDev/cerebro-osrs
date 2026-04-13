@@ -5,6 +5,7 @@ import type { TeleportRouteResponse } from "../types";
 
 type TeleportsViewProps = {
   busyAction: string | null;
+  onAskAdvisor: (prompt: string) => void;
   onLoadTeleport: () => void;
   onOpenDetail: () => void;
   selectedAccountRsn: string | null;
@@ -17,6 +18,7 @@ type TeleportsViewProps = {
 
 export function TeleportsView({
   busyAction,
+  onAskAdvisor,
   onLoadTeleport,
   onOpenDetail,
   selectedAccountRsn,
@@ -66,6 +68,16 @@ export function TeleportsView({
             </select>
             <Button onClick={onLoadTeleport}>
               {busyAction === "teleport" ? "Routing..." : "Find route"}
+            </Button>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={() =>
+                onAskAdvisor(`Is ${teleportDestination} worth unlocking for this account right now?`)
+              }
+              variant="secondary"
+            >
+              Ask Cerebro about this route
             </Button>
           </div>
         </div>
@@ -165,7 +177,18 @@ export function TeleportsView({
           </div>
 
           {teleportRoute ? (
-            <div className="mt-4">
+            <div className="mt-4 space-y-3">
+              <Button
+                className="w-full"
+                onClick={() =>
+                  onAskAdvisor(
+                    `What should I unlock after ${teleportRoute.recommended_route.method} if I want smoother travel?`,
+                  )
+                }
+                variant="secondary"
+              >
+                Ask about follow-up travel value
+              </Button>
               <Button className="w-full" onClick={onOpenDetail} variant="secondary">
                 Open teleport detail page
               </Button>

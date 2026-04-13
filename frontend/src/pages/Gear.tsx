@@ -9,6 +9,7 @@ type GearViewProps = {
   gearCombatStyle: string;
   gearCurrentItems: string;
   gearRecommendations: GearRecommendationResponse | null;
+  onAskAdvisor: (prompt: string) => void;
   onLoadGear: () => void;
   onOpenDetail: () => void;
   selectedAccountRsn: string | null;
@@ -23,6 +24,7 @@ export function GearView({
   gearCombatStyle,
   gearCurrentItems,
   gearRecommendations,
+  onAskAdvisor,
   onLoadGear,
   onOpenDetail,
   selectedAccountRsn,
@@ -75,6 +77,16 @@ export function GearView({
             />
             <Button onClick={onLoadGear}>
               {busyAction === "gear" ? "Loading..." : "Get upgrades"}
+            </Button>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={() =>
+                onAskAdvisor(`What gear upgrade matters most for my ${gearCombatStyle} setup right now?`)
+              }
+              variant="secondary"
+            >
+              Ask Cerebro about this lane
             </Button>
           </div>
         </div>
@@ -174,7 +186,18 @@ export function GearView({
           </div>
 
           {gearRecommendations ? (
-            <div className="mt-4">
+            <div className="mt-4 space-y-3">
+              <Button
+                className="w-full"
+                onClick={() =>
+                  onAskAdvisor(
+                    `What should I prioritize in my ${gearCombatStyle} gear progression after ${gearRecommendations.recommendations[0]?.item_name ?? "this upgrade"}?`,
+                  )
+                }
+                variant="secondary"
+              >
+                Ask about this upgrade path
+              </Button>
               <Button className="w-full" onClick={onOpenDetail} variant="secondary">
                 Open gear detail page
               </Button>

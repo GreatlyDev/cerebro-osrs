@@ -892,6 +892,13 @@ export function App() {
     navigateToView("ask-cerebro");
   }
 
+  function openAdvisorWithPrompt(prompt?: string) {
+    if (prompt) {
+      setChatPrompt(prompt);
+    }
+    navigateToView("ask-cerebro");
+  }
+
   async function handleLoadSkill(skillKey: string, options?: { openPage?: boolean }) {
     setBusyAction(`skill-${skillKey}`);
     setError(null);
@@ -1481,7 +1488,7 @@ export function App() {
             {activeView === "recommendations" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <RecommendationsView
                 nextActions={nextActions}
-                onGoToAdvisor={() => navigateToView("ask-cerebro")}
+                onGoToAdvisor={() => openAdvisorWithPrompt("What should I actually act on first from this recommendation stack?")}
                 onOpenNextAction={handleOpenNextAction}
                 onGoToGoals={() => navigateToView("goals")}
                 selectedAccountRsn={selectedAccountRsn}
@@ -1492,6 +1499,7 @@ export function App() {
               <SkillsView
                 busyAction={busyAction}
                 filteredSkills={filteredSkills}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onLoadSkill={(skillKey) => void handleLoadSkill(skillKey)}
                 selectedAccountRsn={selectedAccountRsn}
                 setSkillSearch={setSkillSearch}
@@ -1505,6 +1513,7 @@ export function App() {
                 busyAction={busyAction}
                 filteredQuests={filteredQuests}
                 nextActions={nextActions}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onLoadQuest={(questId) => void handleLoadQuest(questId)}
                 onOpenSelectedQuest={() => {
                   if (selectedQuest) {
@@ -1543,6 +1552,7 @@ export function App() {
                 gearCombatStyle={gearCombatStyle}
                 gearCurrentItems={gearCurrentItems}
                 gearRecommendations={gearRecommendations}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onLoadGear={handleLoadGear}
                 onOpenDetail={() => navigate("/gear/current")}
                 selectedAccountRsn={selectedAccountRsn}
@@ -1555,6 +1565,7 @@ export function App() {
             {activeView === "teleports" && accountDetailId === null && goalDetailId === null && questDetailId === null && skillDetailKey === null && !gearDetailOpen && !teleportDetailOpen ? (
               <TeleportsView
                 busyAction={busyAction}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onLoadTeleport={handleLoadTeleport}
                 onOpenDetail={() => navigate("/teleports/current")}
                 selectedAccountRsn={selectedAccountRsn}
@@ -1572,7 +1583,7 @@ export function App() {
                 busyAction={busyAction}
                 newAccountRsn={newAccountRsn}
                 onChangeNewAccountRsn={setNewAccountRsn}
-                onGoToAdvisor={() => navigateToView("ask-cerebro")}
+                onGoToAdvisor={() => openAdvisorWithPrompt("How should I tune this profile so Cerebro gives me better advice?")}
                 onQuickstartAccount={handleQuickstartAccount}
                 onSaveProfile={handleSaveProfile}
                 profile={profile}
