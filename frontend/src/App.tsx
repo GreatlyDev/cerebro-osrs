@@ -193,11 +193,18 @@ function getSuggestedGoalTitle(goalType: string, accountRsn: string | null): str
   return `${prefix}Quest Cape Plan`.trim();
 }
 
-function buildChatSessionTitle(prompt: string): string {
+function buildChatSessionTitle(prompt: string, entryContextLabel?: string | null): string {
   const trimmed = prompt.trim().replace(/\s+/g, " ");
   if (!trimmed) {
     return "Cerebro Thread";
   }
+
+  const shortPrompt = trimmed.length > 34 ? `${trimmed.slice(0, 34).trimEnd()}...` : trimmed;
+  if (entryContextLabel) {
+    const shortContext = entryContextLabel.replace(/\broom\b/i, "view").replace(/\s+/g, " ").trim();
+    return `${shortContext} // ${shortPrompt}`;
+  }
+
   return trimmed.length > 42 ? `${trimmed.slice(0, 42).trimEnd()}...` : trimmed;
 }
 
@@ -354,6 +361,7 @@ export function App() {
     return stored ? Number(stored) : null;
   });
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
+  const [chatSessionOrigins, setChatSessionOrigins] = useState<Record<number, string>>({});
   const [chatHistory, setChatHistory] = useState<ChatExchange[]>([]);
   const [selectedChatSessionId, setSelectedChatSessionId] = useState<number | null>(null);
   const [chatReply, setChatReply] = useState("");
@@ -869,8 +877,14 @@ export function App() {
         let session =
           chatSessions.find((item) => item.id === selectedChatSessionId) ?? chatSessions[0];
         if (!session) {
-          session = await api.createChatSession(buildChatSessionTitle(prompt));
+          session = await api.createChatSession(buildChatSessionTitle(prompt, advisorEntryContext?.surfaceLabel));
           setChatSessions((current) => [session, ...current]);
+          if (advisorEntryContext?.surfaceLabel) {
+            setChatSessionOrigins((current) => ({
+              ...current,
+              [session.id]: advisorEntryContext.surfaceLabel,
+            }));
+          }
         }
         setSelectedChatSessionId(session.id);
         const reply = await api.sendChatMessage(session.id, prompt);
@@ -1674,6 +1688,7 @@ export function App() {
                 chatPrompt={chatPrompt}
                 chatReply={chatReply}
                 chatSessions={chatSessions}
+                sessionOrigins={chatSessionOrigins}
                 entryContextLabel={advisorEntryContext?.surfaceLabel ?? null}
                 entryContextPrompt={advisorEntryContext?.suggestedPrompt ?? null}
                 onSelectChatSession={handleSelectChatSession}

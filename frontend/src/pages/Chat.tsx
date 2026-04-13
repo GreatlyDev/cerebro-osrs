@@ -8,6 +8,7 @@ type ChatViewProps = {
   chatPrompt: string;
   chatReply: string;
   chatSessions: ChatSession[];
+  sessionOrigins: Record<number, string>;
   entryContextLabel: string | null;
   entryContextPrompt: string | null;
   onSelectChatSession: (sessionId: number) => void;
@@ -23,6 +24,7 @@ export function ChatView({
   chatPrompt,
   chatReply,
   chatSessions,
+  sessionOrigins,
   entryContextLabel,
   entryContextPrompt,
   onSelectChatSession,
@@ -236,6 +238,13 @@ export function ChatView({
                   <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Started from</p>
                   <p className="mt-2 text-sm leading-7 text-osrs-text-soft">{humanizeEntryContext(entryContextLabel)}</p>
                 </div>
+              ) : selectedSession && sessionOrigins[selectedSession.id] ? (
+                <div>
+                  <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Started from</p>
+                  <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+                    {humanizeEntryContext(sessionOrigins[selectedSession.id])}
+                  </p>
+                </div>
               ) : null}
               <div>
                 <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Best next move</p>
@@ -275,6 +284,11 @@ export function ChatView({
                         {describeSessionIntent(sessionState)}
                       </span>
                     </div>
+                    {sessionOrigins[session.id] ? (
+                      <p className="mt-2 font-mono text-[0.54rem] uppercase tracking-[0.18em] text-osrs-gold/80">
+                        Started from {humanizeEntryContext(sessionOrigins[session.id])}
+                      </p>
+                    ) : null}
                     <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{describeSessionPreview(sessionState)}</p>
                   </button>
                 );
