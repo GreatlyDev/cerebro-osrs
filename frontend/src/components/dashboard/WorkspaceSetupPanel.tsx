@@ -12,6 +12,7 @@ type WorkspaceSetupPanelProps = {
   currentUserName: string;
   goalCount: number;
   newAccountRsn: string;
+  onAskAdvisor: (prompt: string) => void;
   onChangeNewAccountRsn: (value: string) => void;
   onGoToGoals: () => void;
   onGoToProfile: () => void;
@@ -28,6 +29,7 @@ export function WorkspaceSetupPanel({
   currentUserName,
   goalCount,
   newAccountRsn,
+  onAskAdvisor,
   onChangeNewAccountRsn,
   onGoToGoals,
   onGoToProfile,
@@ -124,6 +126,24 @@ export function WorkspaceSetupPanel({
             </div>
             <div className="mt-5 flex flex-wrap gap-3">
               <Button onClick={nextStep.action}>{nextStep.actionLabel}</Button>
+              <Button
+                onClick={() =>
+                  onAskAdvisor(
+                    !hasBaseline
+                      ? "What should I set in my profile first so Cerebro gives better advice?"
+                      : !hasAccount
+                        ? "What account should I link first and why?"
+                        : !hasPrimary
+                          ? "How should I choose the primary account for this workspace?"
+                          : !hasGoal
+                            ? "What first goal would make this workspace most useful?"
+                            : "What should I ask Cerebro first now that the workspace basics are ready?",
+                  )
+                }
+                variant="secondary"
+              >
+                Ask Cerebro for setup help
+              </Button>
               {hasGoal ? (
                 <Button onClick={onGoToGoals} variant="secondary">
                   Open goal planner
@@ -147,6 +167,15 @@ export function WorkspaceSetupPanel({
                 />
                 <Button onClick={onQuickstartAccount}>
                   {busyAction === "quickstart-account" ? "Setting up..." : "Run quick setup"}
+                </Button>
+              </div>
+              <div className="mt-3">
+                <Button
+                  className="w-full"
+                  onClick={() => onAskAdvisor("What kind of account would give this workspace the clearest value first?")}
+                  variant="secondary"
+                >
+                  Ask which account to link first
                 </Button>
               </div>
             </div>

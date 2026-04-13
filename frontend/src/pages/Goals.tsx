@@ -20,6 +20,7 @@ type GoalsViewProps = {
   newGoalTargetRsn: string;
   newGoalTitle: string;
   newGoalType: string;
+  onAskAdvisor: (prompt: string) => void;
   onCreateGoal: () => void;
   onGeneratePlan: (goal: Goal) => void;
   onGoToRecommendations: () => void;
@@ -72,6 +73,7 @@ export function GoalsView({
   newGoalTargetRsn,
   newGoalTitle,
   newGoalType,
+  onAskAdvisor,
   onCreateGoal,
   onGeneratePlan,
   onGoToRecommendations,
@@ -102,6 +104,18 @@ export function GoalsView({
             </p>
           </div>
           <div className="flex flex-wrap gap-2.5">
+            <Button
+              onClick={() =>
+                onAskAdvisor(
+                  goals.length > 0
+                    ? "Which of my goals deserves the most attention right now?"
+                    : "What kind of goal should I create first for this account?",
+                )
+              }
+              variant="secondary"
+            >
+              Ask Cerebro
+            </Button>
             <Button onClick={onGoToRecommendations} variant="secondary">
               Open recommendations
             </Button>
@@ -194,6 +208,19 @@ export function GoalsView({
               {busyAction === "create-goal" ? "Creating..." : "Create goal"}
             </Button>
           </div>
+          <div className="mt-3">
+            <Button
+              className="w-full"
+              onClick={() =>
+                onAskAdvisor(
+                  `What kind of ${newGoalType || "goal"} would make the best first anchor for this workspace?`,
+                )
+              }
+              variant="secondary"
+            >
+              Ask what goal would fit best
+            </Button>
+          </div>
 
           <div className="mt-4 border border-white/8 bg-[#111111] px-4 py-4 text-sm leading-7 text-osrs-text-soft">
             Goal plans feed ranked actions, advisor replies, and account-aware planning. Use one of the common goal
@@ -214,6 +241,15 @@ export function GoalsView({
             {goals.length === 0 ? (
               <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">
                 No goals yet. Create one on the left to turn the rest of Cerebro into a more opinionated planning workspace.
+                <div className="mt-4">
+                  <Button
+                    className="w-full"
+                    onClick={() => onAskAdvisor("What goal would make Cerebro most useful for me right now?")}
+                    variant="secondary"
+                  >
+                    Ask what goal to start with
+                  </Button>
+                </div>
               </div>
             ) : (
               <div className="grid gap-3">
@@ -247,6 +283,12 @@ export function GoalsView({
                         </Button>
                         <Button onClick={() => onGeneratePlan(goal)}>
                           {busyAction === `plan-${goal.id}` ? "Generating..." : "Generate plan"}
+                        </Button>
+                        <Button
+                          onClick={() => onAskAdvisor(`How should I think about ${goal.title} right now?`)}
+                          variant="secondary"
+                        >
+                          Ask Cerebro
                         </Button>
                       </div>
                     </div>
@@ -308,6 +350,17 @@ export function GoalsView({
                     </div>
                   </div>
                 </div>
+                <Button
+                  className="w-full"
+                  onClick={() =>
+                    onAskAdvisor(
+                      `What is the smartest way to act on this ${selectedGoalPlan.summary.toLowerCase()} plan right now?`,
+                    )
+                  }
+                  variant="secondary"
+                >
+                  Ask how to use this plan
+                </Button>
               </div>
             ) : (
               <div className="border border-dashed border-white/10 bg-[#0b0b0b] px-4 py-5 text-sm leading-7 text-osrs-text-soft">

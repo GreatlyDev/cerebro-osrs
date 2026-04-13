@@ -108,6 +108,7 @@ export function DashboardPage(props: DashboardPageProps) {
           currentUserName={currentUser.display_name}
           goalCount={goals.length}
           newAccountRsn={newAccountRsn}
+          onAskAdvisor={onAskAdvisor}
           onChangeNewAccountRsn={onChangeNewAccountRsn}
           onGoToGoals={onGoToGoals}
           onGoToProfile={onGoToProfile}

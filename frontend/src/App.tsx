@@ -1539,6 +1539,7 @@ export function App() {
                 newGoalTargetRsn={newGoalTargetRsn}
                 newGoalTitle={newGoalTitle}
                 newGoalType={newGoalType}
+                onAskAdvisor={openAdvisorWithPrompt}
                 onCreateGoal={handleCreateGoal}
                 onGeneratePlan={handleGeneratePlan}
                 onGoToRecommendations={() => navigateToView("recommendations")}
