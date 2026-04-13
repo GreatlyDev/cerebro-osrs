@@ -207,6 +207,11 @@ type UtilityRailContext = {
   prompts: string[];
 };
 
+type AdvisorEntryContext = {
+  surfaceLabel: string;
+  suggestedPrompt: string | null;
+};
+
 function formatListDraft(value: string[]): string {
   return value.join("\n");
 }
@@ -392,6 +397,7 @@ export function App() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");
+  const [advisorEntryContext, setAdvisorEntryContext] = useState<AdvisorEntryContext | null>(null);
 
   useEffect(() => {
     void initializeApplication();
@@ -890,21 +896,39 @@ export function App() {
   }
 
   function handleAskAdvisorFromRail() {
+    setAdvisorEntryContext({
+      surfaceLabel: utilityRailContext.surfaceLabel,
+      suggestedPrompt: chatPrompt.trim() || (utilityRailContext.prompts[0] ?? null),
+    });
     navigateToView("ask-cerebro");
     void handleRunChatPrompt();
   }
 
   function handleRunAdvisorPromptFromRail(prompt: string) {
+    setAdvisorEntryContext({
+      surfaceLabel: utilityRailContext.surfaceLabel,
+      suggestedPrompt: prompt,
+    });
     setChatPrompt(prompt);
     navigateToView("ask-cerebro");
     void handleRunChatPrompt(prompt);
   }
 
   function handleOpenAdvisorFromRail() {
+    setAdvisorEntryContext({
+      surfaceLabel: utilityRailContext.surfaceLabel,
+      suggestedPrompt: utilityRailContext.prompts[0] ?? null,
+    });
+    setSelectedChatSessionId(null);
     navigateToView("ask-cerebro");
   }
 
   function openAdvisorWithPrompt(prompt?: string) {
+    setAdvisorEntryContext({
+      surfaceLabel: utilityRailContext.surfaceLabel,
+      suggestedPrompt: prompt ?? utilityRailContext.prompts[0] ?? null,
+    });
+    setSelectedChatSessionId(null);
     if (prompt) {
       setChatPrompt(prompt);
     }
@@ -1643,6 +1667,8 @@ export function App() {
                 chatPrompt={chatPrompt}
                 chatReply={chatReply}
                 chatSessions={chatSessions}
+                entryContextLabel={advisorEntryContext?.surfaceLabel ?? null}
+                entryContextPrompt={advisorEntryContext?.suggestedPrompt ?? null}
                 onRunChatPrompt={handleRunChatPrompt}
                 selectedChatSessionId={selectedChatSessionId}
                 setSelectedChatSessionId={setSelectedChatSessionId}

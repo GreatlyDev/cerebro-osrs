@@ -10,6 +10,8 @@ type ChatViewProps = {
   chatPrompt: string;
   chatReply: string;
   chatSessions: ChatSession[];
+  entryContextLabel: string | null;
+  entryContextPrompt: string | null;
   onRunChatPrompt: (promptOverride?: string) => void;
   selectedAccountRsn: string | null;
   selectedChatSessionId: number | null;
@@ -23,6 +25,8 @@ export function ChatView({
   chatPrompt,
   chatReply,
   chatSessions,
+  entryContextLabel,
+  entryContextPrompt,
   onRunChatPrompt,
   selectedAccountRsn,
   selectedChatSessionId,
@@ -31,7 +35,9 @@ export function ChatView({
 }: ChatViewProps) {
   const conversationEndRef = useRef<HTMLDivElement | null>(null);
   const selectedSession =
-    chatSessions.find((session) => session.id === selectedChatSessionId) ?? chatSessions[0] ?? null;
+    selectedChatSessionId === null
+      ? null
+      : chatSessions.find((session) => session.id === selectedChatSessionId) ?? null;
   const sessionState = normalizeSessionState(selectedSession?.session_state);
   const focusLabel = describeSessionFocus(sessionState);
   const intentLabel = describeSessionIntent(sessionState);
@@ -41,7 +47,7 @@ export function ChatView({
   const threadBlockers = readStateStringArray(sessionState, "last_blockers");
   const visibleHistory =
     selectedChatSessionId === null
-      ? chatHistory
+      ? []
       : chatHistory.filter((exchange) => exchange.sessionId === selectedChatSessionId);
   const quickPrompts = buildQuickPrompts(sessionState, selectedAccountRsn);
   const advisorCapabilities = buildAdvisorCapabilities(sessionState);
@@ -95,6 +101,29 @@ export function ChatView({
                     : `Ask about ${threadAccountLabel} and Cerebro will build a grounded OSRS thread from live account context.`}
                 </p>
               </div>
+              {!selectedSession && entryContextLabel ? (
+                <div className="border-b border-white/8 px-5 py-5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Entry context</p>
+                      <p className="mt-3 text-[0.92rem] leading-7 text-osrs-text-soft">
+                        You opened Cerebro from the {entryContextLabel}. Keep the first question anchored there and the
+                        thread will start with better context.
+                      </p>
+                    </div>
+                    {entryContextPrompt ? (
+                      <Button onClick={() => onRunChatPrompt(entryContextPrompt)} variant="secondary">
+                        Use kickoff
+                      </Button>
+                    ) : null}
+                  </div>
+                  {entryContextPrompt ? (
+                    <div className="mt-4 border border-white/8 bg-[#131313] px-4 py-4 text-sm leading-6 text-osrs-text-soft">
+                      {entryContextPrompt}
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
               <div className="max-h-[32rem] min-h-[24rem] space-y-4 overflow-y-auto px-5 py-5">
                 {visibleHistory.length > 0 ? (
                   visibleHistory.map((exchange) => (
