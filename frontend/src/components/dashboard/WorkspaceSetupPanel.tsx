@@ -1,6 +1,4 @@
 import { Button } from "../ui/Button";
-import { Panel } from "../ui/Panel";
-import { SectionHeader } from "../ui/SectionHeader";
 
 type ChecklistItem = {
   title: string;
@@ -82,80 +80,98 @@ export function WorkspaceSetupPanel({
             };
 
   return (
-    <Panel className="space-y-5" tone="soft">
-      <SectionHeader
-        eyebrow="Guided Start"
-        subtitle="A real setup lane for getting from sign-in to a useful planning workspace."
-        title="Finish the basics once and the app gets much smarter"
-      />
+    <section className="space-y-6 border border-white/8 bg-[#101010] px-6 py-6">
+      <div className="flex flex-col gap-6 border-b border-white/8 pb-6 xl:flex-row xl:items-end xl:justify-between">
+        <div className="min-w-0">
+          <p className="font-mono text-[0.62rem] uppercase tracking-[0.38em] text-osrs-text-soft/75">
+            Guided start // Workspace readiness
+          </p>
+          <h2 className="mt-2 max-w-4xl font-display text-[2.3rem] font-black uppercase leading-[0.96] tracking-[0.08em] text-white md:text-[2.8rem]">
+            Finish the basics once and Cerebro gets a lot sharper
+          </h2>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-osrs-text-soft">
+            This lane keeps the first-run setup visible until the workspace is ready for real account-aware planning.
+          </p>
+        </div>
+        <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4 text-right">
+          <p className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Setup progress</p>
+          <strong className="mt-2 block font-display text-[2rem] uppercase text-white">
+            {workspaceProgress}/{totalSteps}
+          </strong>
+        </div>
+      </div>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_20rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_22rem]">
         <div className="space-y-4">
-          <div className="rounded-[18px] border border-osrs-border/70 bg-[linear-gradient(180deg,rgba(60,46,30,0.62),rgba(24,19,15,0.96))] px-5 py-5 shadow-insetPanel">
+          <div className="border border-white/8 bg-[radial-gradient(circle_at_76%_20%,rgba(212,175,55,0.08),transparent_35%),linear-gradient(180deg,#0b0b0b_0%,#0f0f0f_100%)] px-5 py-5">
             <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Current next step</p>
-                <h3 className="mt-2 font-display text-2xl text-osrs-text">{nextStep.title}</h3>
-                <p className="mt-3 max-w-2xl text-sm leading-7 text-osrs-text-soft">{nextStep.body}</p>
+              <div className="max-w-2xl">
+                <p className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Current next step</p>
+                <h3 className="mt-3 font-display text-[1.7rem] font-bold uppercase tracking-[0.05em] text-white">
+                  {nextStep.title}
+                </h3>
+                <p className="mt-3 text-sm leading-7 text-osrs-text-soft">{nextStep.body}</p>
               </div>
-              <div className="rounded-[16px] border border-osrs-border/70 bg-osrs-panel-2/55 px-4 py-3 text-center shadow-insetPanel">
-                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-osrs-gold">Setup</p>
-                <strong className="mt-2 block font-display text-2xl text-osrs-text">
-                  {workspaceProgress}/{totalSteps}
+              <div className="border border-white/8 bg-black/25 px-4 py-3 text-center">
+                <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-osrs-text-soft">Ready</p>
+                <strong className="mt-2 block font-display text-[1.6rem] uppercase text-white">
+                  {Math.round(completion)}%
                 </strong>
               </div>
             </div>
-            <div className="mt-4 h-2.5 overflow-hidden rounded-full border border-osrs-border/60 bg-osrs-stone/40">
-              <div className="h-full rounded-full bg-osrs-progress" style={{ width: `${completion}%` }} />
+            <div className="mt-5 h-[2px] w-full bg-white/8">
+              <div className="h-full bg-osrs-gold" style={{ width: `${completion}%` }} />
             </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Button onClick={nextStep.action}>
-                {nextStep.actionLabel}
-              </Button>
-              {hasGoal ? <Button onClick={onGoToGoals} variant="secondary">Open goal planner</Button> : null}
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button onClick={nextStep.action}>{nextStep.actionLabel}</Button>
+              {hasGoal ? (
+                <Button onClick={onGoToGoals} variant="secondary">
+                  Open goal planner
+                </Button>
+              ) : null}
             </div>
-
-            {!hasAccount ? (
-              <div className="mt-5 rounded-[18px] border border-osrs-border/65 bg-osrs-panel-2/45 px-4 py-4 shadow-insetPanel">
-                <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Fastest way to get moving</p>
-                <p className="mt-3 text-sm leading-7 text-osrs-text-soft">
-                  Add an RSN here and Cerebro will link it, sync it, and make it the primary account in one pass.
-                </p>
-                <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                  <input
-                    className="rounded-[14px] border border-osrs-border/80 bg-[linear-gradient(180deg,rgba(50,40,28,0.34),rgba(18,22,20,0.9))] px-4 py-3 text-sm text-osrs-text shadow-insetPanel outline-none placeholder:text-osrs-text-soft/60 focus:border-osrs-border-light/80"
-                    onChange={(event) => onChangeNewAccountRsn(event.target.value)}
-                    placeholder="Enter your RSN"
-                    value={newAccountRsn}
-                  />
-                  <Button onClick={onQuickstartAccount}>
-                    {busyAction === "quickstart-account" ? "Setting up..." : "Run quick setup"}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
           </div>
+
+          {!hasAccount ? (
+            <div className="border border-white/8 bg-[#0c0c0c] px-5 py-5">
+              <p className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Fastest way to get moving</p>
+              <p className="mt-3 text-sm leading-7 text-osrs-text-soft">
+                Add an RSN here and Cerebro will link it, sync it, and make it the primary account in one pass.
+              </p>
+              <div className="mt-4 grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                <input
+                  className="w-full border border-white/8 bg-[#080808] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
+                  onChange={(event) => onChangeNewAccountRsn(event.target.value)}
+                  placeholder="Enter your RSN"
+                  value={newAccountRsn}
+                />
+                <Button onClick={onQuickstartAccount}>
+                  {busyAction === "quickstart-account" ? "Setting up..." : "Run quick setup"}
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <div className="space-y-3">
-          <div className="rounded-[18px] border border-osrs-border/70 bg-osrs-panel-2/50 px-4 py-4 shadow-insetPanel">
-            <p className="text-[0.68rem] uppercase tracking-[0.18em] text-osrs-gold">Workspace summary</p>
-            <div className="mt-3 grid gap-2 text-sm text-osrs-text-soft">
+          <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+            <p className="font-mono text-[0.56rem] uppercase tracking-[0.22em] text-osrs-gold">Workspace summary</p>
+            <div className="mt-4 grid gap-3 text-sm text-osrs-text-soft">
               <div className="flex items-center justify-between gap-3">
                 <span>Signed in as</span>
-                <strong className="font-display text-base text-osrs-text">{currentUserName}</strong>
+                <strong className="font-display text-base uppercase text-white">{currentUserName}</strong>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Linked accounts</span>
-                <strong className="font-display text-base text-osrs-text">{accountCount}</strong>
+                <strong className="font-display text-base text-white">{accountCount}</strong>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Primary RSN</span>
-                <strong className="font-display text-base text-osrs-text">{primaryAccountRsn ?? "not set"}</strong>
+                <strong className="font-display text-base uppercase text-white">{primaryAccountRsn ?? "not set"}</strong>
               </div>
               <div className="flex items-center justify-between gap-3">
                 <span>Goals</span>
-                <strong className="font-display text-base text-osrs-text">{goalCount}</strong>
+                <strong className="font-display text-base text-white">{goalCount}</strong>
               </div>
             </div>
           </div>
@@ -163,21 +179,23 @@ export function WorkspaceSetupPanel({
           <div className="cerebro-stagger space-y-3">
             {workspaceChecklist.map((item, index) => (
               <div
-                className={`rounded-[18px] border px-4 py-4 shadow-insetPanel ${
+                className={`border px-4 py-4 ${
                   item.done
-                    ? "border-osrs-success/35 bg-osrs-success/10"
+                    ? "border-emerald-700/35 bg-emerald-950/12"
                     : index === workspaceProgress
-                      ? "border-osrs-border-light/70 bg-[linear-gradient(135deg,rgba(200,164,90,0.16),rgba(58,47,38,0.12))]"
-                      : "border-osrs-border/70 bg-osrs-panel-2/45"
+                      ? "border-osrs-gold/35 bg-[rgba(200,164,90,0.08)]"
+                      : "border-white/8 bg-[#0c0c0c]"
                 }`}
                 key={item.title}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <strong className="block text-osrs-text">{item.title}</strong>
+                    <strong className="block font-display text-[1rem] uppercase tracking-[0.04em] text-white">
+                      {item.title}
+                    </strong>
                     <p className="mt-2 text-sm leading-6 text-osrs-text-soft">{item.detail}</p>
                   </div>
-                  <span className="rounded-full border border-osrs-border/70 bg-osrs-panel-2/65 px-2.5 py-1 text-[0.62rem] uppercase tracking-[0.16em] text-osrs-text-soft">
+                  <span className="border border-white/8 bg-black/20 px-2.5 py-1 font-mono text-[0.54rem] uppercase tracking-[0.16em] text-osrs-text-soft">
                     {item.done ? "done" : index === workspaceProgress ? "next" : "pending"}
                   </span>
                 </div>
@@ -186,6 +204,6 @@ export function WorkspaceSetupPanel({
           </div>
         </div>
       </div>
-    </Panel>
+    </section>
   );
 }

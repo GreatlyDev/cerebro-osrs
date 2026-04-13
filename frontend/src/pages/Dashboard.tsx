@@ -10,6 +10,7 @@ import type {
 } from "../types";
 import { HeroPanel } from "../components/dashboard/HeroPanel";
 import { TelemetryBoard } from "../components/dashboard/TelemetryBoard";
+import { WorkspaceSetupPanel } from "../components/dashboard/WorkspaceSetupPanel";
 
 type DashboardPageProps = {
   accountCount: number;
@@ -58,16 +59,25 @@ function formatQuestPoints(selectedProgress: AccountProgress | null) {
 
 export function DashboardPage(props: DashboardPageProps) {
   const {
+    accountCount,
     busyAction,
+    currentUser,
+    goals,
     newAccountRsn,
     onChangeNewAccountRsn,
+    onGoToGoals,
+    onGoToProfile,
     onQuickstartAccount,
+    onQuickstartGoal,
     profile,
     nextActions,
     selectedAccount,
     selectedProgress,
     selectedSnapshot,
+    workspaceChecklist,
+    workspaceProgress,
   } = props;
+  const shouldShowSetupLane = workspaceProgress < workspaceChecklist.length;
 
   return (
     <div className="space-y-8">
@@ -88,6 +98,23 @@ export function DashboardPage(props: DashboardPageProps) {
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
         snapshot={selectedSnapshot}
       />
+      {shouldShowSetupLane ? (
+        <WorkspaceSetupPanel
+          accountCount={accountCount}
+          busyAction={busyAction}
+          currentUserName={currentUser.display_name}
+          goalCount={goals.length}
+          newAccountRsn={newAccountRsn}
+          onChangeNewAccountRsn={onChangeNewAccountRsn}
+          onGoToGoals={onGoToGoals}
+          onGoToProfile={onGoToProfile}
+          onQuickstartAccount={onQuickstartAccount}
+          onQuickstartGoal={onQuickstartGoal}
+          primaryAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
+          workspaceChecklist={workspaceChecklist}
+          workspaceProgress={workspaceProgress}
+        />
+      ) : null}
     </div>
   );
 }
