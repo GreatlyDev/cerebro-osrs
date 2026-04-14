@@ -252,6 +252,36 @@ async def test_chat_can_answer_top_skills_question(client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
+async def test_chat_includes_retrieved_knowledge_for_barrows_readiness(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["retrieval"] = context.retrieval_summary or ""
+        captured["entries"] = getattr(context, "retrieval_entries_summary", "") or ""
+        captured["documents"] = getattr(context, "retrieval_documents_summary", "") or ""
+        return "Barrows looks serviceable, but route comfort and prayer sustain still matter."
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+
+    account_response = await client.post("/api/accounts", json={"rsn": "BarrowsCheck"})
+    await client.post(f"/api/accounts/{account_response.json()['id']}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Barrows Check"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What matters most about Barrows for this account?"},
+    )
+
+    assert response.status_code == 201
+    assert "barrows" in captured["retrieval"].lower()
+    assert "barrows" in captured["entries"].lower()
+    assert "combat progression" in captured["documents"].lower() or "boss readiness" in captured["documents"].lower()
+
+
+@pytest.mark.asyncio
 async def test_chat_can_summarize_account_state(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "AccountRead"})
     account_id = account_response.json()["id"]

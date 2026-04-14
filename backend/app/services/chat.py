@@ -189,6 +189,11 @@ class ChatService:
             account=focus_account,
             include_goal=emphasize_goal,
         )
+        retrieval_packet = knowledge_base_service.retrieve_packet(
+            query=resolved_message,
+            session_intent=session_intent,
+            session_focus_summary=session_focus_summary,
+        )
         ai_response = await assistant_service.generate_chat_reply(
             AssistantChatContext(
                 session_title=session.title,
@@ -205,11 +210,15 @@ class ChatService:
                 goal_summary=self._summarize_goal(latest_goal) if emphasize_goal else None,
                 session_focus_summary=session_focus_summary,
                 session_intent_summary=self._summarize_session_intent(session_intent=session_intent),
-                retrieval_summary=knowledge_base_service.retrieve(
-                    query=resolved_message,
-                    session_intent=session_intent,
-                    session_focus_summary=session_focus_summary,
-                ),
+                retrieval_summary=retrieval_packet.summary,
+                retrieval_entries_summary="\n".join(
+                    f"- {entry.canonical_name}: {entry.summary}" for entry in retrieval_packet.entries
+                )
+                or None,
+                retrieval_documents_summary="\n".join(
+                    f"- {document.title}: {document.summary}" for document in retrieval_packet.documents
+                )
+                or None,
             )
         )
         return (ai_response or structured_response), self._merge_session_state(

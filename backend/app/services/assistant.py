@@ -23,6 +23,8 @@ class AssistantChatContext:
     session_focus_summary: str | None = None
     session_intent_summary: str | None = None
     retrieval_summary: str | None = None
+    retrieval_entries_summary: str | None = None
+    retrieval_documents_summary: str | None = None
 
 
 class AssistantService:
@@ -75,6 +77,8 @@ class AssistantService:
             f"Recent sync delta: {context.snapshot_delta_summary or 'No snapshot delta available yet.'}",
             f"Session focus: {context.session_focus_summary or 'No strong session focus inferred yet.'}",
             f"Session intent: {context.session_intent_summary or 'No strong session intent inferred yet.'}",
+            f"Retrieved OSRS entry context: {context.retrieval_entries_summary or 'No structured entry matches.'}",
+            f"Retrieved OSRS supporting context: {context.retrieval_documents_summary or 'No supporting documents retrieved.'}",
             f"Retrieved OSRS reference context: {context.retrieval_summary or 'No extra reference context retrieved for this question.'}",
             f"Recent chat history:\n{recent_history}",
             f"Structured fallback answer:\n{context.structured_fallback}",
