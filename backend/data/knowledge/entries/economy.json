@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "money-midgame-consistency",
+      "canonical_name": "Midgame consistency money",
+      "entry_type": "money_maker",
+      "domain": "economy",
+      "aliases": ["money maker", "profit route", "consistent gp"],
+      "summary": "A good money-making recommendation should balance raw GP, unlock burden, repeatability, and routine fit.",
+      "prerequisites": ["Access to the activity", "Comfort repeating it cleanly"],
+      "benefits": ["Stable GP", "Builds repeatable account rhythm"],
+      "tradeoffs": ["Highest GP is not always the best early recommendation"],
+      "related_entries": ["skill-high-alchemy", "boss-barrows"],
+      "retrieval_tags": ["money", "profit", "money maker", "gp", "weekend"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.9,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
+    }
+  ]
+}

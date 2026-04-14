@@ -1,0 +1,22 @@
+{
+  "entries": [
+    {
+      "id": "skill-high-alchemy",
+      "canonical_name": "High Alchemy",
+      "entry_type": "skill_method",
+      "domain": "skilling",
+      "aliases": ["high alchemy", "alching", "train magic"],
+      "summary": "Low-attention magic training method that trades top-end efficiency for routine-friendly progress.",
+      "prerequisites": ["Magic level for the spell", "Alchemy items or tolerant budget"],
+      "benefits": ["Routine-friendly magic XP", "Works well with low attention"],
+      "tradeoffs": ["Lower peak XP than sweaty methods", "Can lose money"],
+      "related_entries": ["money-midgame-consistency"],
+      "retrieval_tags": ["magic", "training", "afk", "low attention", "high alchemy"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.92,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
+    }
+  ]
+}

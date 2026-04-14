@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {
+      "id": "boss-barrows",
+      "canonical_name": "Barrows",
+      "entry_type": "boss_profile",
+      "domain": "combat",
+      "aliases": ["barrows", "barrows brothers"],
+      "summary": "Midgame repeatable combat activity that combines route comfort, prayer sustain, and profitable chest rewards.",
+      "prerequisites": ["Prayer sustain", "Travel coverage", "Reliable combat style"],
+      "benefits": ["Midgame profit", "Gear progression", "Bossing routine confidence"],
+      "tradeoffs": ["Travel friction without teleports", "Prayer drain can feel annoying early"],
+      "related_entries": ["travel-barrows", "gear-midgame-magic-upgrades"],
+      "retrieval_tags": ["barrows", "boss", "bossing", "midgame", "profit"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.94,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
+    },
+    {
+      "id": "boss-fight-caves",
+      "canonical_name": "Fight Caves",
+      "entry_type": "boss_profile",
+      "domain": "combat",
+      "aliases": ["fight caves", "jad", "fire cape"],
+      "summary": "Preparation-heavy combat challenge where route calm, prayer sustain, and ranged consistency matter more than one single stat breakpoint.",
+      "prerequisites": ["Ranged consistency", "Prayer sustain", "Supply confidence"],
+      "benefits": ["Fire Cape", "Combat confidence", "Prestige unlock"],
+      "tradeoffs": ["Long attempt time", "Execution pressure at Jad"],
+      "related_entries": ["gear-midgame-ranged-upgrades"],
+      "retrieval_tags": ["fight caves", "jad", "fire cape", "bossing"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.94,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
+    }
+  ]
+}

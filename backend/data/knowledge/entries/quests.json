@@ -1,0 +1,40 @@
+{
+  "entries": [
+    {
+      "id": "unlock-bone-voyage",
+      "canonical_name": "Bone Voyage",
+      "entry_type": "unlock",
+      "domain": "quests",
+      "aliases": ["bone voyage", "fossil island access"],
+      "summary": "High-value unlock quest for Fossil Island access and broader skilling and utility progression.",
+      "prerequisites": ["Digsite progress", "100 museum kudos"],
+      "benefits": ["Fossil Island access", "Important utility progression"],
+      "tradeoffs": ["Requires museum and quest setup"],
+      "related_entries": ["travel-fossil-island"],
+      "retrieval_tags": ["quest", "unlock", "bone voyage", "fossil island", "utility"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.95,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
+    },
+    {
+      "id": "quest-recipe-for-disaster",
+      "canonical_name": "Recipe for Disaster",
+      "entry_type": "quest_chain",
+      "domain": "quests",
+      "aliases": ["recipe for disaster", "rfd", "barrows gloves"],
+      "summary": "Major quest chain that anchors midgame progression through Barrows gloves and broad prerequisite cleanup.",
+      "prerequisites": ["Prerequisite quests", "Mixed skill checks"],
+      "benefits": ["Barrows gloves", "Strong midgame progression leverage"],
+      "tradeoffs": ["Long chain", "Mixed requirements"],
+      "related_entries": ["unlock-bone-voyage"],
+      "retrieval_tags": ["quest", "unlock", "recipe for disaster", "barrows gloves"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.95,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
+    }
+  ]
+}

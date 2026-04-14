@@ -1,4 +1,5 @@
 from app.services.knowledge_models import KnowledgeDocument, KnowledgeEntry
+from app.services.knowledge_base import knowledge_base_service
 
 
 def test_knowledge_entry_accepts_balanced_launch_fields() -> None:
@@ -34,3 +35,16 @@ def test_knowledge_entry_accepts_balanced_launch_fields() -> None:
     assert entry.entry_type == "unlock"
     assert "travel" in entry.retrieval_tags
     assert document.domain == "quests"
+
+
+def test_retrieve_returns_structured_entries_and_docs_for_barrows_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="Am I ready for Barrows and what matters most?",
+        session_intent="bossing",
+        session_focus_summary="Barrows prep for a midgame account",
+    )
+
+    assert packet.entries
+    assert packet.documents
+    assert any(entry.canonical_name == "Barrows" for entry in packet.entries)
+    assert any("barrows" in doc.title.lower() or "combat" in doc.title.lower() for doc in packet.documents)
