@@ -1,5 +1,9 @@
+import pytest
+
 from app.services.knowledge_models import KnowledgeDocument, KnowledgeEntry
 from app.services.knowledge_base import knowledge_base_service
+from app.services.knowledge_store import KnowledgeStore
+from app.services.knowledge_models import KnowledgeCorpus
 
 
 def test_knowledge_entry_accepts_balanced_launch_fields() -> None:
@@ -58,3 +62,43 @@ def test_retrieve_matches_slayer_unlock_entry_for_slayer_question() -> None:
     )
 
     assert any("slayer" in entry.canonical_name.lower() for entry in packet.entries)
+
+
+def test_store_exposes_staged_entries_separately() -> None:
+    store = KnowledgeStore(
+        KnowledgeCorpus(
+            entries=[
+                KnowledgeEntry(
+                    id="canonical-entry",
+                    canonical_name="Canonical unlock",
+                    entry_type="unlock",
+                    domain="quests",
+                    summary="Trusted knowledge.",
+                    status="canonical",
+                ),
+                KnowledgeEntry(
+                    id="staged-entry",
+                    canonical_name="Staged unlock",
+                    entry_type="unlock",
+                    domain="quests",
+                    summary="Draft knowledge.",
+                    status="staged",
+                ),
+            ]
+        )
+    )
+
+    assert [entry.canonical_name for entry in store.canonical_entries()] == ["Canonical unlock"]
+    assert [entry.canonical_name for entry in store.staged_entries()] == ["Staged unlock"]
+
+
+def test_loader_rejects_invalid_status() -> None:
+    with pytest.raises(Exception):
+        KnowledgeEntry(
+            id="bad-entry",
+            canonical_name="Bad Entry",
+            entry_type="unlock",
+            domain="quests",
+            summary="bad",
+            status="broken",
+        )
