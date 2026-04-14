@@ -282,6 +282,32 @@ async def test_chat_includes_retrieved_knowledge_for_barrows_readiness(
 
 
 @pytest.mark.asyncio
+async def test_chat_uses_balanced_launch_knowledge_for_slayer_unlock_question(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["entries"] = getattr(context, "retrieval_entries_summary", "") or ""
+        return "Your next Slayer unlock should improve task value or convenience."
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+
+    account_response = await client.post("/api/accounts", json={"rsn": "UnlockPath"})
+    await client.post(f"/api/accounts/{account_response.json()['id']}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Unlock Brain"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What slayer unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    assert "slayer" in captured["entries"].lower()
+
+
+@pytest.mark.asyncio
 async def test_chat_can_summarize_account_state(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "AccountRead"})
     account_id = account_response.json()["id"]

@@ -35,6 +35,42 @@
       "confidence": 0.94,
       "last_reviewed_at": "2026-04-13",
       "change_note": "Launch corpus"
+    },
+    {
+      "id": "combat-slayer-unlocks",
+      "canonical_name": "Slayer unlock planning",
+      "entry_type": "unlock",
+      "domain": "combat",
+      "aliases": ["slayer unlock", "slayer reward unlock", "slayer reward"],
+      "summary": "The best Slayer unlocks usually improve task value, convenience, or future profit instead of cosmetic or narrow upgrades.",
+      "prerequisites": ["Slayer points", "Basic task routine"],
+      "benefits": ["Better task leverage", "Improved convenience", "Stronger long-term profit and utility"],
+      "tradeoffs": ["Points spent here delay other unlocks", "Niche unlocks can trap value early"],
+      "related_entries": ["boss-barrows"],
+      "retrieval_tags": ["slayer", "unlock", "slayer points", "utility", "profit"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.95,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
+    },
+    {
+      "id": "gear-midgame-magic-upgrades",
+      "canonical_name": "Midgame magic upgrade path",
+      "entry_type": "gear_progression",
+      "domain": "combat",
+      "aliases": ["magic gear upgrade", "ahrim upgrade", "midgame magic gear"],
+      "summary": "Midgame magic upgrades should be judged by accuracy, route comfort, and whether they support repeatable bossing or Slayer routines.",
+      "prerequisites": ["Budget", "Existing magic setup"],
+      "benefits": ["More reliable mage damage", "Better bossing and Slayer comfort"],
+      "tradeoffs": ["Can be expensive relative to broader account unlocks"],
+      "related_entries": ["boss-barrows", "combat-slayer-unlocks"],
+      "retrieval_tags": ["magic", "gear", "upgrade", "ahrim", "slayer"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.9,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
     }
   ]
 }

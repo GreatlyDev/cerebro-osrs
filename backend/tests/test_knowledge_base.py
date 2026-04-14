@@ -48,3 +48,13 @@ def test_retrieve_returns_structured_entries_and_docs_for_barrows_question() -> 
     assert packet.documents
     assert any(entry.canonical_name == "Barrows" for entry in packet.entries)
     assert any("barrows" in doc.title.lower() or "combat" in doc.title.lower() for doc in packet.documents)
+
+
+def test_retrieve_matches_slayer_unlock_entry_for_slayer_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="What slayer unlock should I push next?",
+        session_intent="progression",
+        session_focus_summary="Slayer utility planning",
+    )
+
+    assert any("slayer" in entry.canonical_name.lower() for entry in packet.entries)

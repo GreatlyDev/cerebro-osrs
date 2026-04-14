@@ -2,7 +2,43 @@ from app.services.knowledge_models import KnowledgeDocument, KnowledgeEntry
 
 
 def _tokenize(text: str) -> list[str]:
-    return [token for token in text.lower().replace("?", " ").replace(",", " ").split() if token]
+    stopwords = {
+        "a",
+        "am",
+        "an",
+        "and",
+        "are",
+        "at",
+        "for",
+        "how",
+        "i",
+        "if",
+        "is",
+        "it",
+        "most",
+        "next",
+        "of",
+        "on",
+        "or",
+        "should",
+        "the",
+        "this",
+        "to",
+        "what",
+    }
+    normalized = (
+        text.lower()
+        .replace("?", " ")
+        .replace(",", " ")
+        .replace(".", " ")
+        .replace("!", " ")
+        .replace("/", " ")
+    )
+    return [
+        token
+        for token in normalized.split()
+        if token and len(token) > 2 and token not in stopwords
+    ]
 
 
 def score_entry(entry: KnowledgeEntry, normalized_query: str) -> int:

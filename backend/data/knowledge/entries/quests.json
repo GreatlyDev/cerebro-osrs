@@ -35,6 +35,24 @@
       "confidence": 0.95,
       "last_reviewed_at": "2026-04-13",
       "change_note": "Launch corpus"
+    },
+    {
+      "id": "utility-achievement-diaries",
+      "canonical_name": "Achievement diary utility",
+      "entry_type": "travel_utility",
+      "domain": "quests",
+      "aliases": ["achievement diaries", "diary utility", "diary unlocks"],
+      "summary": "Diary rewards matter most when they reduce repeat friction through travel, routine convenience, and repeatable quality-of-life gains.",
+      "prerequisites": ["Relevant area progression", "Skill and quest thresholds"],
+      "benefits": ["Travel savings", "Routine convenience", "Long-term account smoothness"],
+      "tradeoffs": ["Can spread effort across multiple requirements"],
+      "related_entries": ["unlock-bone-voyage"],
+      "retrieval_tags": ["diary", "achievement diary", "utility", "travel", "convenience"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.91,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
     }
   ]
 }

@@ -17,6 +17,24 @@
       "confidence": 0.92,
       "last_reviewed_at": "2026-04-13",
       "change_note": "Launch corpus"
+    },
+    {
+      "id": "skill-birdhouse-runs",
+      "canonical_name": "Birdhouse runs",
+      "entry_type": "skill_method",
+      "domain": "skilling",
+      "aliases": ["birdhouse", "birdhouses", "hunter run"],
+      "summary": "Low-friction Hunter progression loop that compounds well through routine play and utility-focused account growth.",
+      "prerequisites": ["Fossil Island access", "Birdhouse supplies"],
+      "benefits": ["Routine Hunter XP", "Easy repeatable progression", "Pairs well with casual sessions"],
+      "tradeoffs": ["Requires unlock/setup first", "Not a long continuous play activity"],
+      "related_entries": ["unlock-bone-voyage"],
+      "retrieval_tags": ["hunter", "birdhouse", "routine", "casual", "fossil island"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.93,
+      "last_reviewed_at": "2026-04-13",
+      "change_note": "Launch corpus"
     }
   ]
 }
