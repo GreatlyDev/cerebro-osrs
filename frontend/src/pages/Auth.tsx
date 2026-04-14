@@ -81,7 +81,7 @@ export function AuthView(props: AuthViewProps) {
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_17rem]">
-              <div className="space-y-5">
+              <div className="space-y-6">
                 <div className="inline-flex border border-osrs-gold/80 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.24em] text-osrs-gold">
                   {isRegister ? "Create workspace" : "Access workspace"}
                 </div>
@@ -91,6 +91,20 @@ export function AuthView(props: AuthViewProps) {
                 <p className="max-w-2xl text-[0.98rem] leading-8 text-osrs-text-soft">
                   Keep linked accounts, advisor sessions, goals, and telemetry in one grounded OSRS workspace. The same identity follows your planning context instead of resetting every visit.
                 </p>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="border border-white/8 bg-[#101010] px-4 py-4">
+                    <p className="font-mono text-[0.54rem] uppercase tracking-[0.2em] text-osrs-text-soft">Account telemetry</p>
+                    <p className="mt-2 text-sm leading-6 text-osrs-text-soft">Keep RSNs, sync state, and the live account read in one place.</p>
+                  </div>
+                  <div className="border border-white/8 bg-[#101010] px-4 py-4">
+                    <p className="font-mono text-[0.54rem] uppercase tracking-[0.2em] text-osrs-text-soft">Cerebro threads</p>
+                    <p className="mt-2 text-sm leading-6 text-osrs-text-soft">Advisor history stays tied to the workspace instead of acting like a disposable chat box.</p>
+                  </div>
+                  <div className="border border-white/8 bg-[#101010] px-4 py-4">
+                    <p className="font-mono text-[0.54rem] uppercase tracking-[0.2em] text-osrs-text-soft">Planning state</p>
+                    <p className="mt-2 text-sm leading-6 text-osrs-text-soft">Goals, profile tuning, and recommendations all carry over naturally.</p>
+                  </div>
+                </div>
               </div>
 
               <div className="space-y-4 border border-white/8 bg-[#101010] p-4">
@@ -170,18 +184,21 @@ export function AuthView(props: AuthViewProps) {
               ) : null}
 
               <div className="space-y-3">
+                <label className="font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-text-soft">Email</label>
                 <input
                   className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
                   onChange={(event) => props.setLoginEmail(event.target.value)}
                   placeholder="Email address"
                   value={props.loginEmail}
                 />
+                <label className="font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-text-soft">Display name</label>
                 <input
                   className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
                   onChange={(event) => props.setLoginDisplayName(event.target.value)}
                   placeholder={isRegister ? "Display name" : "Display name (optional)"}
                   value={props.loginDisplayName}
                 />
+                <label className="font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-text-soft">Password</label>
                 <input
                   className="w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40"
                   onChange={(event) => props.setLoginPassword(event.target.value)}

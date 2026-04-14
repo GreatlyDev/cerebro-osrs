@@ -54,24 +54,29 @@ export function TelemetryBoard({
     : "WORKSPACE // TELEMETRY STANDBY";
 
   return (
-    <section className="space-y-12">
-      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.45fr)_22rem]">
+    <section className="space-y-10">
+      <div className="grid gap-8 xl:grid-cols-[minmax(0,1.5fr)_23rem]">
         <div className="border border-white/8 bg-[radial-gradient(circle_at_78%_24%,rgba(212,175,55,0.08),transparent_34%),linear-gradient(180deg,#050505_0%,#090909_100%)] px-10 py-10">
-          <div className="relative min-h-[29rem] overflow-hidden border border-white/8 bg-[linear-gradient(90deg,rgba(0,0,0,0.95),rgba(0,0,0,0.55)),radial-gradient(circle_at_74%_32%,rgba(212,175,55,0.1),transparent_46%)] px-10 py-10">
+          <div className="relative min-h-[29rem] overflow-hidden border border-white/8 bg-[linear-gradient(90deg,rgba(0,0,0,0.95),rgba(0,0,0,0.55)),radial-gradient(circle_at_74%_32%,rgba(212,175,55,0.1),transparent_46%)] px-8 py-8">
             <div className="grid h-full gap-8 xl:grid-cols-[minmax(0,1.1fr)_18rem]">
               <div className="flex h-full flex-col justify-between">
                 <div>
-                  <span className="inline-flex border border-osrs-gold/85 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.24em] text-osrs-gold">
-                    Critical movement
-                  </span>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="inline-flex border border-osrs-gold/85 px-3 py-1 font-mono text-[0.62rem] uppercase tracking-[0.24em] text-osrs-gold">
+                      Critical movement
+                    </span>
+                    <span className="inline-flex border border-white/8 bg-black/25 px-3 py-1 font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                      {topAction?.action_type ?? "workspace read"}
+                    </span>
+                  </div>
                 </div>
                 <div className="space-y-5">
-                  <h2 className="max-w-3xl font-display text-[3.4rem] font-black uppercase leading-[0.94] tracking-[0.02em] text-white md:text-[4.4rem]">
+                  <h2 className="max-w-3xl font-display text-[3.1rem] font-black uppercase leading-[0.92] tracking-[0.02em] text-white md:text-[4.1rem]">
                     {featuredTitle}
                   </h2>
                   <p className="max-w-2xl text-[0.96rem] leading-7 text-osrs-text-soft">{featuredSummary}</p>
                   <p className="font-mono text-[0.78rem] uppercase tracking-[0.12em] text-osrs-gold">{featuredMeta}</p>
-                  <div className="pt-1">
+                  <div className="grid gap-3 sm:grid-cols-[auto_auto]">
                     <Button
                       onClick={() =>
                         onAskAdvisor(
@@ -84,6 +89,14 @@ export function TelemetryBoard({
                     >
                       Ask Cerebro why this matters
                     </Button>
+                    {selectedAccountRsn ? (
+                      <Button
+                        onClick={() => onAskAdvisor(`What should ${selectedAccountRsn} actually focus on after ${topAction?.title ?? "this"}?`)}
+                        variant="ghost"
+                      >
+                        Ask what comes after
+                      </Button>
+                    ) : null}
                   </div>
                   <div className="grid gap-3 pt-2 sm:grid-cols-3">
                     <div className="border border-white/8 bg-black/30 px-4 py-3">
@@ -111,18 +124,18 @@ export function TelemetryBoard({
               <div className="flex h-full flex-col justify-between gap-4">
                 <div className="flex flex-1 items-center justify-center border border-white/8 bg-[radial-gradient(circle_at_50%_26%,rgba(212,175,55,0.18),transparent_38%),linear-gradient(180deg,#111111_0%,#090909_100%)] p-6">
                   {topAction ? (
-                    <RecommendationThumb action={topAction} className="h-48 w-48" />
+                    <RecommendationThumb action={topAction} className="h-52 w-52" />
                   ) : topSkill ? (
-                    <div className="flex h-48 w-48 items-center justify-center border border-white/8 bg-[#121212]">
-                      <SkillIcon className="h-36 w-36 object-cover" skill={topSkill.skill} />
+                    <div className="flex h-52 w-52 items-center justify-center border border-white/8 bg-[#121212]">
+                      <SkillIcon className="h-40 w-40 object-cover" skill={topSkill.skill} />
                     </div>
                   ) : (
-                    <div className="flex h-48 w-48 items-center justify-center border border-dashed border-white/10 bg-[#111111] font-mono text-[0.62rem] uppercase tracking-[0.2em] text-osrs-text-soft">
+                    <div className="flex h-52 w-52 items-center justify-center border border-dashed border-white/10 bg-[#111111] font-mono text-[0.62rem] uppercase tracking-[0.2em] text-osrs-text-soft">
                       Awaiting feed
                     </div>
                   )}
                 </div>
-                <div className="space-y-3">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
                   <div className="border border-white/8 bg-black/30 px-4 py-3">
                     <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Combat</p>
                     <p className="mt-2 font-display text-[1.35rem] font-bold uppercase text-white">
@@ -133,6 +146,12 @@ export function TelemetryBoard({
                     <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Total</p>
                     <p className="mt-2 font-display text-[1.35rem] font-bold uppercase text-white">
                       {snapshot?.summary.overall_level ?? "--"}
+                    </p>
+                  </div>
+                  <div className="border border-white/8 bg-black/30 px-4 py-3">
+                    <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Unlock threads</p>
+                    <p className="mt-2 font-display text-[1.35rem] font-bold uppercase text-white">
+                      {progress?.active_unlocks.length ?? 0}
                     </p>
                   </div>
                 </div>

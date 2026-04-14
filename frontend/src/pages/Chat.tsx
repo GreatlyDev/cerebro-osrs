@@ -84,6 +84,16 @@ export function ChatView({
             <h1 className="mt-2 max-w-4xl font-display text-[3rem] font-black uppercase tracking-[0.12em] text-white md:text-[4.1rem]">
               Cerebro intelligence
             </h1>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <span className="inline-flex border border-white/8 bg-[#101010] px-3 py-2 font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                {selectedSession ? "Live thread" : "Fresh kickoff"}
+              </span>
+              {(activeEntryContextLabel ?? sessionOrigins[selectedSession?.id ?? -1]) ? (
+                <span className="inline-flex border border-white/8 bg-[#101010] px-3 py-2 font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-gold-soft">
+                  Started from {humanizeEntryContext(activeEntryContextLabel ?? sessionOrigins[selectedSession?.id ?? -1] ?? "")}
+                </span>
+              ) : null}
+            </div>
           </div>
           <div className="flex gap-8 xl:gap-10">
             <div className="text-right">
@@ -163,22 +173,38 @@ export function ChatView({
                 <div ref={conversationEndRef} />
               </div>
               <div className="border-t border-white/8 px-5 py-5">
-                <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-                  <input
-                    className="w-full border-0 bg-transparent px-0 py-0 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55"
-                    onChange={(event) => setChatPrompt(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        onRunChatPrompt();
-                      }
-                    }}
-                    placeholder="Ask Cerebro about this account..."
-                    value={chatPrompt}
-                  />
-                  <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>
-                    {busyAction === "chat" ? "Thinking..." : "Ask Cerebro"}
-                  </Button>
+                <div className="rounded-[10px] border border-white/8 bg-[#0c0c0c] px-4 py-4">
+                  <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <input
+                      className="w-full border-0 bg-transparent px-0 py-0 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55"
+                      onChange={(event) => setChatPrompt(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          onRunChatPrompt();
+                        }
+                      }}
+                      placeholder="Ask Cerebro about this account..."
+                      value={chatPrompt}
+                    />
+                    <Button className="md:min-w-[12rem]" onClick={() => onRunChatPrompt()}>
+                      {busyAction === "chat" ? "Thinking..." : "Ask Cerebro"}
+                    </Button>
+                  </div>
+                  {entryContextPrompts.length > 0 ? (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {entryContextPrompts.slice(0, 3).map((prompt) => (
+                        <button
+                          className="border border-white/8 bg-[#131313] px-3 py-2 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
+                          key={prompt}
+                          onClick={() => onRunChatPrompt(prompt)}
+                          type="button"
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -189,7 +215,7 @@ export function ChatView({
               <p className="font-display text-[0.82rem] font-semibold uppercase tracking-[0.3em] text-white">Prompt lanes</p>
               <div className="h-px flex-1 bg-white/8" />
             </div>
-            <div className="grid gap-4 xl:grid-cols-3">
+            <div className="grid gap-4 xl:grid-cols-2">
               {advisorCapabilities.map((capability) => (
                 <div className="border border-white/8 bg-[#101010] p-4" key={capability.title}>
                   <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">{capability.eyebrow}</p>

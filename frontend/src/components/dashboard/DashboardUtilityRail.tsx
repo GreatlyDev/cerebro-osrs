@@ -75,7 +75,7 @@ export function DashboardUtilityRail({
   const advisorMessage = buildAdvisorMessage(nextActions, selectedSnapshotDelta, selectedProgress);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <section className="border border-white/8 bg-[#101010]">
         <div className="flex items-center gap-3 border-b border-white/8 px-5 py-4">
           <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
@@ -118,19 +118,30 @@ export function DashboardUtilityRail({
               </div>
             ) : null}
           </div>
-          <div className="px-5 py-5">
-            <input
-              className="w-full border-0 bg-transparent px-0 py-0 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55"
-              onChange={(event) => onAdvisorPromptChange(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  event.preventDefault();
-                  onAskAdvisor();
-                }
-              }}
-              placeholder={advisorPlaceholder}
-              value={advisorPrompt}
-            />
+          <div className="space-y-4 px-5 py-5">
+            <div className="rounded-[10px] border border-white/8 bg-[#0c0c0c] px-4 py-4">
+              <p className="font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-gold">Ask from here</p>
+              <div className="mt-3 grid gap-3">
+                <input
+                  className="w-full border-0 bg-transparent px-0 py-0 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55"
+                  onChange={(event) => onAdvisorPromptChange(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      onAskAdvisor();
+                    }
+                  }}
+                  placeholder={advisorPlaceholder}
+                  value={advisorPrompt}
+                />
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <Button onClick={onAskAdvisor}>{busyAction === "chat" ? "Thinking..." : "Ask Cerebro"}</Button>
+                  <Button onClick={onOpenAdvisor} variant="secondary">
+                    Open full advisor
+                  </Button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -143,12 +154,24 @@ export function DashboardUtilityRail({
         <div className="space-y-3">
           {recommendationCards.length > 0 ? (
             recommendationCards.map((action) => (
-              <div key={`${action.action_type}-${action.title}`} className="flex items-center gap-3 border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45">
-                <RecommendationThumb action={action} className="h-24 w-24 shrink-0" />
-                <div className="min-w-0">
-                  <p className="font-display text-[0.95rem] font-bold uppercase leading-tight tracking-[0.05em] text-white">{action.title}</p>
-                  <p className="mt-1 text-[0.76rem] leading-6 text-osrs-text-soft">{action.summary}</p>
+              <div
+                key={`${action.action_type}-${action.title}`}
+                className="border border-white/8 bg-[#101010] px-4 py-4 transition-transform duration-200 hover:translate-x-1 hover:border-osrs-gold/45"
+              >
+                <div className="flex items-center gap-3">
+                  <RecommendationThumb action={action} className="h-20 w-20 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-display text-[0.92rem] font-bold uppercase leading-tight tracking-[0.05em] text-white">{action.title}</p>
+                    <p className="mt-1 text-[0.76rem] leading-6 text-osrs-text-soft">{action.summary}</p>
+                  </div>
                 </div>
+                <button
+                  className="mt-3 w-full border border-white/8 bg-[#131313] px-3 py-3 text-left text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
+                  onClick={() => onRunAdvisorPrompt(`Why should I do ${action.title} before the other recommendations?`)}
+                  type="button"
+                >
+                  Ask why this ranks highly
+                </button>
               </div>
             ))
           ) : (
@@ -159,15 +182,12 @@ export function DashboardUtilityRail({
         </div>
       </section>
 
-      <div className="grid gap-2">
-        <Button onClick={onAskAdvisor}>{busyAction === "chat" ? "Thinking..." : "Ask Cerebro"}</Button>
-        <Button onClick={onOpenAdvisor} variant="secondary">
-          Open full advisor
-        </Button>
-      </div>
-
       <section className="border border-white/8 bg-[#101010] px-5 py-5">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex items-center gap-4">
+          <p className="font-display text-[0.82rem] font-semibold uppercase tracking-[0.3em] text-white">Workspace pulse</p>
+          <div className="h-px flex-1 bg-white/8" />
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="border border-white/8 bg-[#0c0c0c] px-3 py-3">
             <p className="font-mono text-[0.52rem] uppercase tracking-[0.18em] text-osrs-text-soft">Account</p>
             <strong className="mt-2 block font-display text-[0.95rem] uppercase text-white">{selectedAccount?.rsn ?? "none"}</strong>
@@ -186,6 +206,30 @@ export function DashboardUtilityRail({
             <p className="font-mono text-[0.52rem] uppercase tracking-[0.18em] text-osrs-text-soft">Unlocks</p>
             <strong className="mt-2 block font-display text-[0.95rem] text-white">{selectedProgress?.active_unlocks.length ?? 0}</strong>
           </div>
+        </div>
+      </section>
+
+      <section className="border border-white/8 bg-[#101010] px-5 py-5">
+        <div className="flex items-center gap-4">
+          <p className="font-display text-[0.82rem] font-semibold uppercase tracking-[0.3em] text-white">Good asks here</p>
+          <div className="h-px flex-1 bg-white/8" />
+        </div>
+        <div className="mt-4 grid gap-2">
+          {surfacePrompts.slice(0, 4).map((prompt) => (
+            <button
+              className="border border-white/8 bg-[#131313] px-3 py-3 text-left text-sm leading-6 text-osrs-text-soft transition-colors hover:border-osrs-gold/45 hover:text-white"
+              key={prompt}
+              onClick={() => onRunAdvisorPrompt(prompt)}
+              type="button"
+            >
+              {prompt}
+            </button>
+          ))}
+          {surfacePrompts.length === 0 ? (
+            <div className="border border-dashed border-white/10 bg-[#0c0c0c] px-3 py-3 text-sm leading-6 text-osrs-text-soft">
+              Cerebro will suggest stronger page-aware prompts once the surface has more context.
+            </div>
+          ) : null}
         </div>
       </section>
     </div>
