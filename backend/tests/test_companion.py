@@ -223,6 +223,61 @@ async def test_create_companion_link_session_enforces_account_ownership(
 
 
 @pytest.mark.asyncio
+async def test_companion_sync_updates_account_progress_and_status(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "SyncAware"})
+    account_id = account.json()["id"]
+    link = await client.post(f"/api/companion/accounts/{account_id}/link-sessions")
+    exchange = await unauthenticated_client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-abc",
+            "plugin_version": "0.1.0",
+        },
+    )
+
+    response = await unauthenticated_client.post(
+        "/api/companion/sync",
+        headers={"X-Cerebro-Sync-Secret": exchange.json()["sync_secret"]},
+        json={
+            "plugin_instance_id": "plugin-abc",
+            "plugin_version": "0.1.0",
+            "completed_quests": ["bone voyage"],
+            "completed_diaries": {"lumbridge_draynor": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "active_unlocks": ["fossil island access"],
+            "owned_gear": ["dragon scimitar"],
+            "equipped_gear": {"weapon": "dragon scimitar"},
+            "notable_items": ["barrows gloves"],
+            "companion_state": {"quest_points": 200},
+        },
+    )
+
+    assert response.status_code == 200
+    progress = await client.get(f"/api/accounts/{account_id}/progress")
+    account_response = await client.get(f"/api/accounts/{account_id}")
+    account_list = await client.get("/api/accounts")
+
+    assert progress.json()["completed_quests"] == ["bone voyage"]
+    assert progress.json()["completed_diaries"]["lumbridge_draynor"] == ["easy"]
+    assert progress.json()["equipped_gear"]["weapon"] == "dragon scimitar"
+    assert progress.json()["unlocked_transports"] == ["fairy rings"]
+    assert progress.json()["active_unlocks"] == ["fossil island access"]
+    assert progress.json()["owned_gear"] == ["dragon scimitar"]
+    assert progress.json()["notable_items"] == ["barrows gloves"]
+    assert progress.json()["companion_state"]["source"] == "runelite_companion"
+    assert progress.json()["companion_state"]["plugin_instance_id"] == "plugin-abc"
+    assert progress.json()["companion_state"]["plugin_version"] == "0.1.0"
+    assert progress.json()["companion_state"]["quest_points"] == 200
+    assert account_response.json()["companion_status"] == "linked"
+    assert account_response.json()["companion_last_synced_at"] is not None
+    assert account_list.json()["items"][0]["companion_status"] == "linked"
+
+
+@pytest.mark.asyncio
 async def test_companion_progress_round_trip_persists_and_normalizes_api_fields(
     client: AsyncClient,
 ) -> None:

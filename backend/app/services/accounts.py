@@ -12,6 +12,7 @@ from app.integrations.osrs_hiscores import (
 from app.models.account import Account
 from app.models.account_progress import AccountProgress
 from app.models.account_snapshot import AccountSnapshot
+from app.models.companion_connection import CompanionConnection
 from app.models.user import User
 from app.schemas.account import (
     AccountCreateRequest,
@@ -27,6 +28,38 @@ from app.schemas.account_progress import AccountProgressResponse, AccountProgres
 class AccountService:
     def __init__(self) -> None:
         self.ingestion_service = osrs_account_ingestion_service
+
+    async def _get_companion_connections_map(
+        self,
+        db_session: AsyncSession,
+        account_ids: list[int],
+    ) -> dict[int, CompanionConnection]:
+        if not account_ids:
+            return {}
+
+        connections = list(
+            (
+                await db_session.scalars(
+                    select(CompanionConnection).where(CompanionConnection.account_id.in_(account_ids))
+                )
+            ).all()
+        )
+        return {connection.account_id: connection for connection in connections}
+
+    def _build_account_response(
+        self,
+        account: Account,
+        connection: CompanionConnection | None = None,
+    ) -> AccountResponse:
+        return AccountResponse(
+            id=account.id,
+            rsn=account.rsn,
+            is_active=account.is_active,
+            created_at=account.created_at,
+            updated_at=account.updated_at,
+            companion_status=connection.status if connection is not None else None,
+            companion_last_synced_at=connection.last_synced_at if connection is not None else None,
+        )
 
     async def _get_account_or_404(
         self,
@@ -56,8 +89,15 @@ class AccountService:
                 )
             ).all()
         )
+        connections_by_account = await self._get_companion_connections_map(
+            db_session=db_session,
+            account_ids=[account.id for account in accounts],
+        )
         return AccountListResponse(
-            items=[AccountResponse.model_validate(account) for account in accounts],
+            items=[
+                self._build_account_response(account, connections_by_account.get(account.id))
+                for account in accounts
+            ],
             total=len(accounts),
         )
 
@@ -72,7 +112,10 @@ class AccountService:
             user=user,
             account_id=account_id,
         )
-        return AccountResponse.model_validate(account)
+        connection = await db_session.scalar(
+            select(CompanionConnection).where(CompanionConnection.account_id == account.id)
+        )
+        return self._build_account_response(account, connection)
 
     async def _get_or_create_progress(
         self,
@@ -142,7 +185,7 @@ class AccountService:
         await db_session.commit()
         await db_session.refresh(account)
 
-        return AccountResponse.model_validate(account)
+        return self._build_account_response(account)
 
     async def sync_account(
         self,

@@ -24,6 +24,8 @@ class AccountResponse(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
+    companion_status: str | None = None
+    companion_last_synced_at: datetime | None = None
 
 
 class AccountListResponse(BaseModel):

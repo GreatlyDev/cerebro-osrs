@@ -7,13 +7,17 @@ from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account import Account
+from app.models.account_progress import AccountProgress
 from app.models.companion_connection import CompanionConnection
 from app.models.companion_link_session import CompanionLinkSession
 from app.models.user import User
+from app.schemas.account_progress import AccountProgressUpdateRequest
 from app.schemas.companion import (
     CompanionLinkExchangeRequest,
     CompanionLinkExchangeResponse,
     CompanionLinkSessionResponse,
+    CompanionSyncRequest,
+    CompanionSyncResponse,
 )
 
 
@@ -133,6 +137,73 @@ class CompanionService:
             account_id=account.id,
             rsn=account.rsn,
             status="linked",
+        )
+
+    async def sync_account_state(
+        self,
+        *,
+        db_session: AsyncSession,
+        sync_secret: str,
+        payload: CompanionSyncRequest,
+    ) -> CompanionSyncResponse:
+        hashed_sync_secret = self._hash_secret(sync_secret)
+        connection = await db_session.scalar(
+            select(CompanionConnection).where(CompanionConnection.sync_secret_hash == hashed_sync_secret)
+        )
+        if connection is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Companion sync secret is invalid.",
+            )
+
+        progress = await db_session.scalar(
+            select(AccountProgress).where(AccountProgress.account_id == connection.account_id)
+        )
+        if progress is None:
+            progress = AccountProgress(account_id=connection.account_id)
+            db_session.add(progress)
+
+        normalized_progress = AccountProgressUpdateRequest(
+            completed_quests=payload.completed_quests,
+            completed_diaries=payload.completed_diaries,
+            unlocked_transports=payload.unlocked_transports,
+            owned_gear=payload.owned_gear,
+            equipped_gear=payload.equipped_gear,
+            notable_items=payload.notable_items,
+            active_unlocks=payload.active_unlocks,
+            companion_state=payload.companion_state,
+        )
+        synced_at = datetime.now(UTC)
+        progress.completed_quests = normalized_progress.completed_quests
+        progress.completed_diaries = normalized_progress.completed_diaries
+        progress.unlocked_transports = normalized_progress.unlocked_transports
+        progress.active_unlocks = normalized_progress.active_unlocks
+        progress.owned_gear = normalized_progress.owned_gear
+        progress.equipped_gear = normalized_progress.equipped_gear
+        progress.notable_items = normalized_progress.notable_items
+        progress.companion_state = {
+            **normalized_progress.companion_state,
+            "source": "runelite_companion",
+            "plugin_instance_id": payload.plugin_instance_id,
+            "plugin_version": payload.plugin_version,
+            "synced_at": synced_at.isoformat(),
+        }
+
+        connection.plugin_instance_id = payload.plugin_instance_id
+        connection.plugin_version = payload.plugin_version
+        connection.status = "linked"
+        connection.last_synced_at = synced_at
+        connection.last_payload_summary = (
+            f"{len(progress.completed_quests)} quests, "
+            f"{len(progress.unlocked_transports)} transports, "
+            f"{len(progress.notable_items)} notable items"
+        )
+        await db_session.commit()
+        return CompanionSyncResponse(
+            account_id=connection.account_id,
+            status="synced",
+            detail="Companion account state synced.",
+            synced_at=synced_at,
         )
 
 
