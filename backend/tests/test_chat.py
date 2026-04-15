@@ -308,6 +308,39 @@ async def test_chat_uses_balanced_launch_knowledge_for_slayer_unlock_question(
 
 
 @pytest.mark.asyncio
+async def test_chat_uses_knowledge_brain_for_utility_unlock_answer(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "UtilityMind"})
+    await client.post(f"/api/accounts/{account_response.json()['id']}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Utility Brain"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What utility unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "utility" in content
+    assert "fairy ring" in content or "bone voyage" in content
+
+
+@pytest.mark.asyncio
+async def test_chat_uses_knowledge_brain_for_profit_vs_progression_answer(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "TradeoffMind"})
+    await client.post(f"/api/accounts/{account_response.json()['id']}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Tradeoff Brain"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What is better for me right now, profit or progression?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "profit versus progression" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_summarize_account_state(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "AccountRead"})
     account_id = account_response.json()["id"]

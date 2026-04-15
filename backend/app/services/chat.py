@@ -29,7 +29,9 @@ from app.services.teleports import teleport_service
 from app.services.account_context import account_context_service
 from app.services.user_context import user_context_service
 from app.services.assistant import AssistantChatContext, assistant_service
+from app.services.knowledge_answering import knowledge_answering_service
 from app.services.knowledge_base import knowledge_base_service
+from app.services.knowledge_models import KnowledgeRetrievalPacket
 from app.schemas.gear import GearRecommendationRequest
 from app.schemas.recommendation import NextActionRecommendation, NextActionRequest
 from app.schemas.teleport import TeleportRouteRequest
@@ -151,6 +153,17 @@ class ChatService:
             db_session=db_session,
             account=focus_account,
         )
+        session_focus_summary = self._summarize_session_focus(
+            session_focus=session_focus,
+            latest_goal=latest_goal,
+            account=focus_account,
+            include_goal=emphasize_goal,
+        )
+        retrieval_packet = knowledge_base_service.retrieve_packet(
+            query=resolved_message,
+            session_intent=session_intent,
+            session_focus_summary=session_focus_summary,
+        )
         stat_answer = await self._build_direct_stat_answer(
             db_session=db_session,
             user=user,
@@ -164,6 +177,7 @@ class ChatService:
             latest_snapshot=latest_snapshot,
             previous_snapshot=previous_snapshot,
             progress=progress,
+            retrieval_packet=retrieval_packet,
         )
         if stat_answer is not None:
             return stat_answer, self._build_session_state_update(
@@ -182,17 +196,6 @@ class ChatService:
             latest_goal=latest_goal,
             latest_account=focus_account,
             latest_snapshot=latest_snapshot,
-        )
-        session_focus_summary = self._summarize_session_focus(
-            session_focus=session_focus,
-            latest_goal=latest_goal,
-            account=focus_account,
-            include_goal=emphasize_goal,
-        )
-        retrieval_packet = knowledge_base_service.retrieve_packet(
-            query=resolved_message,
-            session_intent=session_intent,
-            session_focus_summary=session_focus_summary,
         )
         ai_response = await assistant_service.generate_chat_reply(
             AssistantChatContext(
@@ -811,6 +814,7 @@ class ChatService:
         latest_snapshot: AccountSnapshot | None,
         previous_snapshot: AccountSnapshot | None,
         progress: AccountProgress | None,
+        retrieval_packet: KnowledgeRetrievalPacket,
     ) -> str | None:
         account_answer = self._build_account_focus_answer(message=message, account=account)
         if account_answer is not None:
@@ -841,6 +845,21 @@ class ChatService:
         progress_answer = self._build_progress_answer(message=message, progress=progress)
         if progress_answer is not None:
             return progress_answer
+
+        knowledge_unlock_answer = knowledge_answering_service.build_utility_unlock_answer(
+            message=message,
+            packet=retrieval_packet,
+            account_rsn=account.rsn if account is not None else None,
+        )
+        if knowledge_unlock_answer is not None:
+            return knowledge_unlock_answer
+
+        knowledge_money_answer = knowledge_answering_service.build_money_tradeoff_answer(
+            message=message,
+            packet=retrieval_packet,
+        )
+        if knowledge_money_answer is not None:
+            return knowledge_money_answer
 
         salient_change_answer = await self._build_salient_change_answer(
             db_session=db_session,
