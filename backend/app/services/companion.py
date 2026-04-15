@@ -3,7 +3,7 @@ import secrets
 from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account import Account
@@ -21,10 +21,10 @@ class CompanionService:
     def _hash_secret(self, raw: str) -> str:
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
-    def _is_expired(self, expires_at: datetime, now: datetime) -> bool:
+    def _comparison_timestamp(self, expires_at: datetime, now: datetime) -> datetime:
         if expires_at.tzinfo is None:
-            return expires_at < now.replace(tzinfo=None)
-        return expires_at < now
+            return now.replace(tzinfo=None)
+        return now
 
     async def _get_owned_account(
         self,
@@ -78,7 +78,23 @@ class CompanionService:
             select(CompanionLinkSession).where(CompanionLinkSession.token_hash == hashed_link_token)
         )
         now = datetime.now(UTC)
-        if session is None or session.consumed_at is not None or self._is_expired(session.expires_at, now):
+        if session is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Link token is invalid or expired.",
+            )
+        consumed_at = self._comparison_timestamp(session.expires_at, now)
+        consume_result = await db_session.execute(
+            update(CompanionLinkSession)
+            .where(
+                CompanionLinkSession.id == session.id,
+                CompanionLinkSession.consumed_at.is_(None),
+                CompanionLinkSession.expires_at >= consumed_at,
+            )
+            .values(consumed_at=consumed_at)
+        )
+        if consume_result.rowcount != 1:
+            await db_session.rollback()
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Link token is invalid or expired.",
@@ -111,7 +127,6 @@ class CompanionService:
             connection.plugin_version = payload.plugin_version
             connection.status = "linked"
 
-        session.consumed_at = now
         await db_session.commit()
         return CompanionLinkExchangeResponse(
             sync_secret=raw_sync_secret,

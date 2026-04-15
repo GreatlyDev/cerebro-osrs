@@ -1,7 +1,14 @@
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from httpx import AsyncClient
+from fastapi import HTTPException
+from sqlalchemy import select, update
 
+from app.models.companion_link_session import CompanionLinkSession
 from app.schemas.account_progress import AccountProgressResponse
+from app.schemas.companion import CompanionLinkExchangeRequest
+from app.services.companion import companion_service
 
 
 def test_account_progress_response_exposes_companion_state() -> None:
@@ -53,13 +60,16 @@ async def test_create_companion_link_session_returns_short_lived_token(
 
 
 @pytest.mark.asyncio
-async def test_exchange_link_token_returns_scoped_sync_secret(client: AsyncClient) -> None:
+async def test_exchange_link_token_returns_scoped_sync_secret(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
     account = await client.post("/api/accounts", json={"rsn": "PluginRsn"})
     link = await client.post(
         f"/api/companion/accounts/{account.json()['id']}/link-sessions",
     )
 
-    response = await client.post(
+    response = await unauthenticated_client.post(
         "/api/companion/link",
         json={
             "link_token": link.json()["link_token"],
@@ -74,6 +84,142 @@ async def test_exchange_link_token_returns_scoped_sync_secret(client: AsyncClien
     assert data["account_id"] == account.json()["id"]
     assert data["rsn"] == "PluginRsn"
     assert data["status"] == "linked"
+
+
+@pytest.mark.asyncio
+async def test_exchange_link_token_rejects_expired_token(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+    db_session,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "ExpiredRsn"})
+    link = await client.post(
+        f"/api/companion/accounts/{account.json()['id']}/link-sessions",
+    )
+    hashed_token = companion_service._hash_secret(link.json()["link_token"])
+    session = await db_session.scalar(
+        select(CompanionLinkSession).where(CompanionLinkSession.token_hash == hashed_token)
+    )
+    assert session is not None
+    session.expires_at = datetime.now(UTC) - timedelta(minutes=1)
+    await db_session.commit()
+
+    response = await unauthenticated_client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-expired",
+            "plugin_version": "0.1.0",
+        },
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Link token is invalid or expired."
+
+
+@pytest.mark.asyncio
+async def test_exchange_link_token_rejects_replay_after_consumption(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "ReplayRsn"})
+    link = await client.post(
+        f"/api/companion/accounts/{account.json()['id']}/link-sessions",
+    )
+
+    first_response = await unauthenticated_client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-first",
+            "plugin_version": "0.1.0",
+        },
+    )
+    second_response = await unauthenticated_client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-second",
+            "plugin_version": "0.1.0",
+        },
+    )
+
+    assert first_response.status_code == 200
+    assert second_response.status_code == 404
+    assert second_response.json()["detail"] == "Link token is invalid or expired."
+
+
+@pytest.mark.asyncio
+async def test_exchange_link_token_rejects_if_another_consumer_wins_race(
+    client: AsyncClient,
+    db_session,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "RaceRsn"})
+    link = await client.post(
+        f"/api/companion/accounts/{account.json()['id']}/link-sessions",
+    )
+    original_scalar = db_session.scalar
+    race_triggered = False
+
+    async def raced_scalar(statement):
+        nonlocal race_triggered
+        result = await original_scalar(statement)
+        if isinstance(result, CompanionLinkSession) and not race_triggered:
+            race_triggered = True
+            await db_session.execute(
+                update(CompanionLinkSession)
+                .where(CompanionLinkSession.id == result.id)
+                .values(consumed_at=datetime.now(UTC))
+                .execution_options(synchronize_session=False)
+            )
+            await db_session.commit()
+        return result
+
+    db_session.scalar = raced_scalar  # type: ignore[method-assign]
+
+    with pytest.raises(HTTPException) as exc_info:
+        await companion_service.exchange_link_token(
+            db_session=db_session,
+            payload=CompanionLinkExchangeRequest(
+                link_token=link.json()["link_token"],
+                plugin_instance_id="plugin-race",
+                plugin_version="0.1.0",
+            ),
+        )
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail == "Link token is invalid or expired."
+
+
+@pytest.mark.asyncio
+async def test_create_companion_link_session_requires_authentication(
+    unauthenticated_client: AsyncClient,
+) -> None:
+    response = await unauthenticated_client.post("/api/companion/accounts/1/link-sessions")
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Missing session token."
+
+
+@pytest.mark.asyncio
+async def test_create_companion_link_session_enforces_account_ownership(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "OwnedRsn"})
+    second_login = await unauthenticated_client.post(
+        "/api/auth/dev-login",
+        json={"email": "second@example.com", "display_name": "Second Planner"},
+    )
+    second_headers = {"Authorization": f"Bearer {second_login.json()['session_token']}"}
+
+    response = await unauthenticated_client.post(
+        f"/api/companion/accounts/{account.json()['id']}/link-sessions",
+        headers=second_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Account not found."
 
 
 @pytest.mark.asyncio
