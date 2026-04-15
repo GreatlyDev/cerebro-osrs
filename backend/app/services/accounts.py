@@ -111,9 +111,13 @@ class AccountService:
         await self._get_account_or_404(db_session=db_session, user=user, account_id=account_id)
         progress = await self._get_or_create_progress(db_session=db_session, account_id=account_id)
         progress.completed_quests = payload.completed_quests
+        progress.completed_diaries = payload.completed_diaries
         progress.unlocked_transports = payload.unlocked_transports
         progress.owned_gear = payload.owned_gear
+        progress.equipped_gear = payload.equipped_gear
+        progress.notable_items = payload.notable_items
         progress.active_unlocks = payload.active_unlocks
+        progress.companion_state = payload.companion_state
         await db_session.commit()
         await db_session.refresh(progress)
         return AccountProgressResponse.model_validate(progress)

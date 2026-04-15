@@ -4,6 +4,15 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
+def _normalize_text(value: str) -> str:
+    return " ".join(value.strip().lower().split())
+
+
+def _normalize_text_list(values: list[str]) -> list[str]:
+    normalized = {_normalize_text(item) for item in values}
+    return sorted(item for item in normalized if item)
+
+
 class AccountProgressUpdateRequest(BaseModel):
     completed_quests: list[str] = Field(default_factory=list)
     completed_diaries: dict[str, list[str]] = Field(default_factory=dict)
@@ -23,12 +32,35 @@ class AccountProgressUpdateRequest(BaseModel):
     )
     @classmethod
     def normalize_entries(cls, value: list[str]) -> list[str]:
-        normalized: list[str] = []
-        for item in value:
-            cleaned = " ".join(item.strip().lower().split())
-            if cleaned:
-                normalized.append(cleaned)
-        return sorted(set(normalized))
+        return _normalize_text_list(value)
+
+    @field_validator("completed_diaries")
+    @classmethod
+    def normalize_completed_diaries(
+        cls,
+        value: dict[str, list[str]],
+    ) -> dict[str, list[str]]:
+        normalized = {
+            cleaned_key: _normalize_text_list(tiers)
+            for key, tiers in value.items()
+            if (cleaned_key := _normalize_text(key))
+        }
+        return {
+            key: tiers
+            for key, tiers in sorted(normalized.items())
+            if tiers
+        }
+
+    @field_validator("equipped_gear")
+    @classmethod
+    def normalize_equipped_gear(cls, value: dict[str, str]) -> dict[str, str]:
+        normalized = {
+            cleaned_slot: cleaned_item
+            for slot, item in value.items()
+            if (cleaned_slot := _normalize_text(slot))
+            if (cleaned_item := _normalize_text(item))
+        }
+        return dict(sorted(normalized.items()))
 
 
 class AccountProgressResponse(BaseModel):
