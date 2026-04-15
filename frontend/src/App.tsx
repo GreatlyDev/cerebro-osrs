@@ -622,6 +622,55 @@ export function App() {
     }
   }
 
+  async function refreshSelectedAccountContext(options?: { preserveNotice?: boolean }) {
+    if (selectedAccountId === null) {
+      return;
+    }
+
+    const currentNotice = notice;
+    try {
+      const accountsResponse = await api.listAccounts();
+      setAccounts(accountsResponse.items);
+
+      const refreshedAccount =
+        accountsResponse.items.find((account) => account.id === selectedAccountId) ?? null;
+
+      if (!refreshedAccount) {
+        setSelectedAccountId(null);
+        setSelectedSnapshot(null);
+        setSelectedSnapshotHistory([]);
+        setSelectedProgress(null);
+        setProgressDraft(emptyProgressDraft());
+        return;
+      }
+
+      const [snapshot, progress, history] = await Promise.all([
+        api.getAccountSnapshot(refreshedAccount.id).catch(() => null),
+        api.getAccountProgress(refreshedAccount.id).catch(() => null),
+        api.listAccountSnapshots(refreshedAccount.id, 2).then((response) => response.items).catch(() => []),
+      ]);
+
+      setSelectedSnapshot(snapshot);
+      setSelectedSnapshotHistory(history);
+      setSelectedProgress(progress);
+      setProgressDraft({
+        completed_quests: formatListDraft(progress?.completed_quests ?? []),
+        unlocked_transports: formatListDraft(progress?.unlocked_transports ?? []),
+        owned_gear: formatListDraft(progress?.owned_gear ?? []),
+        active_unlocks: formatListDraft(progress?.active_unlocks ?? []),
+      });
+
+      if (options?.preserveNotice && currentNotice) {
+        setNotice(currentNotice);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to refresh account status.");
+      if (options?.preserveNotice && currentNotice) {
+        setNotice(currentNotice);
+      }
+    }
+  }
+
   async function handleAuthSubmit() {
     if (!loginEmail.trim() || !loginPassword.trim()) {
       setError("Email and password are both required.");
@@ -1580,6 +1629,7 @@ export function App() {
               onGoToSkills={() => navigateToView("skills")}
               onOpenNextAction={handleOpenNextAction}
               onPromptChange={setChatPrompt}
+              onRefreshCompanionStatus={() => refreshSelectedAccountContext({ preserveNotice: true })}
               onQuickstartAccount={handleQuickstartAccount}
               onQuickstartGoal={handleQuickstartGoal}
               onRunChatPrompt={handleRunChatPrompt}
@@ -1800,6 +1850,7 @@ export function App() {
                 onChangeNewAccountRsn={setNewAccountRsn}
                 onGoToAdvisor={() => openAdvisorWithPrompt("How should I tune this profile so Cerebro gives me better advice?")}
                 onQuickstartAccount={handleQuickstartAccount}
+                onRefreshCompanionStatus={() => refreshSelectedAccountContext({ preserveNotice: true })}
                 onSaveProfile={handleSaveProfile}
                 profile={profile}
                 profileDraft={profileDraft}

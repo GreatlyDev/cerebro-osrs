@@ -6,6 +6,7 @@ import { Button } from "../ui/Button";
 
 type CompanionStatusPanelProps = {
   selectedAccount: Account | null;
+  onRefreshStatus?: () => Promise<void> | void;
 };
 
 function formatCompanionStatus(value: string | null): string {
@@ -29,7 +30,7 @@ function formatTimestamp(value: string | null): string | null {
   });
 }
 
-export function CompanionStatusPanel({ selectedAccount }: CompanionStatusPanelProps) {
+export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: CompanionStatusPanelProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -40,6 +41,30 @@ export function CompanionStatusPanel({ selectedAccount }: CompanionStatusPanelPr
     setExpiresAt(null);
     setError(null);
   }, [selectedAccount?.id]);
+
+  useEffect(() => {
+    if (!selectedAccount || !onRefreshStatus) {
+      return;
+    }
+
+    const refresh = () => {
+      void onRefreshStatus();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    };
+
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", refresh);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [onRefreshStatus, selectedAccount]);
 
   const isLinked = selectedAccount?.companion_status === "linked";
   const awarenessCopy = selectedAccount
@@ -57,6 +82,7 @@ export function CompanionStatusPanel({ selectedAccount }: CompanionStatusPanelPr
       const session = await api.createCompanionLinkSession(selectedAccount.id);
       setLinkToken(session.link_token);
       setExpiresAt(session.expires_at);
+      await onRefreshStatus?.();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unable to create a companion link code.");
     } finally {

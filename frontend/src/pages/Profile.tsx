@@ -20,6 +20,7 @@ type ProfileViewProps = {
   onChangeNewAccountRsn: Dispatch<SetStateAction<string>>;
   onGoToAdvisor: () => void;
   onQuickstartAccount: () => void;
+  onRefreshCompanionStatus: () => Promise<void> | void;
   onSaveProfile: () => void;
   profile: Profile | null;
   profileDraft: ProfileDraft;
@@ -34,6 +35,7 @@ export function ProfileView({
   onChangeNewAccountRsn,
   onGoToAdvisor,
   onQuickstartAccount,
+  onRefreshCompanionStatus,
   onSaveProfile,
   profile,
   profileDraft,
@@ -246,7 +248,10 @@ export function ProfileView({
             </div>
 
             <div className="mt-5">
-              <CompanionStatusPanel selectedAccount={companionAccount} />
+              <CompanionStatusPanel
+                onRefreshStatus={onRefreshCompanionStatus}
+                selectedAccount={companionAccount}
+              />
             </div>
           </section>
         </section>

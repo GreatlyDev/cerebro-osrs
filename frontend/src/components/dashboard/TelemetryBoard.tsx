@@ -9,6 +9,7 @@ type TelemetryBoardProps = {
   newAccountRsn: string;
   onAskAdvisor: (prompt: string) => void;
   onChangeNewAccountRsn: (value: string) => void;
+  onRefreshCompanionStatus: () => Promise<void> | void;
   onQuickstartAccount: () => void;
   selectedAccount: Account | null;
   snapshot: AccountSnapshot | null;
@@ -28,6 +29,7 @@ export function TelemetryBoard({
   newAccountRsn,
   onAskAdvisor,
   onChangeNewAccountRsn,
+  onRefreshCompanionStatus,
   onQuickstartAccount,
   selectedAccount,
   snapshot,
@@ -232,7 +234,10 @@ export function TelemetryBoard({
             </div>
           </section>
 
-          <CompanionStatusPanel selectedAccount={selectedAccount} />
+          <CompanionStatusPanel
+            onRefreshStatus={onRefreshCompanionStatus}
+            selectedAccount={selectedAccount}
+          />
 
           <section className="space-y-4">
             <div className="flex items-center gap-4">
