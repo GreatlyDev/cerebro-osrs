@@ -47,3 +47,4 @@ docker-data/
 
 # Misc
 *.swp
+.worktrees/
