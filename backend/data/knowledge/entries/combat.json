@@ -5,13 +5,13 @@
       "canonical_name": "Barrows",
       "entry_type": "boss_profile",
       "domain": "combat",
-      "aliases": ["barrows", "barrows brothers"],
-      "summary": "Midgame repeatable combat activity that combines route comfort, prayer sustain, and profitable chest rewards.",
+      "aliases": ["barrows", "barrows brothers", "midgame money route", "weekend money route", "better money route"],
+      "summary": "Midgame repeatable combat activity that combines route comfort, prayer sustain, and profitable chest rewards for a steady money route when you want better money from a midgame account.",
       "prerequisites": ["Prayer sustain", "Travel coverage", "Reliable combat style"],
       "benefits": ["Midgame profit", "Gear progression", "Bossing routine confidence"],
       "tradeoffs": ["Travel friction without teleports", "Prayer drain can feel annoying early"],
       "related_entries": ["travel-barrows", "gear-midgame-magic-upgrades"],
-      "retrieval_tags": ["barrows", "boss", "bossing", "midgame", "profit"],
+      "retrieval_tags": ["barrows", "boss", "bossing", "midgame", "profit", "money", "weekend", "better", "push", "account"],
       "source_type": "curated",
       "status": "canonical",
       "confidence": 0.94,
@@ -71,6 +71,24 @@
       "confidence": 0.9,
       "last_reviewed_at": "2026-04-13",
       "change_note": "Launch corpus"
+    },
+    {
+      "id": "boss-demonic-gorillas",
+      "canonical_name": "Demonic gorillas",
+      "entry_type": "boss_profile",
+      "domain": "combat",
+      "aliases": ["demonic gorillas", "zenytes", "monkey madness 2 money", "weekend money route", "better money route"],
+      "summary": "Demonic gorillas are a strong midgame bridge between unlock routing, profit, and PvM confidence once the account can handle gear switching and repeatable combat rhythm for better money.",
+      "prerequisites": ["Monkey Madness II access", "Combat comfort", "Switching consistency"],
+      "benefits": ["Zenyte profit", "PvM confidence", "Unlock-linked money making"],
+      "tradeoffs": ["Unlock burden is meaningful", "Execution load is higher than calmer profit routes"],
+      "related_entries": ["money-midgame-consistency", "quest-recipe-for-disaster"],
+      "retrieval_tags": ["demonic gorillas", "zenyte", "bossing", "profit", "money", "unlock burden", "weekend", "better", "account"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.92,
+      "last_reviewed_at": "2026-04-15",
+      "change_note": "Phase 2 launch expansion"
     }
   ]
 }

@@ -41,13 +41,13 @@
       "canonical_name": "Low-attention profit routing",
       "entry_type": "money_maker",
       "domain": "economy",
-      "aliases": ["low attention money", "afk money maker", "casual profit"],
+      "aliases": ["low attention money", "low-attention money", "afk money maker", "casual profit"],
       "summary": "Low-attention profit routes should favor clean repetition and low unlock burden over flashy best-case GP claims.",
       "prerequisites": ["Accessible low-friction activity"],
       "benefits": ["Routine GP", "Low focus requirement", "Pairs with casual play"],
       "tradeoffs": ["Usually lower peak GP than active methods"],
       "related_entries": ["skill-high-alchemy", "boss-barrows"],
-      "retrieval_tags": ["money", "profit", "afk", "low attention", "casual"],
+      "retrieval_tags": ["money", "profit", "afk", "low attention", "low-attention", "casual"],
       "source_type": "curated",
       "status": "canonical",
       "confidence": 0.9,
@@ -89,6 +89,24 @@
       "confidence": 0.93,
       "last_reviewed_at": "2026-04-13",
       "change_note": "Launch corpus"
+    },
+    {
+      "id": "money-barrows-consistency",
+      "canonical_name": "Barrows consistency profit",
+      "entry_type": "money_maker",
+      "domain": "economy",
+      "aliases": ["barrows money", "barrows profit", "midgame barrows gp"],
+      "summary": "Barrows is a consistency-focused midgame money route when the account has enough travel comfort and prayer sustain to repeat runs cleanly.",
+      "prerequisites": ["Barrows readiness", "Travel comfort", "Prayer sustain"],
+      "benefits": ["Repeatable profit", "Midgame account rhythm", "Pairs with gear progression"],
+      "tradeoffs": ["Feels much worse without route and sustain setup"],
+      "related_entries": ["boss-barrows", "money-midgame-consistency"],
+      "retrieval_tags": ["barrows", "profit", "money", "money maker", "midgame", "consistency", "weekend"],
+      "source_type": "curated",
+      "status": "canonical",
+      "confidence": 0.91,
+      "last_reviewed_at": "2026-04-15",
+      "change_note": "Phase 2 launch expansion"
     }
   ]
 }

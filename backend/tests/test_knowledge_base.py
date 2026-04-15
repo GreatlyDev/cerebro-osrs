@@ -64,6 +64,42 @@ def test_retrieve_matches_slayer_unlock_entry_for_slayer_question() -> None:
     assert any("slayer" in entry.canonical_name.lower() for entry in packet.entries)
 
 
+def test_retrieve_diary_and_travel_utility_for_diary_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="What diary-style utility unlock should I care about next?",
+        session_intent="progression",
+        session_focus_summary="Travel utility and friction cleanup",
+    )
+
+    names = {entry.canonical_name for entry in packet.entries}
+    assert "Achievement diary utility" in names
+    assert "Fairy ring utility" in names
+
+
+def test_retrieve_skilling_methods_for_low_attention_training_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="What low-attention skilling method should I lean on this week?",
+        session_intent="training",
+        session_focus_summary="Routine-friendly skilling progress",
+    )
+
+    names = {entry.canonical_name for entry in packet.entries}
+    assert "High Alchemy" in names
+    assert "Farming contracts" in names
+
+
+def test_retrieve_combat_and_economy_knowledge_for_weekend_profit_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="What should I push if I want better money by this weekend?",
+        session_intent="profit",
+        session_focus_summary="Weekend planning for a midgame account",
+    )
+
+    matched_domains = {entry.domain for entry in packet.entries}
+    assert "economy" in matched_domains
+    assert "combat" in matched_domains
+
+
 def test_store_exposes_staged_entries_separately() -> None:
     store = KnowledgeStore(
         KnowledgeCorpus(
