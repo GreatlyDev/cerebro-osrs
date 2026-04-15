@@ -4077,6 +4077,48 @@ async def test_chat_can_answer_utility_unlock_question(client: AsyncClient) -> N
 
 
 @pytest.mark.asyncio
+async def test_chat_uses_companion_quest_state_for_unlock_reasoning(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Aware User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "AwareRsn"}, cookies=cookies)
+    await client.post(f"/api/accounts/{account.json()['id']}/sync", cookies=cookies)
+    await client.post(
+        "/api/goals",
+        cookies=cookies,
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "AwareRsn"},
+    )
+
+    await client.patch(
+        f"/api/accounts/{account.json()['id']}/progress",
+        cookies=cookies,
+        json={
+            "completed_quests": ["bone voyage", "fairytale i - growing pains"],
+            "completed_diaries": {},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": [],
+            "equipped_gear": {},
+            "notable_items": [],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion"},
+        },
+    )
+    session = await client.post("/api/chat/sessions", json={"title": "Unlock Aware"}, cookies=cookies)
+
+    response = await client.post(
+        f"/api/chat/sessions/{session.json()['id']}/messages",
+        cookies=cookies,
+        json={"content": "What utility unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "fairy ring" not in content
+    assert "bone voyage" not in content
+    assert "fossil island" not in content
+    assert "digsite pendant" not in content
+
+
+@pytest.mark.asyncio
 async def test_chat_can_answer_diary_style_utility_question(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "DiaryUtil"})
     account_id = account_response.json()["id"]
@@ -4097,6 +4139,38 @@ async def test_chat_can_answer_diary_style_utility_question(client: AsyncClient)
     content = response.json()["assistant_message"]["content"].lower()
     assert "diary-style utility" in content
     assert "bone voyage" in content or "route" in content or "utility unlock" in content
+
+
+@pytest.mark.asyncio
+async def test_gear_recommendations_see_companion_notable_items(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Gear Aware"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "GearAware"}, cookies=cookies)
+
+    await client.patch(
+        f"/api/accounts/{account.json()['id']}/progress",
+        cookies=cookies,
+        json={
+            "completed_quests": [],
+            "completed_diaries": {},
+            "unlocked_transports": [],
+            "owned_gear": ["abyssal whip"],
+            "equipped_gear": {"weapon": "abyssal whip"},
+            "notable_items": ["abyssal whip", "amulet of fury"],
+            "active_unlocks": [],
+            "companion_state": {"source": "runelite_companion"},
+        },
+    )
+
+    response = await client.post(
+        "/api/gear/recommendations",
+        cookies=cookies,
+        json={"combat_style": "melee", "budget_tier": "midgame", "current_gear": [], "account_rsn": "GearAware"},
+    )
+
+    assert response.status_code == 200
+    item_names = [item["item_name"].lower() for item in response.json()["recommendations"]]
+    assert "abyssal whip" not in item_names
 
 
 @pytest.mark.asyncio

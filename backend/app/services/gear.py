@@ -2,6 +2,7 @@ from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account import Account
+from app.models.account_progress import AccountProgress
 from app.models.account_snapshot import AccountSnapshot
 from app.models.user import User
 from app.schemas.gear import (
@@ -9,6 +10,7 @@ from app.schemas.gear import (
     GearRecommendationResponse,
     GearUpgradeRecommendation,
 )
+from app.services.user_context import user_context_service
 
 GEAR_LIBRARY: dict[str, dict[str, list[GearUpgradeRecommendation]]] = {
     "melee": {
@@ -158,11 +160,23 @@ class GearService:
     ) -> GearRecommendationResponse:
         style_library = GEAR_LIBRARY.get(payload.combat_style, {})
         recommendations = style_library.get(payload.budget_tier, [])
+        progress = await self._get_progress(
+            db_session=db_session,
+            user=user,
+            account_rsn=payload.account_rsn,
+        )
+        tracked_gear = user_context_service.tracked_owned_gear(progress)
+        request_gear = {
+            " ".join(item.strip().lower().split())
+            for item in payload.current_gear
+            if isinstance(item, str) and item.strip()
+        }
+        excluded_gear = tracked_gear | request_gear
 
         filtered = [
             recommendation
             for recommendation in recommendations
-            if recommendation.item_name.lower() not in {item.lower() for item in payload.current_gear}
+            if recommendation.item_name.lower() not in excluded_gear
         ]
 
         snapshot = await self._get_latest_snapshot(
@@ -174,9 +188,18 @@ class GearService:
         context = {
             "snapshot_used": snapshot is not None,
             "current_gear_count": len(payload.current_gear),
+            "tracked_owned_gear_count": len(tracked_gear),
         }
         if snapshot is not None:
             context["overall_level"] = snapshot.summary.get("overall_level")
+        if progress is not None:
+            progress_snapshot = user_context_service.build_progress_snapshot(progress) or {}
+            context["equipped_slot_count"] = len(progress.equipped_gear)
+            context["notable_item_count"] = len(progress.notable_items)
+            context["companion_sync_active"] = (
+                isinstance(progress_snapshot.get("companion_state"), dict)
+                and progress_snapshot["companion_state"].get("source") == "runelite_companion"
+            )
 
         if not filtered:
             filtered = recommendations
@@ -208,6 +231,25 @@ class GearService:
             select(AccountSnapshot)
             .where(AccountSnapshot.account_id == account.id)
             .order_by(desc(AccountSnapshot.created_at), desc(AccountSnapshot.id))
+        )
+
+    async def _get_progress(
+        self,
+        db_session: AsyncSession,
+        user: User,
+        account_rsn: str | None,
+    ) -> AccountProgress | None:
+        if account_rsn is None:
+            return None
+
+        account = await db_session.scalar(
+            select(Account).where(Account.user_id == user.id, Account.rsn == account_rsn)
+        )
+        if account is None:
+            return None
+
+        return await db_session.scalar(
+            select(AccountProgress).where(AccountProgress.account_id == account.id)
         )
 
 

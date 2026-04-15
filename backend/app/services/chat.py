@@ -164,6 +164,10 @@ class ChatService:
             session_intent=session_intent,
             session_focus_summary=session_focus_summary,
         )
+        effective_retrieval_packet = self._filter_retrieval_packet_for_progress(
+            progress=progress,
+            retrieval_packet=retrieval_packet,
+        )
         stat_answer = await self._build_direct_stat_answer(
             db_session=db_session,
             user=user,
@@ -177,7 +181,7 @@ class ChatService:
             latest_snapshot=latest_snapshot,
             previous_snapshot=previous_snapshot,
             progress=progress,
-            retrieval_packet=retrieval_packet,
+            retrieval_packet=effective_retrieval_packet,
         )
         if stat_answer is not None:
             return stat_answer, self._build_session_state_update(
@@ -214,19 +218,19 @@ class ChatService:
                 session_focus_summary=session_focus_summary,
                 session_intent_summary=self._summarize_session_intent(session_intent=session_intent),
                 retrieval_route_summary=(
-                    f"Question mode={retrieval_packet.question_mode or 'unknown'}, "
-                    f"primary domain={retrieval_packet.primary_domain or 'none'}, "
-                    f"secondary domains={', '.join(retrieval_packet.secondary_domains) or 'none'}, "
-                    f"supporting docs={retrieval_packet.include_supporting_documents}"
+                    f"Question mode={effective_retrieval_packet.question_mode or 'unknown'}, "
+                    f"primary domain={effective_retrieval_packet.primary_domain or 'none'}, "
+                    f"secondary domains={', '.join(effective_retrieval_packet.secondary_domains) or 'none'}, "
+                    f"supporting docs={effective_retrieval_packet.include_supporting_documents}"
                 ),
-                retrieval_match_notes_summary="\n".join(retrieval_packet.match_notes) or None,
-                retrieval_summary=retrieval_packet.summary,
+                retrieval_match_notes_summary="\n".join(effective_retrieval_packet.match_notes) or None,
+                retrieval_summary=effective_retrieval_packet.summary,
                 retrieval_entries_summary="\n".join(
-                    f"- {entry.canonical_name}: {entry.summary}" for entry in retrieval_packet.entries
+                    f"- {entry.canonical_name}: {entry.summary}" for entry in effective_retrieval_packet.entries
                 )
                 or None,
                 retrieval_documents_summary="\n".join(
-                    f"- {document.title}: {document.summary}" for document in retrieval_packet.documents
+                    f"- {document.title}: {document.summary}" for document in effective_retrieval_packet.documents
                 )
                 or None,
             )
@@ -754,16 +758,79 @@ class ChatService:
         if progress is None:
             return None
 
-        return (
-            f"completed_quests={len(progress.completed_quests)}, "
-            f"unlocked_transports={len(progress.unlocked_transports)}, "
-            f"owned_gear={len(progress.owned_gear)}, "
-            f"active_unlocks={len(progress.active_unlocks)}, "
-            f"completed_quest_preview={self._preview_list(progress.completed_quests)}, "
-            f"transport_preview={self._preview_list(progress.unlocked_transports)}, "
-            f"gear_preview={self._preview_list(progress.owned_gear)}, "
-            f"unlock_preview={self._preview_list(progress.active_unlocks)}"
+        progress_snapshot = user_context_service.build_progress_snapshot(progress) or {}
+        companion_state = progress_snapshot.get("companion_state", {})
+        tracked_gear = sorted(user_context_service.tracked_owned_gear(progress))
+        parts = [
+            (
+                f"Tracked progress includes {len(progress.completed_quests)} completed quests, "
+                f"{len(progress.unlocked_transports)} transport unlocks, "
+                f"{len(tracked_gear)} gear items, and {len(progress.active_unlocks)} active unlocks."
+            ),
+            f"Completed quest preview: {self._preview_list(progress.completed_quests)}.",
+            f"Transport preview: {self._preview_list(progress.unlocked_transports)}.",
+            f"Gear preview: {self._preview_list(tracked_gear)}.",
+            f"Unlock preview: {self._preview_list(progress.active_unlocks)}.",
+        ]
+        if isinstance(companion_state, dict) and companion_state.get("source") == "runelite_companion":
+            parts.append("Companion sync is active with private account-state awareness.")
+        if progress.completed_diaries:
+            parts.append(f"Tracked diary regions: {', '.join(list(progress.completed_diaries)[:3])}.")
+        if progress.equipped_gear:
+            parts.append(f"Current equipped slots tracked: {', '.join(list(progress.equipped_gear)[:3])}.")
+        if progress.notable_items:
+            parts.append(f"Notable items tracked: {self._preview_list(progress.notable_items)}.")
+        return " ".join(parts)
+
+    def _filter_retrieval_packet_for_progress(
+        self,
+        *,
+        progress: AccountProgress | None,
+        retrieval_packet: KnowledgeRetrievalPacket,
+    ) -> KnowledgeRetrievalPacket:
+        known_unlocks = user_context_service.tracked_known_unlocks(progress)
+        if not known_unlocks:
+            return retrieval_packet
+
+        filtered_entries = [
+            entry
+            for entry in retrieval_packet.entries
+            if not self._entry_matches_known_unlock(entry.canonical_name, entry.aliases, known_unlocks)
+        ]
+        if len(filtered_entries) == len(retrieval_packet.entries):
+            return retrieval_packet
+
+        filtered_match_notes = [
+            note
+            for note in retrieval_packet.match_notes
+            if any(note.startswith(f"{entry.canonical_name}:") for entry in filtered_entries)
+        ]
+        filtered_summary = (
+            "\n".join(f"- {entry.canonical_name}: {entry.summary}" for entry in filtered_entries) or None
         )
+        return retrieval_packet.model_copy(
+            update={
+                "entries": filtered_entries,
+                "summary": filtered_summary,
+                "match_notes": filtered_match_notes,
+            }
+        )
+
+    def _entry_matches_known_unlock(
+        self,
+        canonical_name: str,
+        aliases: list[str],
+        known_unlocks: set[str],
+    ) -> bool:
+        candidates = {
+            " ".join(candidate.strip().lower().split())
+            for candidate in [canonical_name, *aliases]
+            if isinstance(candidate, str) and candidate.strip()
+        }
+        expanded_candidates = set(candidates)
+        for candidate in tuple(candidates):
+            expanded_candidates.update(user_context_service.expand_unlock_aliases(candidate))
+        return any(candidate in known_unlocks for candidate in expanded_candidates)
 
     def _summarize_snapshot_delta(
         self,
@@ -1055,6 +1122,7 @@ class ChatService:
             message=message,
             account=account,
             latest_goal=latest_goal,
+            progress=progress,
         )
         if utility_unlock_answer is not None:
             return utility_unlock_answer
@@ -2894,6 +2962,7 @@ class ChatService:
         message: str,
         account: Account | None,
         latest_goal: Goal | None,
+        progress: AccountProgress | None,
     ) -> str | None:
         normalized = message.lower()
         if not any(
@@ -2921,8 +2990,18 @@ class ChatService:
             ),
         )
         actions = next_actions.actions
+        known_unlocks = user_context_service.tracked_known_unlocks(progress)
+        if known_unlocks:
+            actions = [
+                action
+                for action in actions
+                if not self._action_matches_known_unlock(action, known_unlocks)
+            ]
         if not actions:
-            return None
+            return (
+                "Your synced companion state already covers the biggest utility unlocks on this account, "
+                "so I'd turn that leverage into skill or gear progression next."
+            )
 
         utility_action = next(
             (
@@ -2950,6 +3029,40 @@ class ChatService:
             f"{leading_clause} {self._action_label(utility_action)}. "
             f"It opens broader account value than a narrow stat gain right now."
         )
+
+    def _action_matches_known_unlock(
+        self,
+        action,
+        known_unlocks: set[str],
+    ) -> bool:
+        target = action.target or {}
+        candidates = [
+            action.title,
+            action.summary,
+            target.get("quest_id"),
+            target.get("destination"),
+            target.get("method"),
+        ]
+        normalized_candidates = {
+            " ".join(str(candidate).strip().lower().split())
+            for candidate in candidates
+            if isinstance(candidate, str) and candidate.strip()
+        }
+        if "bone-voyage" in normalized_candidates:
+            normalized_candidates.add("bone voyage")
+        for candidate in tuple(normalized_candidates):
+            if candidate in known_unlocks:
+                return True
+            if "fossil island" in candidate and {"bone voyage", "fossil island", "fossil island access"} & known_unlocks:
+                return True
+            if "fairy ring" in candidate and {
+                "fairy rings",
+                "fairy ring utility",
+                "fairy ring network",
+                "fairy rings unlocked",
+            } & known_unlocks:
+                return True
+        return False
 
     def _build_value_judgment_answer(
         self,
@@ -3332,7 +3445,7 @@ class ChatService:
             payload=GearRecommendationRequest(
                 combat_style=combat_style,
                 budget_tier="midgame",
-                current_gear=progress.owned_gear if progress is not None else [],
+                current_gear=sorted(user_context_service.tracked_owned_gear(progress)),
                 account_rsn=account.rsn if account is not None else None,
             ),
         )

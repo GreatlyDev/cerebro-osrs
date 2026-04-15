@@ -141,9 +141,17 @@ class TeleportService:
             context["overall_level"] = snapshot.summary.get("overall_level")
 
         if progress is not None:
+            progress_snapshot = user_context_service.build_progress_snapshot(progress) or {}
             context["progress_used"] = True
             context["completed_quests_tracked"] = progress.completed_quests
+            context["completed_diary_regions"] = sorted(
+                progress_snapshot.get("completed_diaries", {}).keys()
+            )[:3] if isinstance(progress_snapshot.get("completed_diaries"), dict) else []
             context["tracked_transports"] = progress.unlocked_transports
+            context["companion_sync_active"] = (
+                isinstance(progress_snapshot.get("companion_state"), dict)
+                and progress_snapshot["companion_state"].get("source") == "runelite_companion"
+            )
             context["locked_routes"] = [
                 option.method
                 for option in ordered
@@ -276,9 +284,7 @@ class TeleportService:
         if progress is None:
             return False
 
-        completed_quests = {entry.strip().lower() for entry in progress.completed_quests}
-        unlocked_transports = {entry.strip().lower() for entry in progress.unlocked_transports}
-        known_unlocks = completed_quests | unlocked_transports
+        known_unlocks = user_context_service.tracked_known_unlocks(progress)
         return tracked_requirements.issubset(known_unlocks)
 
     def _missing_tracked_requirement_count(
@@ -292,9 +298,7 @@ class TeleportService:
         if progress is None:
             return len(tracked_requirements)
 
-        completed_quests = {entry.strip().lower() for entry in progress.completed_quests}
-        unlocked_transports = {entry.strip().lower() for entry in progress.unlocked_transports}
-        known_unlocks = completed_quests | unlocked_transports
+        known_unlocks = user_context_service.tracked_known_unlocks(progress)
         return len(tracked_requirements - known_unlocks)
 
     def _tracked_requirements(self, option: TeleportOption) -> set[str]:

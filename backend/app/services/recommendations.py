@@ -90,8 +90,14 @@ class RecommendationService:
                 "overall_level_delta": snapshot_delta["overall_level_delta"] if snapshot_delta else 0,
                 "recently_progressed_skills": snapshot_delta["improved_skills"] if snapshot_delta else [],
                 "progress_available": progress is not None,
-                "owned_gear_count": len(progress.owned_gear) if progress else 0,
+                "owned_gear_count": len(user_context_service.tracked_owned_gear(progress)),
+                "completed_diary_regions": len(progress.completed_diaries) if progress else 0,
+                "notable_item_count": len(progress.notable_items) if progress else 0,
                 "active_unlock_count": len(progress.active_unlocks) if progress else 0,
+                "companion_sync_active": (
+                    progress is not None
+                    and progress.companion_state.get("source") == "runelite_companion"
+                ),
                 "goal_influenced": goal is not None,
                 "returned_action_count": len(trimmed),
             },
@@ -161,8 +167,8 @@ class RecommendationService:
         gear = recommendations["recommended_gear"]
         teleport = recommendations["recommended_teleport"]
         readiness = quest["readiness"]
-        owned_gear = {item.strip().lower() for item in (progress.owned_gear if progress else [])}
-        active_unlocks = {item.strip().lower() for item in (progress.active_unlocks if progress else [])}
+        owned_gear = user_context_service.tracked_owned_gear(progress)
+        known_unlocks = user_context_service.tracked_known_unlocks(progress)
 
         skill_blockers = []
         current_level = skill.get("current_level")
@@ -183,8 +189,8 @@ class RecommendationService:
             if requirement
         ]
         gear_owned = gear["item_name"].strip().lower() in owned_gear
-        quest_matches_active_unlock = quest["name"].strip().lower() in active_unlocks
-        travel_matches_active_unlock = teleport["destination"].strip().lower() in active_unlocks
+        quest_matches_active_unlock = self._quest_matches_known_unlock(quest, known_unlocks)
+        travel_matches_active_unlock = self._travel_matches_known_unlock(teleport, known_unlocks)
         improving_skills = set(snapshot_delta["improved_skills"]) if snapshot_delta else set()
         overall_level_delta = int(snapshot_delta["overall_level_delta"]) if snapshot_delta else 0
         skill_has_momentum = skill["skill"] in improving_skills
@@ -201,11 +207,18 @@ class RecommendationService:
                 summary=quest["why_it_matters"],
                 score=max(
                     40,
-                    92 - (len(quest_blockers) * 8) + (8 if quest_matches_active_unlock else 0) + quest_momentum_bonus,
+                    92
+                    - (len(quest_blockers) * 8)
+                    - (18 if quest_matches_active_unlock else 0)
+                    + quest_momentum_bonus,
                 ),
-                priority="high" if len(quest_blockers) <= 2 else "medium",
+                priority="low" if quest_matches_active_unlock else "high" if len(quest_blockers) <= 2 else "medium",
                 target={"quest_id": quest["id"], "goal_title": goal.title if goal else None},
-                blockers=quest_blockers,
+                blockers=(
+                    ["Already synced as unlocked via companion state"] + quest_blockers
+                    if quest_matches_active_unlock
+                    else quest_blockers
+                ),
                 supporting_data={
                     "readiness": readiness,
                     "goal_type": goal.goal_type if goal else None,
@@ -247,13 +260,17 @@ class RecommendationService:
                 title=f"Set up {teleport['method']}",
                 summary=f"Travel plan for {teleport['destination']}: {teleport['travel_notes']}",
                 score=(68 if "fallback" not in teleport.get("route_type", "") else 58)
-                + (6 if travel_matches_active_unlock else 0),
-                priority="medium",
+                - (18 if travel_matches_active_unlock else 0),
+                priority="low" if travel_matches_active_unlock else "medium",
                 target={
                     "destination": teleport["destination"],
                     "method": teleport["method"],
                 },
-                blockers=teleport_blockers,
+                blockers=(
+                    ["Already synced as unlocked via companion state"] + teleport_blockers
+                    if travel_matches_active_unlock
+                    else teleport_blockers
+                ),
                 supporting_data={
                     "account_rsn": account_rsn,
                     "active_unlock_match": travel_matches_active_unlock,
@@ -261,6 +278,38 @@ class RecommendationService:
             ),
         ]
         return actions
+
+    def _quest_matches_known_unlock(
+        self,
+        quest: dict[str, object],
+        known_unlocks: set[str],
+    ) -> bool:
+        quest_name = str(quest.get("name", "")).strip().lower()
+        if not quest_name:
+            return False
+        if quest_name in known_unlocks:
+            return True
+        return any(alias in known_unlocks for alias in self._unlock_aliases_for_text(quest_name))
+
+    def _travel_matches_known_unlock(
+        self,
+        teleport: dict[str, object],
+        known_unlocks: set[str],
+    ) -> bool:
+        destination = str(teleport.get("destination", "")).strip().lower()
+        if not destination:
+            return False
+        if destination in known_unlocks:
+            return True
+        return any(alias in known_unlocks for alias in self._unlock_aliases_for_text(destination))
+
+    def _unlock_aliases_for_text(self, value: str) -> set[str]:
+        aliases = {value}
+        if "fossil island" in value or "bone voyage" in value:
+            aliases.update({"bone voyage", "fossil island", "fossil island access"})
+        if "fairy ring" in value:
+            aliases.update({"fairy rings", "fairy ring utility", "fairy ring network", "fairy rings unlocked"})
+        return aliases
 
     def _build_snapshot_delta(
         self,
