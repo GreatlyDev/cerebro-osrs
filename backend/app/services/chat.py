@@ -213,6 +213,13 @@ class ChatService:
                 goal_summary=self._summarize_goal(latest_goal) if emphasize_goal else None,
                 session_focus_summary=session_focus_summary,
                 session_intent_summary=self._summarize_session_intent(session_intent=session_intent),
+                retrieval_route_summary=(
+                    f"Question mode={retrieval_packet.question_mode or 'unknown'}, "
+                    f"primary domain={retrieval_packet.primary_domain or 'none'}, "
+                    f"secondary domains={', '.join(retrieval_packet.secondary_domains) or 'none'}, "
+                    f"supporting docs={retrieval_packet.include_supporting_documents}"
+                ),
+                retrieval_match_notes_summary="\n".join(retrieval_packet.match_notes) or None,
                 retrieval_summary=retrieval_packet.summary,
                 retrieval_entries_summary="\n".join(
                     f"- {entry.canonical_name}: {entry.summary}" for entry in retrieval_packet.entries

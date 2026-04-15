@@ -341,6 +341,35 @@ async def test_chat_uses_knowledge_brain_for_profit_vs_progression_answer(client
 
 
 @pytest.mark.asyncio
+async def test_chat_includes_route_metadata_in_assistant_context(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["route"] = getattr(context, "retrieval_route_summary", "") or ""
+        captured["notes"] = getattr(context, "retrieval_match_notes_summary", "") or ""
+        return "Grounded route-aware reply."
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+
+    account_response = await client.post("/api/accounts", json={"rsn": "RouteAware"})
+    await client.post(f"/api/accounts/{account_response.json()['id']}/sync")
+    session_response = await client.post("/api/chat/sessions", json={"title": "Route Aware"})
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_response.json()['id']}/messages",
+        json={"content": "What matters most about Barrows for this account?"},
+    )
+
+    assert response.status_code == 201
+    assert "explanation" in captured["route"].lower()
+    assert "combat" in captured["route"].lower()
+    assert captured["notes"]
+
+
+@pytest.mark.asyncio
 async def test_chat_can_summarize_account_state(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "AccountRead"})
     account_id = account_response.json()["id"]

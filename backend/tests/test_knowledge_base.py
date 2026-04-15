@@ -125,6 +125,17 @@ def test_retrieve_packet_marks_comparison_route_for_profit_question() -> None:
     assert "economy" in [packet.primary_domain, *packet.secondary_domains]
 
 
+def test_retrieve_packet_exposes_match_notes_for_unlock_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="What utility unlock should I push next?",
+        session_intent="progression",
+        session_focus_summary="Travel and utility cleanup",
+    )
+
+    assert packet.match_notes
+    assert any("domain" in note or "tag" in note or "alias" in note for note in packet.match_notes)
+
+
 def test_store_exposes_staged_entries_separately() -> None:
     store = KnowledgeStore(
         KnowledgeCorpus(
