@@ -2,6 +2,7 @@ import type {
   Account,
   AccountProgress,
   AccountProgressUpdate,
+  CompanionLinkSession,
   AccountSnapshot,
   AccountSnapshotListResponse,
   AuthSession,
@@ -150,6 +151,10 @@ export const api = {
     request<Account>("/accounts", {
       method: "POST",
       body: JSON.stringify({ rsn }),
+    }),
+  createCompanionLinkSession: (accountId: number) =>
+    request<CompanionLinkSession>(`/companion/accounts/${accountId}/link-sessions`, {
+      method: "POST",
     }),
   syncAccount: (accountId: number) =>
     request<{ account_id: number; status: string; detail: string; snapshot_id: number }>(

@@ -1,4 +1,14 @@
-export type Account = {
+export type CompanionStatus = {
+  companion_status: string | null;
+  companion_last_synced_at: string | null;
+};
+
+export type CompanionLinkSession = {
+  link_token: string;
+  expires_at: string;
+};
+
+export type Account = CompanionStatus & {
   id: number;
   rsn: string;
   is_active: boolean;

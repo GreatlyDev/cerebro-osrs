@@ -1,5 +1,6 @@
-import type { AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
+import type { Account, AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
 import { Button } from "../ui/Button";
+import { CompanionStatusPanel } from "./CompanionStatusPanel";
 import { RecommendationThumb } from "./RecommendationThumb";
 import { SkillIcon } from "./skillIcons";
 
@@ -9,7 +10,7 @@ type TelemetryBoardProps = {
   onAskAdvisor: (prompt: string) => void;
   onChangeNewAccountRsn: (value: string) => void;
   onQuickstartAccount: () => void;
-  selectedAccountRsn: string | null;
+  selectedAccount: Account | null;
   snapshot: AccountSnapshot | null;
   progress: AccountProgress | null;
   nextActions: NextActionResponse | null;
@@ -28,11 +29,12 @@ export function TelemetryBoard({
   onAskAdvisor,
   onChangeNewAccountRsn,
   onQuickstartAccount,
-  selectedAccountRsn,
+  selectedAccount,
   snapshot,
   progress,
   nextActions,
 }: TelemetryBoardProps) {
+  const selectedAccountRsn = selectedAccount?.rsn ?? null;
   const topAction = nextActions?.top_action ?? null;
   const topSkills = snapshot?.summary.top_skills?.slice(0, 4) ?? [];
   const topSkill = topSkills[0] ?? null;
@@ -229,6 +231,8 @@ export function TelemetryBoard({
               )}
             </div>
           </section>
+
+          <CompanionStatusPanel selectedAccount={selectedAccount} />
 
           <section className="space-y-4">
             <div className="flex items-center gap-4">

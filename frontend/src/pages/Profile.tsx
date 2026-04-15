@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 
+import { CompanionStatusPanel } from "../components/dashboard/CompanionStatusPanel";
 import { Button } from "../components/ui/Button";
 import type { Account, Profile } from "../types";
 
@@ -41,6 +42,11 @@ export function ProfileView({
 }: ProfileViewProps) {
   const normalizedNewRsn = newAccountRsn.trim().toLowerCase();
   const pendingExistingAccount = accounts.find((account) => account.rsn.trim().toLowerCase() === normalizedNewRsn) ?? null;
+  const companionAccount =
+    accounts.find((account) => account.rsn === selectedAccountRsn) ??
+    accounts.find((account) => account.rsn === profileDraft.primary_account_rsn) ??
+    accounts[0] ??
+    null;
   const fieldClassName =
     "w-full border border-white/8 bg-[#0c0c0c] px-4 py-3.5 text-sm text-osrs-text outline-none placeholder:text-osrs-text-soft/55 focus:border-osrs-gold/40";
   const selectClassName =
@@ -204,6 +210,43 @@ export function ProfileView({
                   <span className="mt-1 block text-xs leading-5 text-osrs-text-soft">Keep gp-positive or self-funding routes higher in Cerebro&apos;s advice.</span>
                 </div>
               </label>
+            </div>
+          </section>
+
+          <section className="border border-white/8 bg-[#101010] px-6 py-6">
+            <div className="mb-5 border-b border-white/8 pb-5">
+              <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Companion sync</p>
+              <h2 className="mt-3 font-display text-[1.18rem] font-bold uppercase tracking-[0.08em] text-white">
+                Bring RuneLite context into Cerebro
+              </h2>
+              <p className="mt-2 text-sm leading-7 text-osrs-text-soft">
+                The companion plugin adds deeper account awareness on top of normal hiscores sync, so planning can respond to real unlocks, diaries, and owned setup instead of guesses.
+              </p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+                <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Why it matters</p>
+                <p className="mt-3 text-sm leading-6 text-osrs-text-soft">
+                  Quests, teleports, diaries, utility unlocks, and gear context land directly in the planner.
+                </p>
+              </div>
+              <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+                <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Best target</p>
+                <p className="mt-2 font-display text-[1.02rem] font-bold uppercase text-white">
+                  {companionAccount?.rsn ?? "Choose an RSN first"}
+                </p>
+              </div>
+              <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+                <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Current read</p>
+                <p className="mt-2 font-display text-[1.02rem] font-bold uppercase text-white">
+                  {companionAccount?.companion_status?.replaceAll("_", " ") ?? "Not linked"}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <CompanionStatusPanel selectedAccount={companionAccount} />
             </div>
           </section>
         </section>

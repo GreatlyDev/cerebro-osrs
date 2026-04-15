@@ -1,4 +1,5 @@
 import type {
+  Account,
   AccountProgress,
   AccountSnapshot,
   AuthUser,
@@ -21,7 +22,6 @@ type DashboardPageProps = {
   newAccountRsn: string;
   nextActions: NextActionResponse | null;
   onChangeNewAccountRsn: (value: string) => void;
-  selectedAccount: { rsn: string } | null;
   selectedProgress: AccountProgress | null;
   selectedSnapshot: AccountSnapshot | null;
   chatHistory: ChatExchange[];
@@ -40,6 +40,7 @@ type DashboardPageProps = {
   onGoToSkills: () => void;
   onQuickstartAccount: () => void;
   onQuickstartGoal: () => void;
+  selectedAccount: Account | null;
   workspaceChecklist: Array<{ title: string; done: boolean; detail: string }>;
   workspaceProgress: number;
 };
@@ -73,9 +74,9 @@ export function DashboardPage(props: DashboardPageProps) {
     onQuickstartGoal,
     profile,
     nextActions,
-    selectedAccount,
     selectedProgress,
     selectedSnapshot,
+    selectedAccount,
     workspaceChecklist,
     workspaceProgress,
   } = props;
@@ -98,7 +99,7 @@ export function DashboardPage(props: DashboardPageProps) {
         onChangeNewAccountRsn={onChangeNewAccountRsn}
         onQuickstartAccount={onQuickstartAccount}
         progress={selectedProgress}
-        selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
+        selectedAccount={selectedAccount}
         snapshot={selectedSnapshot}
       />
       {shouldShowSetupLane ? (
