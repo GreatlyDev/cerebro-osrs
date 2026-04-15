@@ -644,15 +644,17 @@ export function App() {
         return;
       }
 
-      const [snapshot, progress, history] = await Promise.all([
+      const [snapshot, progress, history, nextActionsResponse] = await Promise.all([
         api.getAccountSnapshot(refreshedAccount.id).catch(() => null),
         api.getAccountProgress(refreshedAccount.id).catch(() => null),
         api.listAccountSnapshots(refreshedAccount.id, 2).then((response) => response.items).catch(() => []),
+        api.getNextActions({ limit: 4 }).catch(() => null),
       ]);
 
       setSelectedSnapshot(snapshot);
       setSelectedSnapshotHistory(history);
       setSelectedProgress(progress);
+      setNextActions(nextActionsResponse);
       setProgressDraft({
         completed_quests: formatListDraft(progress?.completed_quests ?? []),
         unlocked_transports: formatListDraft(progress?.unlocked_transports ?? []),
