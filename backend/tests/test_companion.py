@@ -37,6 +37,46 @@ def test_companion_models_import() -> None:
 
 
 @pytest.mark.asyncio
+async def test_create_companion_link_session_returns_short_lived_token(
+    client: AsyncClient,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "Gilganor"})
+
+    response = await client.post(
+        f"/api/companion/accounts/{account.json()['id']}/link-sessions",
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["link_token"]
+    assert data["expires_at"]
+
+
+@pytest.mark.asyncio
+async def test_exchange_link_token_returns_scoped_sync_secret(client: AsyncClient) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "PluginRsn"})
+    link = await client.post(
+        f"/api/companion/accounts/{account.json()['id']}/link-sessions",
+    )
+
+    response = await client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-123",
+            "plugin_version": "0.1.0",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["sync_secret"]
+    assert data["account_id"] == account.json()["id"]
+    assert data["rsn"] == "PluginRsn"
+    assert data["status"] == "linked"
+
+
+@pytest.mark.asyncio
 async def test_companion_progress_round_trip_persists_and_normalizes_api_fields(
     client: AsyncClient,
 ) -> None:
