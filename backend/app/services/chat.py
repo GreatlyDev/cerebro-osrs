@@ -2912,10 +2912,20 @@ class ChatService:
             )
         unlock_action = next(
             (action for action in actions if action.action_type in {"quest", "travel"}),
-            next_actions.top_action,
+            None,
         )
         if unlock_action is None:
-            return None
+            if known_unlocks:
+                return (
+                    "Your synced companion state already covers the biggest unlock lanes on this account, "
+                    "so I'd convert that advantage into skills, gear, or cleaner progression cleanup next."
+                )
+            if progress is not None and progress.active_unlocks:
+                return f"Your strongest tracked unlock chain right now is {progress.active_unlocks[0]}."
+            fallback_action = next_actions.top_action
+            if fallback_action is None:
+                return None
+            return f"I'd still anchor on {self._action_label(fallback_action)} as the most useful unlock lane right now."
 
         if unlock_action.action_type == "quest":
             goal_title = latest_goal.title if latest_goal is not None else "your current progression plan"
@@ -2929,15 +2939,6 @@ class ChatService:
                 f"The next unlock I'd push is {self._action_label(unlock_action)}. "
                 f"It reduces future friction across the rest of your account routes."
             )
-
-        if known_unlocks:
-            return (
-                "Your synced companion state already covers the biggest unlock lanes on this account, "
-                "so I'd convert that advantage into skills, gear, or cleaner progression cleanup next."
-            )
-
-        if progress is not None and progress.active_unlocks:
-            return f"Your strongest tracked unlock chain right now is {progress.active_unlocks[0]}."
 
         return f"I'd still anchor on {self._action_label(unlock_action)} as the most useful unlock lane right now."
 

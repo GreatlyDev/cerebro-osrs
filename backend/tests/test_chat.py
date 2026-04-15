@@ -7,9 +7,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.account_snapshot import AccountSnapshot
 from app.models.chat import ChatSession
+from app.schemas.recommendation import NextActionRecommendation, NextActionResponse
 from app.services.assistant import assistant_service
 from app.services.accounts import account_service
 from app.services.chat import chat_service
+from app.services.recommendations import recommendation_service
 
 
 def _sample_account_readout_summary(rsn: str) -> dict[str, object]:
@@ -4158,6 +4160,83 @@ async def test_chat_uses_companion_quest_state_for_generic_unlock_reasoning(clie
     assert "bone voyage" not in content
     assert "fossil island" not in content
     assert "digsite pendant" not in content
+
+
+@pytest.mark.asyncio
+async def test_chat_generic_unlock_reasoning_does_not_fall_back_to_filtered_top_action(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_get_next_actions(*args, **kwargs) -> NextActionResponse:
+        bone_voyage = NextActionRecommendation(
+            action_type="quest",
+            title="Push toward Bone Voyage",
+            summary="High-value unlock quest for Fossil Island access.",
+            score=92,
+            priority="high",
+            target={"quest_id": "bone-voyage"},
+            blockers=[],
+            supporting_data={},
+        )
+        skill_action = NextActionRecommendation(
+            action_type="skill",
+            title="Train Magic",
+            summary="Use magic training to improve broader progression.",
+            score=78,
+            priority="medium",
+            target={"skill": "magic"},
+            blockers=[],
+            supporting_data={},
+        )
+        return NextActionResponse(
+            account_rsn="GenEdge",
+            goal_id=1,
+            goal_title="Quest Cape",
+            top_action=bone_voyage,
+            actions=[bone_voyage, skill_action],
+            context={},
+        )
+
+    monkeypatch.setattr(recommendation_service, "get_next_actions", fake_get_next_actions)
+
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Generic Edge User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "GenEdge"}, cookies=cookies)
+    await client.post(f"/api/accounts/{account.json()['id']}/sync", cookies=cookies)
+    await client.post(
+        "/api/goals",
+        cookies=cookies,
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "GenEdge"},
+    )
+
+    await client.patch(
+        f"/api/accounts/{account.json()['id']}/progress",
+        cookies=cookies,
+        json={
+            "completed_quests": ["bone voyage", "fairytale i - growing pains"],
+            "completed_diaries": {},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": [],
+            "equipped_gear": {},
+            "notable_items": [],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion"},
+        },
+    )
+    session = await client.post("/api/chat/sessions", json={"title": "Generic Unlock Edge"}, cookies=cookies)
+
+    response = await client.post(
+        f"/api/chat/sessions/{session.json()['id']}/messages",
+        cookies=cookies,
+        json={"content": "What unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "bone voyage" not in content
+    assert "fossil island" not in content
+    assert "fairy ring" not in content
+    assert "skills, gear, or cleaner progression cleanup next" in content
 
 
 @pytest.mark.asyncio
