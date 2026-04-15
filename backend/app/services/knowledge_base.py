@@ -1,4 +1,5 @@
-from app.services.knowledge_retrieval import KnowledgeRetrievalPacket, KnowledgeRetrievalService
+from app.services.knowledge_models import KnowledgeRetrievalPacket
+from app.services.knowledge_retrieval import KnowledgeRetrievalService
 
 
 class KnowledgeBaseService:

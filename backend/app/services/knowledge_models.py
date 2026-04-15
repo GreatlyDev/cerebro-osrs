@@ -15,6 +15,7 @@ KnowledgeEntryType = Literal[
     "account_routing_pattern",
 ]
 KnowledgeDomain = Literal["quests", "skilling", "combat", "economy"]
+KnowledgeQuestionMode = Literal["factual", "readiness", "comparison", "planning", "explanation"]
 
 
 class KnowledgeEntry(BaseModel):
@@ -49,3 +50,22 @@ class KnowledgeDocument(BaseModel):
 class KnowledgeCorpus(BaseModel):
     entries: list[KnowledgeEntry] = Field(default_factory=list)
     documents: list[KnowledgeDocument] = Field(default_factory=list)
+
+
+class KnowledgeRouteDecision(BaseModel):
+    question_mode: KnowledgeQuestionMode
+    primary_domain: KnowledgeDomain | None = None
+    secondary_domains: list[KnowledgeDomain] = Field(default_factory=list)
+    include_supporting_documents: bool = False
+    reasoning: list[str] = Field(default_factory=list)
+
+
+class KnowledgeRetrievalPacket(BaseModel):
+    entries: list[KnowledgeEntry] = Field(default_factory=list)
+    documents: list[KnowledgeDocument] = Field(default_factory=list)
+    summary: str | None = None
+    question_mode: KnowledgeQuestionMode | None = None
+    primary_domain: KnowledgeDomain | None = None
+    secondary_domains: list[KnowledgeDomain] = Field(default_factory=list)
+    include_supporting_documents: bool = False
+    match_notes: list[str] = Field(default_factory=list)

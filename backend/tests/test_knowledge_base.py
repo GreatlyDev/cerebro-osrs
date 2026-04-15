@@ -100,6 +100,31 @@ def test_retrieve_combat_and_economy_knowledge_for_weekend_profit_question() -> 
     assert "combat" in matched_domains
 
 
+def test_retrieve_packet_marks_readiness_route_for_barrows_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="Am I ready for Barrows right now?",
+        session_intent="bossing",
+        session_focus_summary="Barrows prep for a midgame account",
+    )
+
+    assert packet.question_mode == "readiness"
+    assert packet.primary_domain == "combat"
+    assert packet.include_supporting_documents is True
+    assert packet.match_notes
+
+
+def test_retrieve_packet_marks_comparison_route_for_profit_question() -> None:
+    packet = knowledge_base_service.retrieve_packet(
+        query="What is better for me right now, profit or progression?",
+        session_intent="profit",
+        session_focus_summary="Comparing account routes",
+    )
+
+    assert packet.question_mode == "comparison"
+    assert packet.primary_domain == "economy"
+    assert "economy" in [packet.primary_domain, *packet.secondary_domains]
+
+
 def test_store_exposes_staged_entries_separately() -> None:
     store = KnowledgeStore(
         KnowledgeCorpus(
