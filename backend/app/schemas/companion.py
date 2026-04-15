@@ -23,16 +23,16 @@ class CompanionLinkExchangeResponse(BaseModel):
 
 
 class CompanionSyncRequest(BaseModel):
-    plugin_instance_id: str
-    plugin_version: str
-    completed_quests: list[str] = Field(default_factory=list)
-    completed_diaries: dict[str, list[str]] = Field(default_factory=dict)
-    unlocked_transports: list[str] = Field(default_factory=list)
-    active_unlocks: list[str] = Field(default_factory=list)
-    owned_gear: list[str] = Field(default_factory=list)
-    equipped_gear: dict[str, str] = Field(default_factory=dict)
-    notable_items: list[str] = Field(default_factory=list)
-    companion_state: dict[str, Any] = Field(default_factory=dict)
+    plugin_instance_id: str = Field(min_length=1, max_length=128)
+    plugin_version: str = Field(min_length=1, max_length=64)
+    completed_quests: list[str] | None = None
+    completed_diaries: dict[str, list[str]] | None = None
+    unlocked_transports: list[str] | None = None
+    active_unlocks: list[str] | None = None
+    owned_gear: list[str] | None = None
+    equipped_gear: dict[str, str] | None = None
+    notable_items: list[str] | None = None
+    companion_state: dict[str, Any] | None = None
 
 
 class CompanionSyncResponse(BaseModel):

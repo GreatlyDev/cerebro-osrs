@@ -30,6 +30,34 @@ class CompanionService:
             return now.replace(tzinfo=None)
         return now
 
+    def _preserve_or_replace_list(
+        self,
+        incoming: list[str] | None,
+        existing: list[str],
+    ) -> list[str]:
+        return existing if incoming is None else incoming
+
+    def _preserve_or_replace_diaries(
+        self,
+        incoming: dict[str, list[str]] | None,
+        existing: dict[str, list[str]],
+    ) -> dict[str, list[str]]:
+        return existing if incoming is None else incoming
+
+    def _preserve_or_replace_gear_map(
+        self,
+        incoming: dict[str, str] | None,
+        existing: dict[str, str],
+    ) -> dict[str, str]:
+        return existing if incoming is None else incoming
+
+    def _preserve_or_replace_state(
+        self,
+        incoming: dict[str, object] | None,
+        existing: dict[str, object],
+    ) -> dict[str, object]:
+        return existing if incoming is None else incoming
+
     async def _get_owned_account(
         self,
         *,
@@ -164,14 +192,38 @@ class CompanionService:
             db_session.add(progress)
 
         normalized_progress = AccountProgressUpdateRequest(
-            completed_quests=payload.completed_quests,
-            completed_diaries=payload.completed_diaries,
-            unlocked_transports=payload.unlocked_transports,
-            owned_gear=payload.owned_gear,
-            equipped_gear=payload.equipped_gear,
-            notable_items=payload.notable_items,
-            active_unlocks=payload.active_unlocks,
-            companion_state=payload.companion_state,
+            completed_quests=self._preserve_or_replace_list(
+                payload.completed_quests,
+                progress.completed_quests,
+            ),
+            completed_diaries=self._preserve_or_replace_diaries(
+                payload.completed_diaries,
+                progress.completed_diaries,
+            ),
+            unlocked_transports=self._preserve_or_replace_list(
+                payload.unlocked_transports,
+                progress.unlocked_transports,
+            ),
+            owned_gear=self._preserve_or_replace_list(
+                payload.owned_gear,
+                progress.owned_gear,
+            ),
+            equipped_gear=self._preserve_or_replace_gear_map(
+                payload.equipped_gear,
+                progress.equipped_gear,
+            ),
+            notable_items=self._preserve_or_replace_list(
+                payload.notable_items,
+                progress.notable_items,
+            ),
+            active_unlocks=self._preserve_or_replace_list(
+                payload.active_unlocks,
+                progress.active_unlocks,
+            ),
+            companion_state=self._preserve_or_replace_state(
+                payload.companion_state,
+                progress.companion_state,
+            ),
         )
         synced_at = datetime.now(UTC)
         progress.completed_quests = normalized_progress.completed_quests

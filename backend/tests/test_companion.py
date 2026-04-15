@@ -278,6 +278,86 @@ async def test_companion_sync_updates_account_progress_and_status(
 
 
 @pytest.mark.asyncio
+async def test_companion_sync_rejects_invalid_sync_secret(
+    unauthenticated_client: AsyncClient,
+) -> None:
+    response = await unauthenticated_client.post(
+        "/api/companion/sync",
+        headers={"X-Cerebro-Sync-Secret": "invalid-secret"},
+        json={
+            "plugin_instance_id": "plugin-invalid",
+            "plugin_version": "0.1.0",
+            "completed_quests": ["bone voyage"],
+        },
+    )
+
+    assert response.status_code == 401
+    assert response.json()["detail"] == "Companion sync secret is invalid."
+
+
+@pytest.mark.asyncio
+async def test_companion_partial_sync_preserves_existing_state_when_fields_are_omitted(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "PartialSync"})
+    account_id = account.json()["id"]
+    link = await client.post(f"/api/companion/accounts/{account_id}/link-sessions")
+    exchange = await unauthenticated_client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-preserve",
+            "plugin_version": "0.1.0",
+        },
+    )
+    sync_secret = exchange.json()["sync_secret"]
+
+    initial_sync = await unauthenticated_client.post(
+        "/api/companion/sync",
+        headers={"X-Cerebro-Sync-Secret": sync_secret},
+        json={
+            "plugin_instance_id": "plugin-preserve",
+            "plugin_version": "0.1.0",
+            "completed_quests": ["bone voyage"],
+            "completed_diaries": {"lumbridge_draynor": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "active_unlocks": ["fossil island access"],
+            "owned_gear": ["dragon scimitar"],
+            "equipped_gear": {"weapon": "dragon scimitar"},
+            "notable_items": ["barrows gloves"],
+            "companion_state": {"quest_points": 200},
+        },
+    )
+
+    assert initial_sync.status_code == 200
+
+    partial_sync = await unauthenticated_client.post(
+        "/api/companion/sync",
+        headers={"X-Cerebro-Sync-Secret": sync_secret},
+        json={
+            "plugin_instance_id": "plugin-preserve",
+            "plugin_version": "0.2.0",
+            "notable_items": [],
+        },
+    )
+
+    assert partial_sync.status_code == 200
+
+    progress = await client.get(f"/api/accounts/{account_id}/progress")
+
+    assert progress.json()["completed_quests"] == ["bone voyage"]
+    assert progress.json()["completed_diaries"] == {"lumbridge_draynor": ["easy"]}
+    assert progress.json()["unlocked_transports"] == ["fairy rings"]
+    assert progress.json()["active_unlocks"] == ["fossil island access"]
+    assert progress.json()["owned_gear"] == ["dragon scimitar"]
+    assert progress.json()["equipped_gear"] == {"weapon": "dragon scimitar"}
+    assert progress.json()["notable_items"] == []
+    assert progress.json()["companion_state"]["quest_points"] == 200
+    assert progress.json()["companion_state"]["plugin_version"] == "0.2.0"
+
+
+@pytest.mark.asyncio
 async def test_companion_progress_round_trip_persists_and_normalizes_api_fields(
     client: AsyncClient,
 ) -> None:
