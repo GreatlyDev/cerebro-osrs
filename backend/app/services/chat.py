@@ -2898,6 +2898,18 @@ class ChatService:
             ),
         )
         actions = next_actions.actions
+        known_unlocks = user_context_service.tracked_known_unlocks(progress)
+        if known_unlocks:
+            actions = [
+                action
+                for action in actions
+                if not self._action_matches_known_unlock(action, known_unlocks)
+            ]
+        if not actions:
+            return (
+                "Your synced companion state already covers the biggest unlock lanes on this account, "
+                "so I'd convert that advantage into skills, gear, or cleaner progression cleanup next."
+            )
         unlock_action = next(
             (action for action in actions if action.action_type in {"quest", "travel"}),
             next_actions.top_action,
@@ -2916,6 +2928,12 @@ class ChatService:
             return (
                 f"The next unlock I'd push is {self._action_label(unlock_action)}. "
                 f"It reduces future friction across the rest of your account routes."
+            )
+
+        if known_unlocks:
+            return (
+                "Your synced companion state already covers the biggest unlock lanes on this account, "
+                "so I'd convert that advantage into skills, gear, or cleaner progression cleanup next."
             )
 
         if progress is not None and progress.active_unlocks:
