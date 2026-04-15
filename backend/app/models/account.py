@@ -38,3 +38,10 @@ class Account(Base):
         cascade="all, delete-orphan",
         uselist=False,
     )
+    companion_connection: Mapped["CompanionConnection | None"] = relationship(
+        cascade="all, delete-orphan",
+        uselist=False,
+    )
+    companion_link_sessions: Mapped[list["CompanionLinkSession"]] = relationship(
+        cascade="all, delete-orphan",
+    )
