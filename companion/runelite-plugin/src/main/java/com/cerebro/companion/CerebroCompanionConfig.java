@@ -1,48 +1,51 @@
 package com.cerebro.companion;
 
-public class CerebroCompanionConfig
+import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigItem;
+
+@ConfigGroup(CerebroCompanionConfig.GROUP)
+public interface CerebroCompanionConfig extends Config
 {
-    private String baseUrl = "http://127.0.0.1:8000";
-    private String linkToken = "";
-    private String syncSecret = "";
+    String GROUP = "cerebrocompanion";
+    String DEFAULT_BASE_URL = "http://127.0.0.1:8000";
+    String BASE_URL_KEY = "baseUrl";
+    String LINK_TOKEN_KEY = "linkToken";
+    String SYNC_SECRET_KEY = "syncSecret";
 
-    public String getBaseUrl()
+    @ConfigItem(
+        position = 0,
+        keyName = BASE_URL_KEY,
+        name = "Cerebro base URL",
+        description = "Base URL for the Cerebro companion API"
+    )
+    default String baseUrl()
     {
-        return baseUrl;
+        return DEFAULT_BASE_URL;
     }
 
-    public void setBaseUrl(String baseUrl)
+    @ConfigItem(
+        position = 1,
+        keyName = LINK_TOKEN_KEY,
+        name = "Pending link token",
+        description = "One-time link token issued by Cerebro",
+        hidden = true
+    )
+    default String linkToken()
     {
-        this.baseUrl = baseUrl == null ? "http://127.0.0.1:8000" : baseUrl.trim();
+        return "";
     }
 
-    public String getLinkToken()
+    @ConfigItem(
+        position = 2,
+        keyName = SYNC_SECRET_KEY,
+        name = "Sync secret",
+        description = "Scoped sync secret used for Cerebro sync requests",
+        hidden = true,
+        secret = true
+    )
+    default String syncSecret()
     {
-        return linkToken;
-    }
-
-    public void setLinkToken(String linkToken)
-    {
-        this.linkToken = linkToken == null ? "" : linkToken.trim();
-    }
-
-    public String getSyncSecret()
-    {
-        return syncSecret;
-    }
-
-    public void setSyncSecret(String syncSecret)
-    {
-        this.syncSecret = syncSecret == null ? "" : syncSecret.trim();
-    }
-
-    public boolean hasLinkToken()
-    {
-        return !linkToken.isEmpty();
-    }
-
-    public boolean isLinked()
-    {
-        return !syncSecret.isEmpty();
+        return "";
     }
 }
