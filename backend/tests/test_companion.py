@@ -406,3 +406,72 @@ async def test_companion_progress_round_trip_persists_and_normalizes_api_fields(
         "source": "runelite_companion",
         "last_sync": "2026-04-15T00:00:00Z",
     }
+
+
+@pytest.mark.asyncio
+async def test_companion_link_and_sync_make_chat_more_account_aware(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "End To End"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "EndToEnd"}, cookies=cookies)
+    account_id = account.json()["id"]
+
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    await client.post(
+        "/api/goals",
+        cookies=cookies,
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "EndToEnd"},
+    )
+
+    link = await client.post(
+        f"/api/companion/accounts/{account_id}/link-sessions",
+        cookies=cookies,
+    )
+    exchange = await unauthenticated_client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-final",
+            "plugin_version": "0.1.0",
+        },
+    )
+    sync = await unauthenticated_client.post(
+        "/api/companion/sync",
+        headers={"X-Cerebro-Sync-Secret": exchange.json()["sync_secret"]},
+        json={
+            "plugin_instance_id": "plugin-final",
+            "plugin_version": "0.1.0",
+            "completed_quests": ["bone voyage", "fairytale i - growing pains"],
+            "completed_diaries": {"lumbridge_draynor": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "active_unlocks": ["fossil island access"],
+            "owned_gear": ["dragon scimitar"],
+            "equipped_gear": {"weapon": "dragon scimitar"},
+            "notable_items": ["barrows gloves"],
+            "companion_state": {"quest_points": 200},
+        },
+    )
+
+    assert sync.status_code == 200
+
+    session = await client.post(
+        "/api/chat/sessions",
+        json={"title": "Companion Aware"},
+        cookies=cookies,
+    )
+    response = await client.post(
+        f"/api/chat/sessions/{session.json()['id']}/messages",
+        cookies=cookies,
+        json={"content": "What utility unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "next utility unlock" in content
+    assert "travel savings" in content or "broader account utility" in content
+    assert "fairy ring" not in content
+    assert "bone voyage" not in content
+    assert "fossil island" not in content
+    assert "digsite pendant" not in content
