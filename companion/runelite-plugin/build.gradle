@@ -29,8 +29,16 @@ tasks.withType(JavaCompile).configureEach {
     options.release = 11
 }
 
+configurations {
+    localClientRuntime {
+        extendsFrom compileOnly
+    }
+}
+
 dependencies {
     compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+    localClientRuntime group: 'net.runelite', name: 'client', version: runeLiteVersion
+
     testImplementation 'org.junit.jupiter:junit-jupiter:5.10.2'
     testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -43,6 +51,15 @@ jar {
             'Implementation-Version': project.version
         )
     }
+}
+
+tasks.register('runLocalClient', JavaExec) {
+    group = 'application'
+    description = 'Launches a RuneLite development client with the Cerebro companion on the plugin path.'
+    classpath = files(sourceSets.main.runtimeClasspath, configurations.localClientRuntime)
+    mainClass = 'net.runelite.client.RuneLite'
+    workingDir = project.projectDir
+    systemProperty 'runelite.pluginhub.version', 'local-cerebro'
 }
 
 test {

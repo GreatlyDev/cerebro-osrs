@@ -39,6 +39,10 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 class CerebroCompanionPluginTest
 {
+    // Local-installability contract:
+    // 1. Windows users can run `gradlew.bat runLocalClient`
+    // 2. The task launches a RuneLite development client with this plugin on the classpath
+    // 3. The same wrapper can run `gradlew.bat test` without a separate Gradle install
     @Test
     void linkLifecycleUsesPersistedConfigAndClearsOneTimeToken() throws Exception
     {
