@@ -59,6 +59,11 @@ public class CerebroSyncClient
         );
     }
 
+    public HttpRequest sendSyncRequest(String syncSecret, SyncPayload payload)
+    {
+        return buildSyncRequest(syncSecret, payload);
+    }
+
     private HttpRequest jsonPost(String path, Map<String, Object> payload, Map<String, String> headers)
     {
         HttpRequest.Builder builder = HttpRequest.newBuilder()

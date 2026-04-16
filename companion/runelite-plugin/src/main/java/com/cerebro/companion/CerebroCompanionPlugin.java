@@ -4,12 +4,15 @@ import com.cerebro.companion.api.CerebroModels.LinkExchangeRequest;
 import com.cerebro.companion.api.CerebroModels.LinkExchangeResponse;
 import com.cerebro.companion.api.CerebroModels.SyncPayload;
 import com.cerebro.companion.api.CerebroSyncClient;
+import com.cerebro.companion.state.DiaryStateCollector;
+import com.cerebro.companion.state.GearStateCollector;
+import com.cerebro.companion.state.PayloadComposer;
+import com.cerebro.companion.state.QuestStateCollector;
+import com.cerebro.companion.state.TravelStateCollector;
+import com.cerebro.companion.state.UtilityStateCollector;
 import com.google.inject.Provides;
 
 import java.net.http.HttpRequest;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -34,6 +37,12 @@ public class CerebroCompanionPlugin extends Plugin
     private final Function<String, CerebroSyncClient> syncClientFactory;
     private final BiConsumer<String, String> configWriter;
     private final Consumer<String> configRemover;
+    private final QuestStateCollector questStateCollector;
+    private final DiaryStateCollector diaryStateCollector;
+    private final TravelStateCollector travelStateCollector;
+    private final GearStateCollector gearStateCollector;
+    private final UtilityStateCollector utilityStateCollector;
+    private final PayloadComposer payloadComposer;
 
     @Inject
     private ConfigManager configManager;
@@ -43,7 +52,19 @@ public class CerebroCompanionPlugin extends Plugin
 
     public CerebroCompanionPlugin()
     {
-        this(UUID.randomUUID().toString(), resolvePluginVersion(), CerebroSyncClient::new, null, null);
+        this(
+            UUID.randomUUID().toString(),
+            resolvePluginVersion(),
+            CerebroSyncClient::new,
+            null,
+            null,
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
     }
 
     CerebroCompanionPlugin(
@@ -57,8 +78,15 @@ public class CerebroCompanionPlugin extends Plugin
             config,
             pluginInstanceId,
             pluginVersion,
+            CerebroSyncClient::new,
             (key, value) -> configManager.setConfiguration(CerebroCompanionConfig.GROUP, key, value),
-            key -> configManager.unsetConfiguration(CerebroCompanionConfig.GROUP, key)
+            key -> configManager.unsetConfiguration(CerebroCompanionConfig.GROUP, key),
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
         );
         this.configManager = Objects.requireNonNull(configManager, "configManager must not be null");
     }
@@ -72,11 +100,48 @@ public class CerebroCompanionPlugin extends Plugin
     )
     {
         this(
+            config,
             pluginInstanceId,
             pluginVersion,
             CerebroSyncClient::new,
+            configWriter,
+            configRemover,
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+    }
+
+    CerebroCompanionPlugin(
+        CerebroCompanionConfig config,
+        String pluginInstanceId,
+        String pluginVersion,
+        Function<String, CerebroSyncClient> syncClientFactory,
+        BiConsumer<String, String> configWriter,
+        Consumer<String> configRemover,
+        QuestStateCollector questStateCollector,
+        DiaryStateCollector diaryStateCollector,
+        TravelStateCollector travelStateCollector,
+        GearStateCollector gearStateCollector,
+        UtilityStateCollector utilityStateCollector,
+        PayloadComposer payloadComposer
+    )
+    {
+        this(
+            pluginInstanceId,
+            pluginVersion,
+            syncClientFactory,
             Objects.requireNonNull(configWriter, "configWriter must not be null"),
-            Objects.requireNonNull(configRemover, "configRemover must not be null")
+            Objects.requireNonNull(configRemover, "configRemover must not be null"),
+            questStateCollector,
+            diaryStateCollector,
+            travelStateCollector,
+            gearStateCollector,
+            utilityStateCollector,
+            payloadComposer
         );
         this.config = Objects.requireNonNull(config, "config must not be null");
     }
@@ -86,7 +151,13 @@ public class CerebroCompanionPlugin extends Plugin
         String pluginVersion,
         Function<String, CerebroSyncClient> syncClientFactory,
         BiConsumer<String, String> configWriter,
-        Consumer<String> configRemover
+        Consumer<String> configRemover,
+        QuestStateCollector questStateCollector,
+        DiaryStateCollector diaryStateCollector,
+        TravelStateCollector travelStateCollector,
+        GearStateCollector gearStateCollector,
+        UtilityStateCollector utilityStateCollector,
+        PayloadComposer payloadComposer
     )
     {
         this.pluginInstanceId = requireValue("pluginInstanceId", pluginInstanceId);
@@ -94,6 +165,12 @@ public class CerebroCompanionPlugin extends Plugin
         this.syncClientFactory = Objects.requireNonNull(syncClientFactory, "syncClientFactory must not be null");
         this.configWriter = configWriter;
         this.configRemover = configRemover;
+        this.questStateCollector = Objects.requireNonNull(questStateCollector, "questStateCollector must not be null");
+        this.diaryStateCollector = Objects.requireNonNull(diaryStateCollector, "diaryStateCollector must not be null");
+        this.travelStateCollector = Objects.requireNonNull(travelStateCollector, "travelStateCollector must not be null");
+        this.gearStateCollector = Objects.requireNonNull(gearStateCollector, "gearStateCollector must not be null");
+        this.utilityStateCollector = Objects.requireNonNull(utilityStateCollector, "utilityStateCollector must not be null");
+        this.payloadComposer = Objects.requireNonNull(payloadComposer, "payloadComposer must not be null");
     }
 
     public CerebroCompanionConfig getConfig()
@@ -147,30 +224,12 @@ public class CerebroCompanionPlugin extends Plugin
 
     public HttpRequest buildSyncRequest()
     {
-        String syncSecret = normalizeConfigValue(requireConfig().syncSecret());
-        if (syncSecret.isEmpty())
-        {
-            throw new IllegalStateException("A sync secret is required before building a sync request.");
-        }
+        return getSyncClient().buildSyncRequest(requireSyncSecret(), composePayload());
+    }
 
-        Map<String, Object> companionState = new LinkedHashMap<>();
-        companionState.put("source", "runelite_companion");
-        companionState.put("link_token_present", hasPendingLink());
-
-        SyncPayload payload = new SyncPayload(
-            pluginInstanceId,
-            pluginVersion,
-            List.of(),
-            Map.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            Map.of(),
-            List.of(),
-            companionState
-        );
-
-        return getSyncClient().buildSyncRequest(syncSecret, payload);
+    public HttpRequest syncNow()
+    {
+        return getSyncClient().sendSyncRequest(requireSyncSecret(), composePayload());
     }
 
     private CerebroCompanionConfig requireConfig()
@@ -211,6 +270,30 @@ public class CerebroCompanionPlugin extends Plugin
         }
 
         requireConfigManager().unsetConfiguration(CerebroCompanionConfig.GROUP, key);
+    }
+
+    private SyncPayload composePayload()
+    {
+        return payloadComposer.compose(
+            pluginInstanceId,
+            pluginVersion,
+            hasPendingLink(),
+            questStateCollector,
+            diaryStateCollector,
+            travelStateCollector,
+            gearStateCollector,
+            utilityStateCollector
+        );
+    }
+
+    private String requireSyncSecret()
+    {
+        String syncSecret = normalizeConfigValue(requireConfig().syncSecret());
+        if (syncSecret.isEmpty())
+        {
+            throw new IllegalStateException("A sync secret is required before building a sync request.");
+        }
+        return syncSecret;
     }
 
     private static String requireValue(String name, String value)

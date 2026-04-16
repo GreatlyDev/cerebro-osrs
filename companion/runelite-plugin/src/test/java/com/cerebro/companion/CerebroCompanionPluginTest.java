@@ -1,6 +1,14 @@
 package com.cerebro.companion;
 
 import com.cerebro.companion.api.CerebroModels.LinkExchangeResponse;
+import com.cerebro.companion.api.CerebroModels.SyncPayload;
+import com.cerebro.companion.api.CerebroSyncClient;
+import com.cerebro.companion.state.DiaryStateCollector;
+import com.cerebro.companion.state.GearStateCollector;
+import com.cerebro.companion.state.PayloadComposer;
+import com.cerebro.companion.state.QuestStateCollector;
+import com.cerebro.companion.state.TravelStateCollector;
+import com.cerebro.companion.state.UtilityStateCollector;
 import com.google.inject.Provides;
 
 import java.io.ByteArrayOutputStream;
@@ -8,6 +16,9 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.net.http.HttpRequest;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -106,6 +118,54 @@ class CerebroCompanionPluginTest
         assertTrue(Config.class.isAssignableFrom(provideConfig.getReturnType()));
     }
 
+    @Test
+    void syncNowBuildsBroadPayloadAndSendsItThroughSyncClient() throws Exception
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("pending-link");
+        AtomicReference<String> syncSecret = new AtomicReference<>("secret-456");
+
+        CerebroCompanionConfig config = new TestConfig(baseUrl, linkToken, syncSecret);
+        CapturingSyncClient syncClient = new CapturingSyncClient(baseUrl.get());
+
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            config,
+            "plugin-123",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) ->
+            {
+            },
+            key ->
+            {
+            },
+            new QuestStateCollector(List.of("Dragon Slayer I")),
+            new DiaryStateCollector(Map.of("desert", List.of("easy"))),
+            new TravelStateCollector(List.of("fairy_ring_zanaris"), List.of("spellbook:lunar")),
+            new GearStateCollector(
+                List.of("dragon_scimitar"),
+                Map.of("weapon", "dragon_scimitar"),
+                List.of("seed_box")
+            ),
+            new UtilityStateCollector(Map.of("account_type", "main")),
+            new PayloadComposer()
+        );
+
+        HttpRequest sentRequest = plugin.syncNow();
+
+        assertSame(sentRequest, syncClient.getLastRequest());
+        assertEquals("secret-456", syncClient.getLastSyncSecret());
+        assertEquals("Dragon Slayer I", syncClient.getLastPayload().getCompletedQuests().get(0));
+        assertEquals("main", syncClient.getLastPayload().getCompanionState().get("account_type"));
+
+        String syncPayload = readRequestBody(sentRequest);
+        assertTrue(syncPayload.contains("\"completed_quests\":[\"Dragon Slayer I\"]"));
+        assertTrue(syncPayload.contains("\"completed_diaries\":{\"desert\":[\"easy\"]}"));
+        assertTrue(syncPayload.contains("\"unlocked_transports\":[\"fairy_ring_zanaris\"]"));
+        assertTrue(syncPayload.contains("\"equipped_gear\":{\"weapon\":\"dragon_scimitar\"}"));
+        assertTrue(syncPayload.contains("\"link_token_present\":true"));
+    }
+
     private String readRequestBody(HttpRequest request) throws Exception
     {
         HttpRequest.BodyPublisher publisher = request.bodyPublisher().orElseThrow();
@@ -185,6 +245,42 @@ class CerebroCompanionPluginTest
         public String syncSecret()
         {
             return syncSecret.get();
+        }
+    }
+
+    private static final class CapturingSyncClient extends CerebroSyncClient
+    {
+        private HttpRequest lastRequest;
+        private SyncPayload lastPayload;
+        private String lastSyncSecret;
+
+        private CapturingSyncClient(String baseUrl)
+        {
+            super(baseUrl);
+        }
+
+        @Override
+        public HttpRequest sendSyncRequest(String syncSecret, SyncPayload payload)
+        {
+            this.lastSyncSecret = syncSecret;
+            this.lastPayload = payload;
+            this.lastRequest = super.buildSyncRequest(syncSecret, payload);
+            return lastRequest;
+        }
+
+        private HttpRequest getLastRequest()
+        {
+            return lastRequest;
+        }
+
+        private SyncPayload getLastPayload()
+        {
+            return lastPayload;
+        }
+
+        private String getLastSyncSecret()
+        {
+            return lastSyncSecret;
         }
     }
 }
