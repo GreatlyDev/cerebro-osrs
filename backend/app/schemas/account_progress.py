@@ -14,14 +14,14 @@ def _normalize_text_list(values: list[str]) -> list[str]:
 
 
 class AccountProgressUpdateRequest(BaseModel):
-    completed_quests: list[str] = Field(default_factory=list)
-    completed_diaries: dict[str, list[str]] = Field(default_factory=dict)
-    unlocked_transports: list[str] = Field(default_factory=list)
-    owned_gear: list[str] = Field(default_factory=list)
-    equipped_gear: dict[str, str] = Field(default_factory=dict)
-    notable_items: list[str] = Field(default_factory=list)
-    active_unlocks: list[str] = Field(default_factory=list)
-    companion_state: dict[str, Any] = Field(default_factory=dict)
+    completed_quests: list[str] | None = None
+    completed_diaries: dict[str, list[str]] | None = None
+    unlocked_transports: list[str] | None = None
+    owned_gear: list[str] | None = None
+    equipped_gear: dict[str, str] | None = None
+    notable_items: list[str] | None = None
+    active_unlocks: list[str] | None = None
+    companion_state: dict[str, Any] | None = None
 
     @field_validator(
         "completed_quests",
@@ -31,15 +31,19 @@ class AccountProgressUpdateRequest(BaseModel):
         "active_unlocks",
     )
     @classmethod
-    def normalize_entries(cls, value: list[str]) -> list[str]:
+    def normalize_entries(cls, value: list[str] | None) -> list[str] | None:
+        if value is None:
+            return None
         return _normalize_text_list(value)
 
     @field_validator("completed_diaries")
     @classmethod
     def normalize_completed_diaries(
         cls,
-        value: dict[str, list[str]],
-    ) -> dict[str, list[str]]:
+        value: dict[str, list[str]] | None,
+    ) -> dict[str, list[str]] | None:
+        if value is None:
+            return None
         normalized = {
             cleaned_key: _normalize_text_list(tiers)
             for key, tiers in value.items()
@@ -53,7 +57,9 @@ class AccountProgressUpdateRequest(BaseModel):
 
     @field_validator("equipped_gear")
     @classmethod
-    def normalize_equipped_gear(cls, value: dict[str, str]) -> dict[str, str]:
+    def normalize_equipped_gear(cls, value: dict[str, str] | None) -> dict[str, str] | None:
+        if value is None:
+            return None
         normalized = {
             cleaned_slot: cleaned_item
             for slot, item in value.items()

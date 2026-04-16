@@ -153,14 +153,22 @@ class AccountService:
     ) -> AccountProgressResponse:
         await self._get_account_or_404(db_session=db_session, user=user, account_id=account_id)
         progress = await self._get_or_create_progress(db_session=db_session, account_id=account_id)
-        progress.completed_quests = payload.completed_quests
-        progress.completed_diaries = payload.completed_diaries
-        progress.unlocked_transports = payload.unlocked_transports
-        progress.owned_gear = payload.owned_gear
-        progress.equipped_gear = payload.equipped_gear
-        progress.notable_items = payload.notable_items
-        progress.active_unlocks = payload.active_unlocks
-        progress.companion_state = payload.companion_state
+        if payload.completed_quests is not None:
+            progress.completed_quests = payload.completed_quests
+        if payload.completed_diaries is not None:
+            progress.completed_diaries = payload.completed_diaries
+        if payload.unlocked_transports is not None:
+            progress.unlocked_transports = payload.unlocked_transports
+        if payload.owned_gear is not None:
+            progress.owned_gear = payload.owned_gear
+        if payload.equipped_gear is not None:
+            progress.equipped_gear = payload.equipped_gear
+        if payload.notable_items is not None:
+            progress.notable_items = payload.notable_items
+        if payload.active_unlocks is not None:
+            progress.active_unlocks = payload.active_unlocks
+        if payload.companion_state is not None:
+            progress.companion_state = payload.companion_state
         await db_session.commit()
         await db_session.refresh(progress)
         return AccountProgressResponse.model_validate(progress)

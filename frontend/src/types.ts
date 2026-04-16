@@ -72,18 +72,26 @@ export type AccountProgress = {
   id: number;
   account_id: number;
   completed_quests: string[];
+  completed_diaries: Record<string, string[]>;
   unlocked_transports: string[];
   owned_gear: string[];
+  equipped_gear: Record<string, string>;
+  notable_items: string[];
   active_unlocks: string[];
+  companion_state: Record<string, unknown>;
   created_at: string;
   updated_at: string;
 };
 
 export type AccountProgressUpdate = {
-  completed_quests: string[];
-  unlocked_transports: string[];
-  owned_gear: string[];
-  active_unlocks: string[];
+  completed_quests?: string[];
+  completed_diaries?: Record<string, string[]>;
+  unlocked_transports?: string[];
+  owned_gear?: string[];
+  equipped_gear?: Record<string, string>;
+  notable_items?: string[];
+  active_unlocks?: string[];
+  companion_state?: Record<string, unknown>;
 };
 
 export type Goal = {

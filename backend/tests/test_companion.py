@@ -358,6 +358,47 @@ async def test_companion_partial_sync_preserves_existing_state_when_fields_are_o
 
 
 @pytest.mark.asyncio
+async def test_companion_first_sparse_sync_initializes_missing_fields(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    account = await client.post("/api/accounts", json={"rsn": "SparseSync"})
+    account_id = account.json()["id"]
+    link = await client.post(f"/api/companion/accounts/{account_id}/link-sessions")
+    exchange = await unauthenticated_client.post(
+        "/api/companion/link",
+        json={
+            "link_token": link.json()["link_token"],
+            "plugin_instance_id": "plugin-sparse",
+            "plugin_version": "0.1.0",
+        },
+    )
+
+    sync = await unauthenticated_client.post(
+        "/api/companion/sync",
+        headers={"X-Cerebro-Sync-Secret": exchange.json()["sync_secret"]},
+        json={
+            "plugin_instance_id": "plugin-sparse",
+            "plugin_version": "0.1.0",
+            "notable_items": ["barrows gloves"],
+        },
+    )
+
+    assert sync.status_code == 200
+
+    progress = await client.get(f"/api/accounts/{account_id}/progress")
+    assert progress.status_code == 200
+    assert progress.json()["completed_quests"] == []
+    assert progress.json()["completed_diaries"] == {}
+    assert progress.json()["unlocked_transports"] == []
+    assert progress.json()["owned_gear"] == []
+    assert progress.json()["equipped_gear"] == {}
+    assert progress.json()["active_unlocks"] == []
+    assert progress.json()["notable_items"] == ["barrows gloves"]
+    assert progress.json()["companion_state"]["source"] == "runelite_companion"
+
+
+@pytest.mark.asyncio
 async def test_companion_progress_round_trip_persists_and_normalizes_api_fields(
     client: AsyncClient,
 ) -> None:

@@ -1184,9 +1184,13 @@ export function App() {
     try {
       const updated = await api.updateAccountProgress(selectedAccount.id, {
         completed_quests: parseListDraft(progressDraft.completed_quests),
+        completed_diaries: selectedProgress?.completed_diaries ?? {},
         unlocked_transports: parseListDraft(progressDraft.unlocked_transports),
         owned_gear: parseListDraft(progressDraft.owned_gear),
+        equipped_gear: selectedProgress?.equipped_gear ?? {},
+        notable_items: selectedProgress?.notable_items ?? [],
         active_unlocks: parseListDraft(progressDraft.active_unlocks),
+        companion_state: selectedProgress?.companion_state ?? {},
       });
       setSelectedProgress(updated);
       setProgressDraft({

@@ -33,30 +33,30 @@ class CompanionService:
     def _preserve_or_replace_list(
         self,
         incoming: list[str] | None,
-        existing: list[str],
+        existing: list[str] | None,
     ) -> list[str]:
-        return existing if incoming is None else incoming
+        return ([] if existing is None else existing) if incoming is None else incoming
 
     def _preserve_or_replace_diaries(
         self,
         incoming: dict[str, list[str]] | None,
-        existing: dict[str, list[str]],
+        existing: dict[str, list[str]] | None,
     ) -> dict[str, list[str]]:
-        return existing if incoming is None else incoming
+        return ({} if existing is None else existing) if incoming is None else incoming
 
     def _preserve_or_replace_gear_map(
         self,
         incoming: dict[str, str] | None,
-        existing: dict[str, str],
+        existing: dict[str, str] | None,
     ) -> dict[str, str]:
-        return existing if incoming is None else incoming
+        return ({} if existing is None else existing) if incoming is None else incoming
 
     def _preserve_or_replace_state(
         self,
         incoming: dict[str, object] | None,
-        existing: dict[str, object],
+        existing: dict[str, object] | None,
     ) -> dict[str, object]:
-        return existing if incoming is None else incoming
+        return ({} if existing is None else existing) if incoming is None else incoming
 
     async def _get_owned_account(
         self,

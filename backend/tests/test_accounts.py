@@ -119,3 +119,44 @@ async def test_list_recent_account_snapshots_returns_latest_first(client: AsyncC
     assert payload["total"] == 2
     assert len(payload["items"]) == 2
     assert payload["items"][0]["id"] > payload["items"][1]["id"]
+
+
+@pytest.mark.asyncio
+async def test_update_account_progress_preserves_companion_fields_when_omitted(
+    client: AsyncClient,
+) -> None:
+    create_response = await client.post("/api/accounts", json={"rsn": "CompSafe"})
+    account_id = create_response.json()["id"]
+
+    seeded = await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["bone voyage"],
+            "completed_diaries": {"lumbridge draynor": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": ["dragon scimitar"],
+            "equipped_gear": {"weapon": "dragon scimitar"},
+            "notable_items": ["barrows gloves"],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion", "quest_points": 200},
+        },
+    )
+
+    assert seeded.status_code == 200
+
+    updated = await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["bone voyage", "fairytale i - growing pains"],
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": ["dragon scimitar"],
+            "active_unlocks": ["fossil island access", "digsite pendant access"],
+        },
+    )
+
+    assert updated.status_code == 200
+    payload = updated.json()
+    assert payload["completed_diaries"] == {"lumbridge draynor": ["easy"]}
+    assert payload["equipped_gear"] == {"weapon": "dragon scimitar"}
+    assert payload["notable_items"] == ["barrows gloves"]
+    assert payload["companion_state"] == {"source": "runelite_companion", "quest_points": 200}
