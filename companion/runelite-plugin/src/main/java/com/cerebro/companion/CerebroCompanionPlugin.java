@@ -13,6 +13,7 @@ import com.cerebro.companion.state.UtilityStateCollector;
 import com.google.inject.Provides;
 
 import java.net.http.HttpRequest;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -220,6 +221,7 @@ public class CerebroCompanionPlugin extends Plugin
             requireValue("syncSecret", response.getSyncSecret())
         );
         clearConfigValue(CerebroCompanionConfig.LINK_TOKEN_KEY);
+        recordSyncStatus("linked");
     }
 
     public HttpRequest buildSyncRequest()
@@ -229,7 +231,18 @@ public class CerebroCompanionPlugin extends Plugin
 
     public HttpRequest syncNow()
     {
-        return getSyncClient().sendSyncRequest(requireSyncSecret(), composePayload());
+        HttpRequest request = getSyncClient().sendSyncRequest(requireSyncSecret(), composePayload());
+        recordSyncStatus("sync-request-built");
+        return request;
+    }
+
+    public void recordSyncStatus(String status)
+    {
+        setConfigValue(
+            CerebroCompanionConfig.LAST_SYNC_STATUS_KEY,
+            requireValue("status", status)
+        );
+        setConfigValue(CerebroCompanionConfig.LAST_SYNC_AT_KEY, Instant.now().toString());
     }
 
     private CerebroCompanionConfig requireConfig()

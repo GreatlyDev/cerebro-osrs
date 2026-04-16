@@ -12,6 +12,8 @@ public interface CerebroCompanionConfig extends Config
     String BASE_URL_KEY = "baseUrl";
     String LINK_TOKEN_KEY = "linkToken";
     String SYNC_SECRET_KEY = "syncSecret";
+    String LAST_SYNC_STATUS_KEY = "lastSyncStatus";
+    String LAST_SYNC_AT_KEY = "lastSyncAt";
 
     @ConfigItem(
         position = 0,
@@ -45,6 +47,30 @@ public interface CerebroCompanionConfig extends Config
         secret = true
     )
     default String syncSecret()
+    {
+        return "";
+    }
+
+    @ConfigItem(
+        position = 3,
+        keyName = LAST_SYNC_STATUS_KEY,
+        name = "Last sync status",
+        description = "Local test feedback for the most recent Cerebro sync attempt",
+        hidden = true
+    )
+    default String lastSyncStatus()
+    {
+        return "";
+    }
+
+    @ConfigItem(
+        position = 4,
+        keyName = LAST_SYNC_AT_KEY,
+        name = "Last sync time",
+        description = "Local test feedback for the most recent Cerebro sync attempt",
+        hidden = true
+    )
+    default String lastSyncAt()
     {
         return "";
     }

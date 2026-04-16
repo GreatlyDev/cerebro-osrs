@@ -39,6 +39,10 @@ public class CerebroSyncClient
         {
             throw new IllegalArgumentException("syncSecret must not be blank");
         }
+        if (payload == null)
+        {
+            throw new IllegalArgumentException("payload must not be null");
+        }
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("plugin_instance_id", payload.getPluginInstanceId());

@@ -19,6 +19,9 @@ import java.net.http.HttpRequest;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
@@ -170,6 +173,31 @@ class CerebroCompanionPluginTest
         assertTrue(syncPayload.contains("\"link_token_present\":true"));
     }
 
+    @Test
+    void completeLinkStoresSyncSecretAndClearsPendingToken()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("abc123");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            writes::put,
+            removed::add
+        );
+
+        plugin.completeLink(new LinkExchangeResponse("sync-secret", 7, "Gilganor", "linked"));
+
+        assertEquals("sync-secret", writes.get(CerebroCompanionConfig.SYNC_SECRET_KEY));
+        assertTrue(removed.contains(CerebroCompanionConfig.LINK_TOKEN_KEY));
+        assertEquals("linked", writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY));
+        assertTrue(writes.containsKey(CerebroCompanionConfig.LAST_SYNC_AT_KEY));
+    }
+
     private String readRequestBody(HttpRequest request) throws Exception
     {
         HttpRequest.BodyPublisher publisher = request.bodyPublisher().orElseThrow();
@@ -249,6 +277,18 @@ class CerebroCompanionPluginTest
         public String syncSecret()
         {
             return syncSecret.get();
+        }
+
+        @Override
+        public String lastSyncStatus()
+        {
+            return "";
+        }
+
+        @Override
+        public String lastSyncAt()
+        {
+            return "";
         }
     }
 
