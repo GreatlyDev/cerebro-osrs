@@ -4,6 +4,11 @@ import { api } from "../../api";
 import type { Account } from "../../types";
 import { Button } from "../ui/Button";
 
+// Local test flow requirement:
+// After generating a plugin link code, the UI should point the tester at
+// companion/runelite-plugin/scripts/run-cerebro-companion.bat
+// so the website and plugin setup feel like one coherent flow.
+
 type CompanionStatusPanelProps = {
   selectedAccount: Account | null;
   onRefreshStatus?: () => Promise<void> | void;
@@ -145,6 +150,13 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
               <pre className="mt-3 overflow-x-auto font-mono text-sm leading-6 text-white">{linkToken}</pre>
               <p className="mt-3 text-xs leading-6 text-osrs-text-soft">
                 Enter this in the RuneLite companion plugin{expiresAt ? ` before ${formatTimestamp(expiresAt)}` : ""}.
+              </p>
+              <p className="mt-2 text-xs leading-6 text-osrs-text-soft">
+                For local Windows testing, start the companion from
+                <code className="mx-1 font-mono text-[0.72rem]">
+                  companion\runelite-plugin\scripts\run-cerebro-companion.bat
+                </code>
+                after your backend is running.
               </p>
             </div>
           ) : null}
