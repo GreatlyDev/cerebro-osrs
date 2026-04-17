@@ -1,6 +1,7 @@
 package com.cerebro.companion;
 
 import com.cerebro.companion.api.CerebroModels.LinkExchangeResponse;
+import com.cerebro.companion.api.CerebroModels.LinkExchangeRequest;
 import com.cerebro.companion.api.CerebroModels.SyncPayload;
 import com.cerebro.companion.api.CerebroSyncClient;
 import com.cerebro.companion.state.DiaryStateCollector;
@@ -13,6 +14,8 @@ import com.google.inject.Provides;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.net.http.HttpRequest;
@@ -26,9 +29,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Flow;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.io.IOException;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import org.junit.jupiter.api.Test;
@@ -198,6 +203,145 @@ class CerebroCompanionPluginTest
         assertTrue(writes.containsKey(CerebroCompanionConfig.LAST_SYNC_AT_KEY));
     }
 
+    @Test
+    void processingVisibleLinkCodeExchangesAndSyncs()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("link-code-123");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) ->
+            {
+                writes.put(key, value);
+                if (CerebroCompanionConfig.SYNC_SECRET_KEY.equals(key))
+                {
+                    syncSecret.set(value);
+                }
+            },
+            key ->
+            {
+                removed.add(key);
+                if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
+                {
+                    linkToken.set("");
+                }
+            },
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        plugin.processPendingLink();
+
+        assertTrue(syncClient.exchangeCalled);
+        assertTrue(syncClient.syncCalled);
+        assertEquals("synced", writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY));
+        assertEquals("sync-secret", writes.get(CerebroCompanionConfig.SYNC_SECRET_KEY));
+        assertTrue(removed.contains(CerebroCompanionConfig.LINK_TOKEN_KEY));
+    }
+
+    @Test
+    void configChangeOnLinkCodeTriggersProcessing()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("link-code-123");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) ->
+            {
+                writes.put(key, value);
+                if (CerebroCompanionConfig.SYNC_SECRET_KEY.equals(key))
+                {
+                    syncSecret.set(value);
+                }
+            },
+            key ->
+            {
+                removed.add(key);
+                if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
+                {
+                    linkToken.set("");
+                }
+            },
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        ConfigChanged event = new ConfigChanged();
+        event.setGroup(CerebroCompanionConfig.GROUP);
+        event.setKey(CerebroCompanionConfig.LINK_TOKEN_KEY);
+
+        plugin.onConfigChanged(event);
+
+        assertTrue(syncClient.exchangeCalled);
+    }
+
+    @Test
+    void startupWithStoredSyncSecretTriggersFreshSync() throws Exception
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("");
+        AtomicReference<String> syncSecret = new AtomicReference<>("sync-secret");
+
+        RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) -> {},
+            key -> {},
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        plugin.startUp();
+
+        assertFalse(syncClient.exchangeCalled);
+        assertTrue(syncClient.syncCalled);
+    }
+
+    @Test
+    void localRunBuildIsWiredThroughThePluginHarness() throws Exception
+    {
+        Path buildFile = Path.of("build.gradle");
+        String build = Files.readString(buildFile);
+
+        assertTrue(build.contains("def pluginMainClass = 'com.cerebro.companion.CerebroCompanionPluginHarness'"));
+        assertTrue(build.contains("classpath = sourceSets.test.runtimeClasspath"));
+        assertTrue(build.contains("mainClass = pluginMainClass"));
+        assertTrue(build.contains("args '--developer-mode', '--debug'"));
+        assertTrue(build.contains("jvmArgs '-ea'"));
+        assertEquals(CerebroCompanionPlugin.class, CerebroCompanionPluginHarness.targetPlugin());
+    }
+
     private String readRequestBody(HttpRequest request) throws Exception
     {
         HttpRequest.BodyPublisher publisher = request.bodyPublisher().orElseThrow();
@@ -325,6 +469,32 @@ class CerebroCompanionPluginTest
         private String getLastSyncSecret()
         {
             return lastSyncSecret;
+        }
+    }
+
+    private static final class RecordingSyncClient extends CerebroSyncClient
+    {
+        private boolean exchangeCalled;
+        private boolean syncCalled;
+
+        private RecordingSyncClient(String baseUrl)
+        {
+            super(baseUrl, request -> {
+                throw new IOException("not used in test");
+            });
+        }
+
+        @Override
+        public LinkExchangeResponse exchangeLink(LinkExchangeRequest request)
+        {
+            exchangeCalled = true;
+            return new LinkExchangeResponse("sync-secret", 7, "Gilganor", "linked");
+        }
+
+        @Override
+        public void sendSyncPayload(String syncSecret, SyncPayload payload)
+        {
+            syncCalled = true;
         }
     }
 }

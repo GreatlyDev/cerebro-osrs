@@ -29,9 +29,8 @@ public interface CerebroCompanionConfig extends Config
     @ConfigItem(
         position = 1,
         keyName = LINK_TOKEN_KEY,
-        name = "Pending link token",
-        description = "One-time link token issued by Cerebro",
-        hidden = true
+        name = "Link code",
+        description = "Paste the one-time link code issued by Cerebro to connect this RuneLite client"
     )
     default String linkToken()
     {
@@ -55,8 +54,7 @@ public interface CerebroCompanionConfig extends Config
         position = 3,
         keyName = LAST_SYNC_STATUS_KEY,
         name = "Last sync status",
-        description = "Local test feedback for the most recent Cerebro sync attempt",
-        hidden = true
+        description = "Most recent Cerebro companion link or sync result"
     )
     default String lastSyncStatus()
     {
@@ -67,8 +65,7 @@ public interface CerebroCompanionConfig extends Config
         position = 4,
         keyName = LAST_SYNC_AT_KEY,
         name = "Last sync time",
-        description = "Local test feedback for the most recent Cerebro sync attempt",
-        hidden = true
+        description = "Timestamp for the most recent Cerebro companion link or sync attempt"
     )
     default String lastSyncAt()
     {

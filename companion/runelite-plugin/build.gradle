@@ -3,6 +3,7 @@ plugins {
 }
 
 def runeLiteVersion = '1.12.24'
+def pluginMainClass = 'com.cerebro.companion.CerebroCompanionPluginHarness'
 
 repositories {
     mavenLocal()
@@ -56,10 +57,11 @@ jar {
 tasks.register('runLocalClient', JavaExec) {
     group = 'application'
     description = 'Launches a RuneLite development client with the Cerebro companion on the plugin path.'
-    classpath = files(sourceSets.main.runtimeClasspath, configurations.localClientRuntime)
-    mainClass = 'net.runelite.client.RuneLite'
+    classpath = sourceSets.test.runtimeClasspath
+    mainClass = pluginMainClass
     workingDir = project.projectDir
-    systemProperty 'runelite.pluginhub.version', 'local-cerebro'
+    jvmArgs '-ea'
+    args '--developer-mode', '--debug'
 }
 
 test {

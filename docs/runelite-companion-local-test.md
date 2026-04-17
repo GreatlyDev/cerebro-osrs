@@ -16,6 +16,11 @@ From the repo root:
 
 ```powershell
 docker compose up -d postgres redis backend
+```
+
+Then in a second terminal:
+
+```powershell
 cd frontend
 npm.cmd run dev
 ```
@@ -47,14 +52,15 @@ Double-click the batch file or run it from PowerShell.
 
 1. Open the Cerebro Companion plugin config.
 2. Confirm the base URL is `http://127.0.0.1:8000`.
-3. Paste the link token from the website.
-4. Trigger the link exchange.
+3. Paste the link code from the website into the `Link code` field.
+4. Wait a moment while the plugin exchanges the code and runs its first sync automatically.
 
 ## Verify sync
 
-- Trigger `Sync now` if needed.
+- Confirm the plugin shows a recent `Last sync status` and `Last sync time`.
 - Confirm the website shows the account as linked.
 - Confirm the companion last-sync timestamp updates.
+- Relaunch the local client and confirm it performs a fresh sync automatically once already linked.
 - Ask Cerebro a question that depends on quests, diaries, teleports, or notable gear.
 
 ## Troubleshooting

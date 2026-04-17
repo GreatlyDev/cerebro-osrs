@@ -1,26 +1,50 @@
 package com.cerebro.companion.api;
 
+import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.cerebro.companion.api.CerebroModels.LinkExchangeRequest;
+import static com.cerebro.companion.api.CerebroModels.LinkExchangeResponse;
 import static com.cerebro.companion.api.CerebroModels.SyncPayload;
 
 public class CerebroSyncClient
 {
+    @FunctionalInterface
+    public interface RequestExecutor
+    {
+        HttpResponse<String> execute(HttpRequest request) throws IOException, InterruptedException;
+    }
+
     private final String baseUrl;
+    private final RequestExecutor requestExecutor;
 
     public CerebroSyncClient(String baseUrl)
+    {
+        this(baseUrl, request ->
+        {
+            HttpClient client = HttpClient.newHttpClient();
+            return client.send(request, HttpResponse.BodyHandlers.ofString());
+        });
+    }
+
+    public CerebroSyncClient(String baseUrl, RequestExecutor requestExecutor)
     {
         if (baseUrl == null || baseUrl.trim().isEmpty())
         {
             throw new IllegalArgumentException("baseUrl must not be blank");
         }
         this.baseUrl = stripTrailingSlash(baseUrl.trim());
+        this.requestExecutor = Objects.requireNonNull(requestExecutor, "requestExecutor must not be null");
     }
 
     public HttpRequest buildExchangeRequest(LinkExchangeRequest request)
@@ -63,9 +87,79 @@ public class CerebroSyncClient
         );
     }
 
+    public LinkExchangeResponse exchangeLink(LinkExchangeRequest request)
+    {
+        HttpRequest httpRequest = buildExchangeRequest(request);
+        HttpResponse<String> response = execute(httpRequest, "Cerebro link exchange");
+        if (response.statusCode() < 200 || response.statusCode() >= 300)
+        {
+            throw new IllegalStateException(
+                "Cerebro link exchange failed with status " + response.statusCode()
+            );
+        }
+
+        String body = response.body();
+        return new LinkExchangeResponse(
+            requireJsonString(body, "sync_secret"),
+            requireJsonInt(body, "account_id"),
+            requireJsonString(body, "rsn"),
+            requireJsonString(body, "status")
+        );
+    }
+
+    public void sendSyncPayload(String syncSecret, SyncPayload payload)
+    {
+        HttpRequest request = buildSyncRequest(syncSecret, payload);
+        HttpResponse<String> response = execute(request, "Cerebro sync");
+        if (response.statusCode() < 200 || response.statusCode() >= 300)
+        {
+            throw new IllegalStateException("Cerebro sync failed with status " + response.statusCode());
+        }
+    }
+
     public HttpRequest sendSyncRequest(String syncSecret, SyncPayload payload)
     {
-        return buildSyncRequest(syncSecret, payload);
+        HttpRequest request = buildSyncRequest(syncSecret, payload);
+        sendSyncPayload(syncSecret, payload);
+        return request;
+    }
+
+    private HttpResponse<String> execute(HttpRequest request, String action)
+    {
+        try
+        {
+            return requestExecutor.execute(request);
+        }
+        catch (IOException | InterruptedException error)
+        {
+            if (error instanceof InterruptedException)
+            {
+                Thread.currentThread().interrupt();
+            }
+            throw new IllegalStateException(action + " request failed", error);
+        }
+    }
+
+    private String requireJsonString(String body, String fieldName)
+    {
+        Pattern pattern = Pattern.compile("\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*\"([^\"]*)\"");
+        Matcher matcher = pattern.matcher(body);
+        if (!matcher.find())
+        {
+            throw new IllegalStateException("Cerebro response missing " + fieldName);
+        }
+        return matcher.group(1);
+    }
+
+    private int requireJsonInt(String body, String fieldName)
+    {
+        Pattern pattern = Pattern.compile("\"" + Pattern.quote(fieldName) + "\"\\s*:\\s*(\\d+)");
+        Matcher matcher = pattern.matcher(body);
+        if (!matcher.find())
+        {
+            throw new IllegalStateException("Cerebro response missing " + fieldName);
+        }
+        return Integer.parseInt(matcher.group(1));
     }
 
     private HttpRequest jsonPost(String path, Map<String, Object> payload, Map<String, String> headers)

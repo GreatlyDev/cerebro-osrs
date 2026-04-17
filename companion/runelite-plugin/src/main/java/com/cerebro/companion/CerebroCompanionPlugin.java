@@ -22,6 +22,8 @@ import java.util.function.Function;
 import javax.inject.Inject;
 
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
@@ -190,6 +192,28 @@ public class CerebroCompanionPlugin extends Plugin
         return syncClientFactory.apply(normalizeBaseUrl(requireConfig().baseUrl()));
     }
 
+    @Override
+    protected void startUp()
+    {
+        if (hasPendingLink())
+        {
+            processPendingLink();
+            return;
+        }
+
+        if (hasSyncSecret())
+        {
+            try
+            {
+                syncNow();
+            }
+            catch (RuntimeException error)
+            {
+                recordSyncStatus("sync failed: " + summarize(error));
+            }
+        }
+    }
+
     public void beginLink(String linkToken)
     {
         setConfigValue(CerebroCompanionConfig.LINK_TOKEN_KEY, requireValue("linkToken", linkToken));
@@ -232,8 +256,59 @@ public class CerebroCompanionPlugin extends Plugin
     public HttpRequest syncNow()
     {
         HttpRequest request = getSyncClient().sendSyncRequest(requireSyncSecret(), composePayload());
-        recordSyncStatus("sync-request-built");
+        recordSyncStatus("synced");
         return request;
+    }
+
+    public void processPendingLink()
+    {
+        if (!hasPendingLink())
+        {
+            return;
+        }
+
+        try
+        {
+            LinkExchangeResponse response = getSyncClient().exchangeLink(
+                new LinkExchangeRequest(
+                    normalizeConfigValue(requireConfig().linkToken()),
+                    pluginInstanceId,
+                    pluginVersion
+                )
+            );
+            completeLink(response);
+            syncNow();
+        }
+        catch (RuntimeException error)
+        {
+            recordSyncStatus("link failed: " + summarize(error));
+        }
+    }
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged event)
+    {
+        if (event == null)
+        {
+            return;
+        }
+
+        if (!CerebroCompanionConfig.GROUP.equals(event.getGroup()))
+        {
+            return;
+        }
+
+        if (!CerebroCompanionConfig.LINK_TOKEN_KEY.equals(event.getKey()))
+        {
+            return;
+        }
+
+        if (!hasPendingLink())
+        {
+            return;
+        }
+
+        processPendingLink();
     }
 
     public void recordSyncStatus(String status)
@@ -309,6 +384,11 @@ public class CerebroCompanionPlugin extends Plugin
         return syncSecret;
     }
 
+    private boolean hasSyncSecret()
+    {
+        return !normalizeConfigValue(requireConfig().syncSecret()).isEmpty();
+    }
+
     private static String requireValue(String name, String value)
     {
         String normalized = normalizeConfigValue(value);
@@ -328,6 +408,16 @@ public class CerebroCompanionPlugin extends Plugin
     private static String normalizeConfigValue(String value)
     {
         return value == null ? "" : value.trim();
+    }
+
+    private static String summarize(RuntimeException error)
+    {
+        String message = error.getMessage();
+        if (message == null || message.trim().isEmpty())
+        {
+            return error.getClass().getSimpleName();
+        }
+        return message.trim();
     }
 
     private static String resolvePluginVersion()
