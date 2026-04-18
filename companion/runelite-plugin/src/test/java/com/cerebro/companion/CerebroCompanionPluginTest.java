@@ -211,6 +211,7 @@ class CerebroCompanionPluginTest
         AtomicReference<String> syncSecret = new AtomicReference<>("");
         Map<String, String> writes = new HashMap<>();
         Set<String> removed = new HashSet<>();
+        java.util.List<String> statusWrites = new java.util.ArrayList<>();
 
         RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
         CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
@@ -221,6 +222,10 @@ class CerebroCompanionPluginTest
             (key, value) ->
             {
                 writes.put(key, value);
+                if (CerebroCompanionConfig.LAST_SYNC_STATUS_KEY.equals(key))
+                {
+                    statusWrites.add(value);
+                }
                 if (CerebroCompanionConfig.SYNC_SECRET_KEY.equals(key))
                 {
                     syncSecret.set(value);
@@ -246,6 +251,8 @@ class CerebroCompanionPluginTest
 
         assertTrue(syncClient.exchangeCalled);
         assertTrue(syncClient.syncCalled);
+        assertTrue(statusWrites.contains("linked"));
+        assertTrue(statusWrites.contains("syncing"));
         assertEquals("synced", writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY));
         assertEquals("sync-secret", writes.get(CerebroCompanionConfig.SYNC_SECRET_KEY));
         assertTrue(removed.contains(CerebroCompanionConfig.LINK_TOKEN_KEY));
@@ -305,6 +312,7 @@ class CerebroCompanionPluginTest
         AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
         AtomicReference<String> linkToken = new AtomicReference<>("");
         AtomicReference<String> syncSecret = new AtomicReference<>("sync-secret");
+        java.util.List<String> statusWrites = new java.util.ArrayList<>();
 
         RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
         CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
@@ -312,7 +320,13 @@ class CerebroCompanionPluginTest
             "plugin-id",
             "0.1.0",
             ignored -> syncClient,
-            (key, value) -> {},
+            (key, value) ->
+            {
+                if (CerebroCompanionConfig.LAST_SYNC_STATUS_KEY.equals(key))
+                {
+                    statusWrites.add(value);
+                }
+            },
             key -> {},
             new QuestStateCollector(),
             new DiaryStateCollector(),
@@ -326,6 +340,42 @@ class CerebroCompanionPluginTest
 
         assertFalse(syncClient.exchangeCalled);
         assertTrue(syncClient.syncCalled);
+        assertTrue(statusWrites.contains("syncing"));
+    }
+
+    @Test
+    void failedPendingLinkShowsReadablePluginStatus()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("expired-link");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        Map<String, String> writes = new HashMap<>();
+
+        FailingSyncClient syncClient = new FailingSyncClient(
+            baseUrl.get(),
+            "Cerebro link exchange failed with status 400: Link token is invalid or expired."
+        );
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            writes::put,
+            key -> {},
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        plugin.processPendingLink();
+
+        assertEquals(
+            "link failed: Cerebro link exchange failed with status 400: Link token is invalid or expired.",
+            writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY)
+        );
     }
 
     @Test
@@ -495,6 +545,25 @@ class CerebroCompanionPluginTest
         public void sendSyncPayload(String syncSecret, SyncPayload payload)
         {
             syncCalled = true;
+        }
+    }
+
+    private static final class FailingSyncClient extends CerebroSyncClient
+    {
+        private final String failureMessage;
+
+        private FailingSyncClient(String baseUrl, String failureMessage)
+        {
+            super(baseUrl, request -> {
+                throw new IOException("not used in test");
+            });
+            this.failureMessage = failureMessage;
+        }
+
+        @Override
+        public LinkExchangeResponse exchangeLink(LinkExchangeRequest request)
+        {
+            throw new IllegalStateException(failureMessage);
         }
     }
 }

@@ -255,6 +255,7 @@ public class CerebroCompanionPlugin extends Plugin
 
     public HttpRequest syncNow()
     {
+        recordSyncStatus("syncing");
         HttpRequest request = getSyncClient().sendSyncRequest(requireSyncSecret(), composePayload());
         recordSyncStatus("synced");
         return request;
