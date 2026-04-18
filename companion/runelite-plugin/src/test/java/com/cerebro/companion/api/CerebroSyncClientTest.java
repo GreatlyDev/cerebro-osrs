@@ -98,6 +98,29 @@ class CerebroSyncClientTest
     }
 
     @Test
+    void exchangeLinkRejectsNonOkResponseWithBackendDetail()
+    {
+        CerebroSyncClient client = new CerebroSyncClient(
+            "http://127.0.0.1:8000",
+            request -> new FakeHttpResponse(
+                request,
+                400,
+                "{\"detail\":\"Link token is invalid or expired.\"}"
+            )
+        );
+
+        IllegalStateException error = assertThrows(
+            IllegalStateException.class,
+            () -> client.exchangeLink(new LinkExchangeRequest("token-123", "plugin-instance", "0.1.0"))
+        );
+
+        assertEquals(
+            "Cerebro link exchange failed with status 400: Link token is invalid or expired.",
+            error.getMessage()
+        );
+    }
+
+    @Test
     void sendSyncPayloadRejectsNonOkResponse()
     {
         CerebroSyncClient client = new CerebroSyncClient(
@@ -122,7 +145,7 @@ class CerebroSyncClientTest
             () -> client.sendSyncPayload("sync-secret", payload)
         );
 
-        assertEquals("Cerebro sync failed with status 500", error.getMessage());
+        assertEquals("Cerebro sync failed with status 500: boom", error.getMessage());
     }
 
     private static final class FakeHttpResponse implements HttpResponse<String>

@@ -93,9 +93,7 @@ public class CerebroSyncClient
         HttpResponse<String> response = execute(httpRequest, "Cerebro link exchange");
         if (response.statusCode() < 200 || response.statusCode() >= 300)
         {
-            throw new IllegalStateException(
-                "Cerebro link exchange failed with status " + response.statusCode()
-            );
+            throw failedResponse("Cerebro link exchange", response);
         }
 
         String body = response.body();
@@ -113,7 +111,7 @@ public class CerebroSyncClient
         HttpResponse<String> response = execute(request, "Cerebro sync");
         if (response.statusCode() < 200 || response.statusCode() >= 300)
         {
-            throw new IllegalStateException("Cerebro sync failed with status " + response.statusCode());
+            throw failedResponse("Cerebro sync", response);
         }
     }
 
@@ -160,6 +158,37 @@ public class CerebroSyncClient
             throw new IllegalStateException("Cerebro response missing " + fieldName);
         }
         return Integer.parseInt(matcher.group(1));
+    }
+
+    private IllegalStateException failedResponse(String action, HttpResponse<String> response)
+    {
+        String body = response.body();
+        String detail = extractErrorDetail(body);
+        if (detail == null || detail.isEmpty())
+        {
+            return new IllegalStateException(action + " failed with status " + response.statusCode());
+        }
+        return new IllegalStateException(
+            action + " failed with status " + response.statusCode() + ": " + detail
+        );
+    }
+
+    private String extractErrorDetail(String body)
+    {
+        if (body == null)
+        {
+            return null;
+        }
+
+        Pattern detailPattern = Pattern.compile("\"detail\"\\s*:\\s*\"([^\"]*)\"");
+        Matcher detailMatcher = detailPattern.matcher(body);
+        if (detailMatcher.find())
+        {
+            return detailMatcher.group(1);
+        }
+
+        String normalized = body.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private HttpRequest jsonPost(String path, Map<String, Object> payload, Map<String, String> headers)
