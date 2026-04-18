@@ -96,6 +96,19 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
   ]);
 
   useEffect(() => {
+    const linked =
+      selectedAccount?.companion_status === "linked" &&
+      Boolean(selectedAccount?.companion_last_synced_at);
+    if (!linked) {
+      return;
+    }
+
+    setLinkToken(null);
+    setExpiresAt(null);
+    setWatchingForLink(false);
+  }, [selectedAccount?.companion_last_synced_at, selectedAccount?.companion_status]);
+
+  useEffect(() => {
     if (!selectedAccount || !onRefreshStatus) {
       return;
     }
@@ -137,6 +150,13 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
   } else if (linkToken) {
     handshakeStateLabel = "Code ready";
   }
+
+  const createButtonLabel =
+    busy
+      ? "Creating link code..."
+      : linkToken
+        ? "Generate fresh link code"
+        : "Create plugin link code";
 
   async function handleCreateLinkSession() {
     if (!selectedAccount) {
@@ -210,7 +230,7 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
 
         <div className="space-y-3">
           <Button disabled={busy || !selectedAccount} onClick={handleCreateLinkSession}>
-            {busy ? "Creating link code..." : "Create plugin link code"}
+            {createButtonLabel}
           </Button>
 
           {linkToken ? (
@@ -225,12 +245,21 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
                 Refresh this page if the linked state does not appear right away.
               </p>
               <p className="mt-2 text-xs leading-6 text-osrs-text-soft">
+                If RuneLite says the code is invalid or expired, generate a fresh one here and replace the old code in
+                the plugin before retrying.
+              </p>
+              <p className="mt-2 text-xs leading-6 text-osrs-text-soft">
                 For local Windows testing, start the companion from
                 <code className="mx-1 font-mono text-[0.72rem]">
                   companion\runelite-plugin\scripts\run-cerebro-companion.bat
                 </code>
                 after your backend is running.
               </p>
+              {codeExpired ? (
+                <p className="mt-2 text-xs leading-6 text-amber-300">
+                  This code has expired. Generate a fresh one before retrying from RuneLite.
+                </p>
+              ) : null}
             </div>
           ) : null}
 

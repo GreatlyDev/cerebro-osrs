@@ -282,7 +282,16 @@ public class CerebroCompanionPlugin extends Plugin
         }
         catch (RuntimeException error)
         {
-            recordSyncStatus("link failed: " + summarize(error));
+            String summary = summarize(error);
+            if (isTerminalLinkFailure(summary))
+            {
+                clearConfigValue(CerebroCompanionConfig.LINK_TOKEN_KEY);
+                recordSyncStatus(
+                    "link failed: " + summary + " Generate a fresh link code on the site and paste it here."
+                );
+                return;
+            }
+            recordSyncStatus("link failed: " + summary);
         }
     }
 
@@ -419,6 +428,15 @@ public class CerebroCompanionPlugin extends Plugin
             return error.getClass().getSimpleName();
         }
         return message.trim();
+    }
+
+    private static boolean isTerminalLinkFailure(String summary)
+    {
+        String normalized = summary.toLowerCase();
+        return normalized.contains("link token is invalid or expired")
+            || normalized.contains("token is invalid or expired")
+            || normalized.contains("invalid or expired")
+            || normalized.contains("status 404");
     }
 
     private static String resolvePluginVersion()

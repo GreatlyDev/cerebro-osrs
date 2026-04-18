@@ -373,7 +373,90 @@ class CerebroCompanionPluginTest
         plugin.processPendingLink();
 
         assertEquals(
-            "link failed: Cerebro link exchange failed with status 400: Link token is invalid or expired.",
+            "link failed: Cerebro link exchange failed with status 400: Link token is invalid or expired. Generate a fresh link code on the site and paste it here.",
+            writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY)
+        );
+    }
+
+    @Test
+    void terminalLinkFailureClearsStaleLinkCodeForRetry()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("expired-link");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        FailingSyncClient syncClient = new FailingSyncClient(
+            baseUrl.get(),
+            "Cerebro link exchange failed with status 404: Link token is invalid or expired."
+        );
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            writes::put,
+            key ->
+            {
+                removed.add(key);
+                if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
+                {
+                    linkToken.set("");
+                }
+            },
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        plugin.processPendingLink();
+
+        assertTrue(removed.contains(CerebroCompanionConfig.LINK_TOKEN_KEY));
+        assertEquals("", linkToken.get());
+        assertEquals(
+            "link failed: Cerebro link exchange failed with status 404: Link token is invalid or expired. Generate a fresh link code on the site and paste it here.",
+            writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY)
+        );
+    }
+
+    @Test
+    void transientLinkFailureKeepsCodeInPlaceForRetry()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("retry-link");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        FailingSyncClient syncClient = new FailingSyncClient(
+            baseUrl.get(),
+            "Cerebro link exchange request failed"
+        );
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            writes::put,
+            removed::add,
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        plugin.processPendingLink();
+
+        assertFalse(removed.contains(CerebroCompanionConfig.LINK_TOKEN_KEY));
+        assertEquals("retry-link", linkToken.get());
+        assertEquals(
+            "link failed: Cerebro link exchange request failed",
             writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY)
         );
     }
