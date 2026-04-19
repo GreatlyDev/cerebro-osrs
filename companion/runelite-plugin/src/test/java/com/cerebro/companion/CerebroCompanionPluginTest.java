@@ -13,6 +13,7 @@ import com.cerebro.companion.state.UtilityStateCollector;
 import com.google.inject.Provides;
 
 import java.io.ByteArrayOutputStream;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.io.IOException;
 
 import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
@@ -128,6 +130,17 @@ class CerebroCompanionPluginTest
         assertNotNull(provideConfig.getAnnotation(Provides.class));
         assertEquals(CerebroCompanionConfig.class, provideConfig.getReturnType());
         assertTrue(Config.class.isAssignableFrom(provideConfig.getReturnType()));
+    }
+
+    @Test
+    void syncSecretConfigItemStaysHiddenButIsNotMarkedSecret() throws Exception
+    {
+        Method syncSecretMethod = CerebroCompanionConfig.class.getDeclaredMethod("syncSecret");
+        ConfigItem configItem = ((AnnotatedElement) syncSecretMethod).getAnnotation(ConfigItem.class);
+
+        assertNotNull(configItem);
+        assertTrue(configItem.hidden());
+        assertFalse(configItem.secret());
     }
 
     @Test

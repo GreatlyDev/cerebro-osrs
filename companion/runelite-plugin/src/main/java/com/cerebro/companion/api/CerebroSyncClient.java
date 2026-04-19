@@ -32,7 +32,7 @@ public class CerebroSyncClient
     {
         this(baseUrl, request ->
         {
-            HttpClient client = HttpClient.newHttpClient();
+            HttpClient client = createDefaultHttpClient();
             return client.send(request, HttpResponse.BodyHandlers.ofString());
         });
     }
@@ -261,5 +261,12 @@ public class CerebroSyncClient
             return candidate.substring(0, candidate.length() - 1);
         }
         return candidate;
+    }
+
+    static HttpClient createDefaultHttpClient()
+    {
+        return HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .build();
     }
 }

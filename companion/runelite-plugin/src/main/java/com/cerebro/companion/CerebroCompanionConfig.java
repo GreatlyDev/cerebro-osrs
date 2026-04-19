@@ -42,8 +42,7 @@ public interface CerebroCompanionConfig extends Config
         keyName = SYNC_SECRET_KEY,
         name = "Sync secret",
         description = "Scoped sync secret used for Cerebro sync requests",
-        hidden = true,
-        secret = true
+        hidden = true
     )
     default String syncSecret()
     {

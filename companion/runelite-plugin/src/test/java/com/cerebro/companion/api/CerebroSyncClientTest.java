@@ -3,6 +3,7 @@ package com.cerebro.companion.api;
 import java.net.http.HttpRequest;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpResponse;
+import java.net.http.HttpClient;
 import java.net.URI;
 import java.util.Optional;
 import javax.net.ssl.SSLSession;
@@ -17,6 +18,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CerebroSyncClientTest
 {
+    @Test
+    void defaultHttpClientUsesHttp11ForLocalCompanionRequests()
+    {
+        HttpClient client = CerebroSyncClient.createDefaultHttpClient();
+
+        assertEquals(HttpClient.Version.HTTP_1_1, client.version());
+    }
+
     @Test
     void buildLinkRequestTargetsCompanionLinkEndpoint()
     {
