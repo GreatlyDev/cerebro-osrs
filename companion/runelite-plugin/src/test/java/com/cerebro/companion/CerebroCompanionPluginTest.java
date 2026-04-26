@@ -475,6 +475,51 @@ class CerebroCompanionPluginTest
     }
 
     @Test
+    void staleReconnectCodeDoesNotOverwriteExistingLinkedState()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("expired-link");
+        AtomicReference<String> syncSecret = new AtomicReference<>("saved-secret");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        FailingSyncClient syncClient = new FailingSyncClient(
+            baseUrl.get(),
+            "Cerebro link exchange failed with status 404: Link token is invalid or expired."
+        );
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            writes::put,
+            key ->
+            {
+                removed.add(key);
+                if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
+                {
+                    linkToken.set("");
+                }
+            },
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        plugin.processPendingLink();
+
+        assertTrue(removed.contains(CerebroCompanionConfig.LINK_TOKEN_KEY));
+        assertEquals("saved-secret", syncSecret.get());
+        assertEquals(
+            "reconnect failed: Cerebro link exchange failed with status 404: Link token is invalid or expired. The saved companion link is still available. Generate a fresh reconnect code on the site if you need to relink this client.",
+            writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY)
+        );
+    }
+
+    @Test
     void localRunBuildIsWiredThroughThePluginHarness() throws Exception
     {
         Path buildFile = Path.of("build.gradle");

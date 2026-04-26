@@ -53,11 +53,31 @@ function formatBankValue(selectedProgress: AccountProgress | null) {
   return "Awaiting bank sync";
 }
 
-function formatQuestPoints(selectedProgress: AccountProgress | null) {
-  if ((selectedProgress?.completed_quests.length ?? 0) > 0) {
-    return `~${(selectedProgress?.completed_quests.length ?? 0) * 2}`;
+function hasCompanionSync(selectedProgress: AccountProgress | null) {
+  const source = selectedProgress?.companion_state?.source;
+  return typeof source === "string" && source === "runelite_companion";
+}
+
+function formatQuestMetric(selectedProgress: AccountProgress | null) {
+  const trackedQuestCount = selectedProgress?.completed_quests.length ?? 0;
+  if (trackedQuestCount > 0) {
+    return {
+      label: "Quest tracking",
+      value: `${trackedQuestCount} quests`,
+    };
   }
-  return "Untracked";
+
+  if (hasCompanionSync(selectedProgress)) {
+    return {
+      label: "Quest tracking",
+      value: "Sync active",
+    };
+  }
+
+  return {
+    label: "Quest tracking",
+    value: "Untracked",
+  };
 }
 
 export function DashboardPage(props: DashboardPageProps) {
@@ -83,6 +103,7 @@ export function DashboardPage(props: DashboardPageProps) {
     workspaceProgress,
   } = props;
   const shouldShowSetupLane = workspaceProgress < workspaceChecklist.length;
+  const questMetric = formatQuestMetric(selectedProgress);
 
   return (
     <div className="space-y-8">
@@ -90,7 +111,8 @@ export function DashboardPage(props: DashboardPageProps) {
         bankValue={formatBankValue(selectedProgress)}
         combatLevel={selectedSnapshot?.summary.combat_level ?? null}
         overallLevel={selectedSnapshot?.summary.overall_level ?? null}
-        questPoints={formatQuestPoints(selectedProgress)}
+        questMetricLabel={questMetric.label}
+        questMetricValue={questMetric.value}
         selectedAccountRsn={selectedAccount?.rsn ?? profile?.primary_account_rsn ?? null}
       />
       <TelemetryBoard

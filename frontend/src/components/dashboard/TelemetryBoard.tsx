@@ -237,6 +237,7 @@ export function TelemetryBoard({
           <CompanionStatusPanel
             onRefreshStatus={onRefreshCompanionStatus}
             selectedAccount={selectedAccount}
+            selectedProgress={progress}
           />
 
           <section className="space-y-4">

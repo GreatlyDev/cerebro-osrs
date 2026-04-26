@@ -26,6 +26,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.api.Client;
 
 @PluginDescriptor(
     name = "Cerebro Companion",
@@ -40,7 +41,7 @@ public class CerebroCompanionPlugin extends Plugin
     private final Function<String, CerebroSyncClient> syncClientFactory;
     private final BiConsumer<String, String> configWriter;
     private final Consumer<String> configRemover;
-    private final QuestStateCollector questStateCollector;
+    private QuestStateCollector questStateCollector;
     private final DiaryStateCollector diaryStateCollector;
     private final TravelStateCollector travelStateCollector;
     private final GearStateCollector gearStateCollector;
@@ -52,6 +53,9 @@ public class CerebroCompanionPlugin extends Plugin
 
     @Inject
     private CerebroCompanionConfig config;
+
+    @Inject
+    private Client client;
 
     public CerebroCompanionPlugin()
     {
@@ -195,6 +199,8 @@ public class CerebroCompanionPlugin extends Plugin
     @Override
     protected void startUp()
     {
+        initializeRuntimeCollectors();
+
         if (hasPendingLink())
         {
             processPendingLink();
@@ -285,10 +291,18 @@ public class CerebroCompanionPlugin extends Plugin
             String summary = summarize(error);
             if (isTerminalLinkFailure(summary))
             {
+                boolean alreadyLinked = hasSyncSecret();
                 clearConfigValue(CerebroCompanionConfig.LINK_TOKEN_KEY);
-                recordSyncStatus(
-                    "link failed: " + summary + " Generate a fresh link code on the site and paste it here."
-                );
+                if (alreadyLinked)
+                {
+                    recordSyncStatus(
+                        "reconnect failed: "
+                            + summary
+                            + " The saved companion link is still available. Generate a fresh reconnect code on the site if you need to relink this client."
+                    );
+                    return;
+                }
+                recordSyncStatus("link failed: " + summary + " Generate a fresh link code on the site and paste it here.");
                 return;
             }
             recordSyncStatus("link failed: " + summary);
@@ -382,6 +396,14 @@ public class CerebroCompanionPlugin extends Plugin
             gearStateCollector,
             utilityStateCollector
         );
+    }
+
+    private void initializeRuntimeCollectors()
+    {
+        if (client != null && questStateCollector.isPlaceholderCollector())
+        {
+            questStateCollector = new QuestStateCollector(client);
+        }
     }
 
     private String requireSyncSecret()

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { api } from "../../api";
-import type { Account } from "../../types";
+import type { Account, AccountProgress } from "../../types";
 import { Button } from "../ui/Button";
 
 // Local test flow requirement:
@@ -11,6 +11,7 @@ import { Button } from "../ui/Button";
 
 type CompanionStatusPanelProps = {
   selectedAccount: Account | null;
+  selectedProgress?: AccountProgress | null;
   onRefreshStatus?: () => Promise<void> | void;
 };
 
@@ -35,7 +36,11 @@ function formatTimestamp(value: string | null): string | null {
   });
 }
 
-export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: CompanionStatusPanelProps) {
+export function CompanionStatusPanel({
+  selectedAccount,
+  selectedProgress = null,
+  onRefreshStatus,
+}: CompanionStatusPanelProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [linkToken, setLinkToken] = useState<string | null>(null);
@@ -134,8 +139,14 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
 
   const isLinked = selectedAccount?.companion_status === "linked";
   const codeExpired = expiresAt ? new Date(expiresAt).getTime() <= Date.now() : false;
+  const questCount = selectedProgress?.completed_quests.length ?? 0;
+  const diaryRegionCount = Object.keys(selectedProgress?.completed_diaries ?? {}).length;
+  const transportCount = selectedProgress?.unlocked_transports.length ?? 0;
+  const gearCount = selectedProgress?.notable_items.length ?? 0;
   const awarenessCopy = selectedAccount
-    ? `Connect the RuneLite companion to ${selectedAccount.rsn} to sync quests, diaries, travel unlocks, and gear-aware state into the same telemetry Cerebro already reads.`
+    ? isLinked
+      ? `${selectedAccount.rsn} is already connected to the RuneLite companion. Cerebro can keep reading quests, diaries, travel unlocks, and gear-aware state from that saved link.`
+      : `Connect the RuneLite companion to ${selectedAccount.rsn} to sync quests, diaries, travel unlocks, and gear-aware state into the same telemetry Cerebro already reads.`
     : "Select an account first, then generate a short-lived plugin link code to bring RuneLite companion awareness into this workspace.";
 
   let handshakeStateLabel = "Standby";
@@ -154,7 +165,9 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
   const createButtonLabel =
     busy
       ? "Creating link code..."
-      : linkToken
+      : isLinked
+        ? "Generate reconnect code"
+        : linkToken
         ? "Generate fresh link code"
         : "Create plugin link code";
 
@@ -228,6 +241,27 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
 
         <p className="text-sm leading-7 text-osrs-text-soft">{awarenessCopy}</p>
 
+        {isLinked ? (
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+              <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Tracked quests</p>
+              <p className="mt-2 font-display text-[1.02rem] font-bold uppercase text-white">{questCount}</p>
+            </div>
+            <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+              <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Diary regions</p>
+              <p className="mt-2 font-display text-[1.02rem] font-bold uppercase text-white">{diaryRegionCount}</p>
+            </div>
+            <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+              <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Transports</p>
+              <p className="mt-2 font-display text-[1.02rem] font-bold uppercase text-white">{transportCount}</p>
+            </div>
+            <div className="border border-white/8 bg-[#0c0c0c] px-4 py-4">
+              <p className="font-mono text-[0.54rem] uppercase tracking-[0.22em] text-osrs-text-soft">Notable items</p>
+              <p className="mt-2 font-display text-[1.02rem] font-bold uppercase text-white">{gearCount}</p>
+            </div>
+          </div>
+        ) : null}
+
         <div className="space-y-3">
           <Button disabled={busy || !selectedAccount} onClick={handleCreateLinkSession}>
             {createButtonLabel}
@@ -241,8 +275,9 @@ export function CompanionStatusPanel({ selectedAccount, onRefreshStatus }: Compa
                 Enter this in the RuneLite companion plugin{expiresAt ? ` before ${formatTimestamp(expiresAt)}` : ""}.
               </p>
               <p className="mt-2 text-xs leading-6 text-osrs-text-soft">
-                After you paste the code into RuneLite, the plugin should link and run the first sync automatically.
-                Refresh this page if the linked state does not appear right away.
+                {isLinked
+                  ? "Use this only if you are reconnecting this RuneLite client. Your current companion link can keep syncing without a fresh code."
+                  : "After you paste the code into RuneLite, the plugin should link and run the first sync automatically. Refresh this page if the linked state does not appear right away."}
               </p>
               <p className="mt-2 text-xs leading-6 text-osrs-text-soft">
                 If RuneLite says the code is invalid or expired, generate a fresh one here and replace the old code in

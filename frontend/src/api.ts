@@ -105,10 +105,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set("Authorization", `Bearer ${sessionToken}`);
   }
 
-  const response = await fetch(target, {
-    headers,
-    ...init,
-  });
+  let response: Response;
+  try {
+    response = await fetch(target, {
+      headers,
+      ...init,
+    });
+  } catch {
+    throw new Error("Unable to reach Cerebro.");
+  }
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({ detail: "Request failed." }));

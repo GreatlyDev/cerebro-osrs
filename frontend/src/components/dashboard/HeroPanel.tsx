@@ -2,7 +2,8 @@ type HeroPanelProps = {
   selectedAccountRsn: string | null;
   combatLevel: number | null;
   overallLevel: number | null;
-  questPoints: string;
+  questMetricLabel: string;
+  questMetricValue: string;
   bankValue: string;
 };
 
@@ -10,7 +11,8 @@ export function HeroPanel({
   selectedAccountRsn,
   combatLevel,
   overallLevel,
-  questPoints,
+  questMetricLabel,
+  questMetricValue,
   bankValue,
 }: HeroPanelProps) {
   return (
@@ -41,7 +43,7 @@ export function HeroPanel({
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-2">
           <MetricCard accent label="Combat level" value={combatLevel !== null ? `${combatLevel}.0` : "--"} />
           <MetricCard label="Total level" value={overallLevel !== null ? String(overallLevel) : "--"} />
-          <MetricCard label="Quest points" value={questPoints} />
+          <MetricCard label={questMetricLabel} value={questMetricValue} />
           <MetricCard label="Bank state" value={bankValue} />
         </div>
       </div>

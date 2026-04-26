@@ -1,4 +1,6 @@
 /.gradle/
 /.gradle-home/
+/.gradle-home-*/
 /.gradle-tmp/
+/.gradle-tmp-*/
 /build/

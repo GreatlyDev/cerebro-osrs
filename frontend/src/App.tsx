@@ -146,6 +146,15 @@ function formatTimestamp(value: string): string {
   });
 }
 
+function isTransientFetchError(error: string | null): boolean {
+  if (!error) {
+    return false;
+  }
+
+  const normalized = error.trim().toLowerCase();
+  return normalized === "failed to fetch" || normalized === "request failed." || normalized === "unable to reach cerebro.";
+}
+
 function buildWorkspaceChecklist(profile: Profile | null, accounts: Account[], goals: Goal[]) {
   return [
     {
@@ -612,6 +621,8 @@ export function App() {
         setSelectedAccountId(null);
         setProgressDraft(emptyProgressDraft());
       }
+
+      setError((currentError) => (isTransientFetchError(currentError) ? null : currentError));
     } catch (err) {
       if (!options?.skipHealthCheck) {
         setBackendStatus("offline");
@@ -661,6 +672,8 @@ export function App() {
         owned_gear: formatListDraft(progress?.owned_gear ?? []),
         active_unlocks: formatListDraft(progress?.active_unlocks ?? []),
       });
+
+      setError((currentError) => (isTransientFetchError(currentError) ? null : currentError));
 
       if (options?.preserveNotice && currentNotice) {
         setNotice(currentNotice);
