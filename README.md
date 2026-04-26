@@ -63,4 +63,4 @@ The web app works without the companion, but the RuneLite companion is the recom
 
 ## Status
 
-Active product build. The current focus is launch-quality intelligence and account awareness, not gameplay automation.
+Active product build. The current focus is launch-quality intelligence and account awarenes. 
