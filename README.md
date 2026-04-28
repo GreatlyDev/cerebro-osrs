@@ -15,7 +15,7 @@ Cerebro merges multiple sync sources into one account context:
 
 - `hiscores sync`
   - public skills and progression signals
-- `companion sync`
+- `companion sync` with runelite plugin 
   - completed quests
   - achievement diary state
   - travel and teleport unlocks
