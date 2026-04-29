@@ -316,7 +316,147 @@ class CerebroCompanionPluginTest
 
         plugin.onConfigChanged(event);
 
+        assertFalse(syncClient.exchangeCalled);
+    }
+
+    @Test
+    void applyLinkCodeConfigActionProcessesVisibleLinkCode()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("link-code-123");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) ->
+            {
+                writes.put(key, value);
+                if (CerebroCompanionConfig.SYNC_SECRET_KEY.equals(key))
+                {
+                    syncSecret.set(value);
+                }
+            },
+            key ->
+            {
+                removed.add(key);
+                if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
+                {
+                    linkToken.set("");
+                }
+            },
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        ConfigChanged event = new ConfigChanged();
+        event.setGroup(CerebroCompanionConfig.GROUP);
+        event.setKey(CerebroCompanionConfig.APPLY_LINK_CODE_KEY);
+        event.setNewValue("true");
+
+        plugin.onConfigChanged(event);
+
+        assertTrue(removed.contains(CerebroCompanionConfig.APPLY_LINK_CODE_KEY));
         assertTrue(syncClient.exchangeCalled);
+        assertTrue(syncClient.syncCalled);
+        assertEquals("sync-secret", writes.get(CerebroCompanionConfig.SYNC_SECRET_KEY));
+    }
+
+    @Test
+    void syncNowConfigActionRunsFreshSyncWhenLinked()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("");
+        AtomicReference<String> syncSecret = new AtomicReference<>("sync-secret");
+        Set<String> removed = new HashSet<>();
+
+        RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) -> {},
+            removed::add,
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        ConfigChanged event = new ConfigChanged();
+        event.setGroup(CerebroCompanionConfig.GROUP);
+        event.setKey(CerebroCompanionConfig.SYNC_NOW_KEY);
+        event.setNewValue("true");
+
+        plugin.onConfigChanged(event);
+
+        assertTrue(removed.contains(CerebroCompanionConfig.SYNC_NOW_KEY));
+        assertTrue(syncClient.syncCalled);
+    }
+
+    @Test
+    void clearLocalLinkConfigActionClearsSavedLinkWithoutUsingRuneLiteReset()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("stale-code");
+        AtomicReference<String> syncSecret = new AtomicReference<>("sync-secret");
+        Map<String, String> writes = new HashMap<>();
+        Set<String> removed = new HashSet<>();
+
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> new RecordingSyncClient(baseUrl.get()),
+            (key, value) -> writes.put(key, value),
+            key ->
+            {
+                removed.add(key);
+                if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
+                {
+                    linkToken.set("");
+                }
+                if (CerebroCompanionConfig.SYNC_SECRET_KEY.equals(key))
+                {
+                    syncSecret.set("");
+                }
+            },
+            new QuestStateCollector(),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer()
+        );
+
+        ConfigChanged event = new ConfigChanged();
+        event.setGroup(CerebroCompanionConfig.GROUP);
+        event.setKey(CerebroCompanionConfig.DISCONNECT_KEY);
+        event.setNewValue("true");
+
+        plugin.onConfigChanged(event);
+
+        assertTrue(removed.contains(CerebroCompanionConfig.DISCONNECT_KEY));
+        assertTrue(removed.contains(CerebroCompanionConfig.LINK_TOKEN_KEY));
+        assertTrue(removed.contains(CerebroCompanionConfig.SYNC_SECRET_KEY));
+        assertEquals("", linkToken.get());
+        assertEquals("", syncSecret.get());
+        assertEquals(
+            "local link cleared. Generate a fresh Cerebro link code to connect this RuneLite client again.",
+            writes.get(CerebroCompanionConfig.LAST_SYNC_STATUS_KEY)
+        );
     }
 
     @Test
@@ -354,6 +494,89 @@ class CerebroCompanionPluginTest
         assertFalse(syncClient.exchangeCalled);
         assertTrue(syncClient.syncCalled);
         assertTrue(statusWrites.contains("syncing"));
+    }
+
+    @Test
+    void startupWithStoredSyncSecretQueuesFreshSyncOnClientThread() throws Exception
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("");
+        AtomicReference<String> syncSecret = new AtomicReference<>("sync-secret");
+        AtomicReference<Runnable> queuedSync = new AtomicReference<>();
+
+        RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) -> {},
+            key -> {},
+            new QuestStateCollector(List.of("Cook's Assistant")),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer(),
+            queuedSync::set
+        );
+
+        plugin.startUp();
+
+        assertFalse(syncClient.syncCalled);
+        assertNotNull(queuedSync.get());
+
+        queuedSync.get().run();
+
+        assertTrue(syncClient.syncCalled);
+    }
+
+    @Test
+    void processingVisibleLinkCodeQueuesFirstSyncOnClientThread()
+    {
+        AtomicReference<String> baseUrl = new AtomicReference<>("http://127.0.0.1:8000");
+        AtomicReference<String> linkToken = new AtomicReference<>("link-code-123");
+        AtomicReference<String> syncSecret = new AtomicReference<>("");
+        AtomicReference<Runnable> queuedSync = new AtomicReference<>();
+
+        RecordingSyncClient syncClient = new RecordingSyncClient(baseUrl.get());
+        CerebroCompanionPlugin plugin = new CerebroCompanionPlugin(
+            new TestConfig(baseUrl, linkToken, syncSecret),
+            "plugin-id",
+            "0.1.0",
+            ignored -> syncClient,
+            (key, value) ->
+            {
+                if (CerebroCompanionConfig.SYNC_SECRET_KEY.equals(key))
+                {
+                    syncSecret.set(value);
+                }
+            },
+            key ->
+            {
+                if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
+                {
+                    linkToken.set("");
+                }
+            },
+            new QuestStateCollector(List.of("Cook's Assistant")),
+            new DiaryStateCollector(),
+            new TravelStateCollector(),
+            new GearStateCollector(),
+            new UtilityStateCollector(),
+            new PayloadComposer(),
+            queuedSync::set
+        );
+
+        plugin.processPendingLink();
+
+        assertTrue(syncClient.exchangeCalled);
+        assertFalse(syncClient.syncCalled);
+        assertNotNull(queuedSync.get());
+
+        queuedSync.get().run();
+
+        assertTrue(syncClient.syncCalled);
     }
 
     @Test

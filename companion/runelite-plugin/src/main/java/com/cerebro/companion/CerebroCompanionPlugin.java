@@ -22,6 +22,7 @@ import java.util.function.Function;
 import javax.inject.Inject;
 
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
@@ -47,6 +48,7 @@ public class CerebroCompanionPlugin extends Plugin
     private final GearStateCollector gearStateCollector;
     private final UtilityStateCollector utilityStateCollector;
     private final PayloadComposer payloadComposer;
+    private final Consumer<Runnable> clientThreadInvoker;
 
     @Inject
     private ConfigManager configManager;
@@ -56,6 +58,9 @@ public class CerebroCompanionPlugin extends Plugin
 
     @Inject
     private Client client;
+
+    @Inject
+    private ClientThread clientThread;
 
     public CerebroCompanionPlugin()
     {
@@ -70,7 +75,8 @@ public class CerebroCompanionPlugin extends Plugin
             new TravelStateCollector(),
             new GearStateCollector(),
             new UtilityStateCollector(),
-            new PayloadComposer()
+            new PayloadComposer(),
+            Runnable::run
         );
     }
 
@@ -93,7 +99,8 @@ public class CerebroCompanionPlugin extends Plugin
             new TravelStateCollector(),
             new GearStateCollector(),
             new UtilityStateCollector(),
-            new PayloadComposer()
+            new PayloadComposer(),
+            Runnable::run
         );
         this.configManager = Objects.requireNonNull(configManager, "configManager must not be null");
     }
@@ -118,7 +125,8 @@ public class CerebroCompanionPlugin extends Plugin
             new TravelStateCollector(),
             new GearStateCollector(),
             new UtilityStateCollector(),
-            new PayloadComposer()
+            new PayloadComposer(),
+            Runnable::run
         );
     }
 
@@ -138,6 +146,39 @@ public class CerebroCompanionPlugin extends Plugin
     )
     {
         this(
+            config,
+            pluginInstanceId,
+            pluginVersion,
+            syncClientFactory,
+            configWriter,
+            configRemover,
+            questStateCollector,
+            diaryStateCollector,
+            travelStateCollector,
+            gearStateCollector,
+            utilityStateCollector,
+            payloadComposer,
+            Runnable::run
+        );
+    }
+
+    CerebroCompanionPlugin(
+        CerebroCompanionConfig config,
+        String pluginInstanceId,
+        String pluginVersion,
+        Function<String, CerebroSyncClient> syncClientFactory,
+        BiConsumer<String, String> configWriter,
+        Consumer<String> configRemover,
+        QuestStateCollector questStateCollector,
+        DiaryStateCollector diaryStateCollector,
+        TravelStateCollector travelStateCollector,
+        GearStateCollector gearStateCollector,
+        UtilityStateCollector utilityStateCollector,
+        PayloadComposer payloadComposer,
+        Consumer<Runnable> clientThreadInvoker
+    )
+    {
+        this(
             pluginInstanceId,
             pluginVersion,
             syncClientFactory,
@@ -148,7 +189,8 @@ public class CerebroCompanionPlugin extends Plugin
             travelStateCollector,
             gearStateCollector,
             utilityStateCollector,
-            payloadComposer
+            payloadComposer,
+            clientThreadInvoker
         );
         this.config = Objects.requireNonNull(config, "config must not be null");
     }
@@ -164,7 +206,8 @@ public class CerebroCompanionPlugin extends Plugin
         TravelStateCollector travelStateCollector,
         GearStateCollector gearStateCollector,
         UtilityStateCollector utilityStateCollector,
-        PayloadComposer payloadComposer
+        PayloadComposer payloadComposer,
+        Consumer<Runnable> clientThreadInvoker
     )
     {
         this.pluginInstanceId = requireValue("pluginInstanceId", pluginInstanceId);
@@ -178,6 +221,7 @@ public class CerebroCompanionPlugin extends Plugin
         this.gearStateCollector = Objects.requireNonNull(gearStateCollector, "gearStateCollector must not be null");
         this.utilityStateCollector = Objects.requireNonNull(utilityStateCollector, "utilityStateCollector must not be null");
         this.payloadComposer = Objects.requireNonNull(payloadComposer, "payloadComposer must not be null");
+        this.clientThreadInvoker = Objects.requireNonNull(clientThreadInvoker, "clientThreadInvoker must not be null");
     }
 
     public CerebroCompanionConfig getConfig()
@@ -209,14 +253,7 @@ public class CerebroCompanionPlugin extends Plugin
 
         if (hasSyncSecret())
         {
-            try
-            {
-                syncNow();
-            }
-            catch (RuntimeException error)
-            {
-                recordSyncStatus("sync failed: " + summarize(error));
-            }
+            syncNowOnClientThread();
         }
     }
 
@@ -284,7 +321,7 @@ public class CerebroCompanionPlugin extends Plugin
                 )
             );
             completeLink(response);
-            syncNow();
+            syncNowOnClientThread();
         }
         catch (RuntimeException error)
         {
@@ -322,17 +359,54 @@ public class CerebroCompanionPlugin extends Plugin
             return;
         }
 
-        if (!CerebroCompanionConfig.LINK_TOKEN_KEY.equals(event.getKey()))
+        String key = event.getKey();
+        if (CerebroCompanionConfig.LINK_TOKEN_KEY.equals(key))
         {
+            if (hasPendingLink())
+            {
+                recordSyncStatus("link code ready. Click Apply link code to connect this RuneLite client.");
+            }
             return;
         }
 
-        if (!hasPendingLink())
+        if (CerebroCompanionConfig.APPLY_LINK_CODE_KEY.equals(key))
         {
+            clearConfigValue(CerebroCompanionConfig.APPLY_LINK_CODE_KEY);
+            if (isTrueConfigValue(event.getNewValue()))
+            {
+                if (!hasPendingLink())
+                {
+                    recordSyncStatus("paste a fresh Cerebro link code before clicking Apply link code.");
+                    return;
+                }
+                processPendingLink();
+            }
             return;
         }
 
-        processPendingLink();
+        if (CerebroCompanionConfig.SYNC_NOW_KEY.equals(key))
+        {
+            clearConfigValue(CerebroCompanionConfig.SYNC_NOW_KEY);
+            if (isTrueConfigValue(event.getNewValue()))
+            {
+                if (!hasSyncSecret())
+                {
+                    recordSyncStatus("sync skipped: no saved companion link. Paste a link code and click Apply link code first.");
+                    return;
+                }
+                syncNowOnClientThread();
+            }
+            return;
+        }
+
+        if (CerebroCompanionConfig.DISCONNECT_KEY.equals(key))
+        {
+            clearConfigValue(CerebroCompanionConfig.DISCONNECT_KEY);
+            if (isTrueConfigValue(event.getNewValue()))
+            {
+                disconnectCompanion();
+            }
+        }
     }
 
     public void recordSyncStatus(String status)
@@ -384,6 +458,13 @@ public class CerebroCompanionPlugin extends Plugin
         requireConfigManager().unsetConfiguration(CerebroCompanionConfig.GROUP, key);
     }
 
+    private void disconnectCompanion()
+    {
+        clearConfigValue(CerebroCompanionConfig.LINK_TOKEN_KEY);
+        clearConfigValue(CerebroCompanionConfig.SYNC_SECRET_KEY);
+        recordSyncStatus("local link cleared. Generate a fresh Cerebro link code to connect this RuneLite client again.");
+    }
+
     private SyncPayload composePayload()
     {
         return payloadComposer.compose(
@@ -396,6 +477,31 @@ public class CerebroCompanionPlugin extends Plugin
             gearStateCollector,
             utilityStateCollector
         );
+    }
+
+    private void syncNowOnClientThread()
+    {
+        runOnClientThread(() ->
+        {
+            try
+            {
+                syncNow();
+            }
+            catch (RuntimeException error)
+            {
+                recordSyncStatus("sync failed: " + summarize(error));
+            }
+        });
+    }
+
+    private void runOnClientThread(Runnable task)
+    {
+        if (clientThread != null)
+        {
+            clientThread.invokeLater(task);
+            return;
+        }
+        clientThreadInvoker.accept(task);
     }
 
     private void initializeRuntimeCollectors()
@@ -459,6 +565,11 @@ public class CerebroCompanionPlugin extends Plugin
             || normalized.contains("token is invalid or expired")
             || normalized.contains("invalid or expired")
             || normalized.contains("status 404");
+    }
+
+    private static boolean isTrueConfigValue(String value)
+    {
+        return "true".equalsIgnoreCase(normalizeConfigValue(value));
     }
 
     private static String resolvePluginVersion()
