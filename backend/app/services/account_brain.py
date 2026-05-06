@@ -18,6 +18,7 @@ class AccountBrainPacket:
     companion_awareness: dict[str, object] = field(default_factory=dict)
     planning_signals: dict[str, object] = field(default_factory=dict)
     knowledge_route: dict[str, object] = field(default_factory=dict)
+    readiness: dict[str, object] = field(default_factory=dict)
     advisor_brief: str = ""
 
 
@@ -55,12 +56,19 @@ class AccountBrainService:
             planning_state=planning_state,
         )
         knowledge_route = self._build_knowledge_route(retrieval_packet=retrieval_packet)
+        readiness = self._build_readiness(
+            latest_goal=latest_goal,
+            latest_snapshot=latest_snapshot,
+            progress=progress,
+            companion_awareness=companion_awareness,
+        )
         advisor_brief = self._build_advisor_brief(
             identity=identity,
             stats=stats,
             companion_awareness=companion_awareness,
             planning_signals=planning_signals,
             knowledge_route=knowledge_route,
+            readiness=readiness,
         )
         return AccountBrainPacket(
             identity=identity,
@@ -68,6 +76,7 @@ class AccountBrainService:
             companion_awareness=companion_awareness,
             planning_signals=planning_signals,
             knowledge_route=knowledge_route,
+            readiness=readiness,
             advisor_brief=advisor_brief,
         )
 
@@ -176,6 +185,65 @@ class AccountBrainService:
             "match_notes": retrieval_packet.match_notes[:3],
         }
 
+    def _build_readiness(
+        self,
+        *,
+        latest_goal: Goal | None,
+        latest_snapshot: AccountSnapshot | None,
+        progress: AccountProgress | None,
+        companion_awareness: dict[str, object],
+    ) -> dict[str, object]:
+        trusted_sources: list[str] = []
+        missing_inputs: list[str] = []
+
+        if latest_snapshot is not None:
+            trusted_sources.append("hiscores")
+        else:
+            missing_inputs.append("hiscores sync")
+
+        if companion_awareness.get("sync_active") is True:
+            trusted_sources.append("runelite companion")
+        else:
+            missing_inputs.append("runelite companion sync")
+
+        if progress is None or not progress.completed_quests:
+            missing_inputs.append("quest state")
+        else:
+            trusted_sources.append("quest state")
+
+        if progress is None or not progress.equipped_gear:
+            missing_inputs.append("equipped gear")
+        else:
+            trusted_sources.append("equipped gear")
+
+        if progress is None or not user_context_service.tracked_owned_gear(progress):
+            missing_inputs.append("gear ownership")
+        else:
+            trusted_sources.append("gear ownership")
+
+        # Deep bank sync is not implemented yet, so keep this explicit for safer gear and money advice.
+        missing_inputs.append("bank sync")
+
+        if latest_goal is None:
+            missing_inputs.append("active goal")
+        else:
+            trusted_sources.append("active goal")
+
+        if latest_snapshot is not None and companion_awareness.get("sync_active") is True and progress is not None:
+            confidence = "high" if progress.completed_quests and progress.equipped_gear else "medium"
+        elif latest_snapshot is not None or companion_awareness.get("sync_active") is True:
+            confidence = "medium"
+        else:
+            confidence = "low"
+
+        return {
+            "confidence": confidence,
+            "trusted_sources": trusted_sources,
+            "missing_inputs": missing_inputs,
+            "next_sync_needed": self._next_sync_needed(missing_inputs),
+            "advisor_warning": self._advisor_warning(confidence, missing_inputs),
+        }
+
     def _build_advisor_brief(
         self,
         *,
@@ -184,6 +252,7 @@ class AccountBrainService:
         companion_awareness: dict[str, object],
         planning_signals: dict[str, object],
         knowledge_route: dict[str, object],
+        readiness: dict[str, object],
     ) -> str:
         lines = [
             "Account brain packet:",
@@ -233,6 +302,14 @@ class AccountBrainService:
                 f"{self._join(planning_signals.get('avoid_known_unlocks'))}."
             ),
             (
+                "- Readiness: "
+                f"confidence={readiness.get('confidence') or 'unknown'}; "
+                f"trusted_sources={self._join(readiness.get('trusted_sources'))}; "
+                f"missing_inputs={self._join(readiness.get('missing_inputs'))}; "
+                f"next_sync_needed={readiness.get('next_sync_needed') or 'none'}; "
+                f"advisor_warning={readiness.get('advisor_warning') or 'none'}."
+            ),
+            (
                 "- Knowledge route: "
                 f"mode={knowledge_route.get('question_mode') or 'unknown'}; "
                 f"primary_domain={knowledge_route.get('primary_domain') or 'none'}; "
@@ -244,6 +321,32 @@ class AccountBrainService:
         if active_unlocks != "none":
             lines.insert(4, f"- Active unlocks: {active_unlocks}.")
         return "\n".join(lines)
+
+    def _next_sync_needed(self, missing_inputs: list[str]) -> str:
+        priority = (
+            "hiscores sync",
+            "runelite companion sync",
+            "bank sync",
+            "equipped gear",
+            "active goal",
+            "quest state",
+            "gear ownership",
+        )
+        for item in priority:
+            if item in missing_inputs:
+                return item
+        return "none"
+
+    def _advisor_warning(self, confidence: str, missing_inputs: list[str]) -> str:
+        if "hiscores sync" in missing_inputs or "runelite companion sync" in missing_inputs:
+            return (
+                "Do not assume quest completion, unlocks, or gear state until the missing account syncs are complete."
+            )
+        if "bank sync" in missing_inputs:
+            return "Bank state is missing, so do not make exact wealth, affordability, or owned-supplies assumptions."
+        if confidence == "low":
+            return "Account state is sparse; keep recommendations conservative and ask for the next missing sync."
+        return "Account state is usable; stay grounded in the trusted sources and call out any missing inputs."
 
     def _progression_value(self, summary: dict[str, Any], key: str) -> object | None:
         progression_profile = summary.get("progression_profile")

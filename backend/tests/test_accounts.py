@@ -213,6 +213,60 @@ async def test_get_account_brain_returns_unified_account_context(client: AsyncCl
 
 
 @pytest.mark.asyncio
+async def test_get_account_brain_reports_high_confidence_when_sources_are_rich(client: AsyncClient) -> None:
+    create_response = await client.post("/api/accounts", json={"rsn": "ReadyBrain"})
+    account_id = create_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        "/api/profile",
+        json={"primary_account_rsn": "ReadyBrain", "play_style": "balanced"},
+    )
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["bone voyage", "fairytale i - growing pains"],
+            "completed_diaries": {"lumbridge": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": ["abyssal whip"],
+            "equipped_gear": {"weapon": "abyssal whip"},
+            "notable_items": ["amulet of fury"],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion", "last_sync_status": "ok"},
+        },
+    )
+
+    response = await client.get(f"/api/accounts/{account_id}/brain")
+
+    assert response.status_code == 200
+    readiness = response.json()["readiness"]
+    assert readiness["confidence"] == "high"
+    assert "hiscores" in readiness["trusted_sources"]
+    assert "runelite companion" in readiness["trusted_sources"]
+    assert "equipped gear" in readiness["trusted_sources"]
+    assert "bank sync" in readiness["missing_inputs"]
+    assert readiness["next_sync_needed"] == "bank sync"
+    assert "bank state is missing" in readiness["advisor_warning"].lower()
+    assert "Readiness:" in response.json()["advisor_brief"]
+
+
+@pytest.mark.asyncio
+async def test_get_account_brain_reports_low_confidence_when_account_state_is_sparse(client: AsyncClient) -> None:
+    create_response = await client.post("/api/accounts", json={"rsn": "SparseBrain"})
+    account_id = create_response.json()["id"]
+
+    response = await client.get(f"/api/accounts/{account_id}/brain")
+
+    assert response.status_code == 200
+    readiness = response.json()["readiness"]
+    assert readiness["confidence"] == "low"
+    assert "hiscores sync" in readiness["missing_inputs"]
+    assert "runelite companion sync" in readiness["missing_inputs"]
+    assert "active goal" in readiness["missing_inputs"]
+    assert readiness["next_sync_needed"] == "hiscores sync"
+    assert "not assume quest completion" in readiness["advisor_warning"].lower()
+
+
+@pytest.mark.asyncio
 async def test_get_account_brain_rejects_other_users_account(
     client: AsyncClient,
     unauthenticated_client: AsyncClient,

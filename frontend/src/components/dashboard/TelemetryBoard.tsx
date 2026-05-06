@@ -41,6 +41,16 @@ function formatBrainSource(accountBrain: AccountBrain | null) {
   return source;
 }
 
+function confidenceClass(confidence: string | undefined) {
+  if (confidence === "high") {
+    return "border-emerald-400/35 bg-emerald-400/10 text-emerald-200";
+  }
+  if (confidence === "medium") {
+    return "border-osrs-gold/40 bg-osrs-gold/10 text-osrs-gold-soft";
+  }
+  return "border-red-400/35 bg-red-400/10 text-red-200";
+}
+
 export function TelemetryBoard({
   busyAction,
   newAccountRsn,
@@ -267,11 +277,21 @@ export function TelemetryBoard({
                 </h3>
               </div>
               <span className="border border-emerald-400/35 bg-emerald-400/10 px-3 py-1 font-mono text-[0.55rem] uppercase tracking-[0.18em] text-emerald-200">
-                {accountBrain ? "live" : "standby"}
+                {accountBrain ? "brain live" : "standby"}
               </span>
             </div>
             {accountBrain ? (
               <div className="space-y-4 px-5 py-5">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`border px-3 py-1 font-mono text-[0.56rem] uppercase tracking-[0.18em] ${confidenceClass(accountBrain.readiness.confidence)}`}
+                  >
+                    confidence {accountBrain.readiness.confidence ?? "unknown"}
+                  </span>
+                  <span className="border border-white/10 bg-black/30 px-3 py-1 font-mono text-[0.56rem] uppercase tracking-[0.18em] text-osrs-text-soft">
+                    next sync {accountBrain.readiness.next_sync_needed ?? "none"}
+                  </span>
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="border border-white/8 bg-black/30 px-4 py-3">
                     <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-osrs-text-soft">Source</p>
@@ -298,6 +318,14 @@ export function TelemetryBoard({
                 </div>
                 <div className="space-y-3 text-[0.82rem] leading-6 text-osrs-text-soft">
                   <p>
+                    <span className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-gold">Trusted</span>{" "}
+                    {previewList(accountBrain.readiness.trusted_sources)}
+                  </p>
+                  <p>
+                    <span className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-gold">Missing</span>{" "}
+                    {previewList(accountBrain.readiness.missing_inputs, 4)}
+                  </p>
+                  <p>
                     <span className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-gold">Avoid</span>{" "}
                     {previewList(accountBrain.planning_signals.avoid_known_unlocks)}
                   </p>
@@ -310,6 +338,11 @@ export function TelemetryBoard({
                     {previewList(accountBrain.companion_awareness.transport_unlocks)}
                   </p>
                 </div>
+                {accountBrain.readiness.advisor_warning ? (
+                  <div className="border border-osrs-gold/25 bg-osrs-gold/8 px-4 py-3 text-[0.75rem] leading-5 text-osrs-gold-soft">
+                    {accountBrain.readiness.advisor_warning}
+                  </div>
+                ) : null}
                 <div className="max-h-32 overflow-hidden border border-white/8 bg-black/30 px-4 py-3 text-[0.72rem] leading-5 text-osrs-text-soft">
                   {accountBrain.advisor_brief.split("\n").slice(0, 4).join(" ")}
                 </div>

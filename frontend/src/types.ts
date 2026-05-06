@@ -127,6 +127,14 @@ export type AccountBrain = {
     match_notes?: string[];
     [key: string]: unknown;
   };
+  readiness: {
+    confidence?: string;
+    trusted_sources?: string[];
+    missing_inputs?: string[];
+    next_sync_needed?: string;
+    advisor_warning?: string;
+    [key: string]: unknown;
+  };
   advisor_brief: string;
 };
 

@@ -64,4 +64,5 @@ class AccountBrainResponse(BaseModel):
     companion_awareness: dict[str, Any]
     planning_signals: dict[str, Any]
     knowledge_route: dict[str, Any]
+    readiness: dict[str, Any]
     advisor_brief: str

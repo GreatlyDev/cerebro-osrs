@@ -336,6 +336,7 @@ class AccountService:
             companion_awareness=packet.companion_awareness,
             planning_signals=packet.planning_signals,
             knowledge_route=packet.knowledge_route,
+            readiness=packet.readiness,
             advisor_brief=packet.advisor_brief,
         )
 
