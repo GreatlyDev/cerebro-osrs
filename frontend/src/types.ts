@@ -68,6 +68,15 @@ export type AccountSnapshotListResponse = {
   total: number;
 };
 
+export type AccountReadiness = {
+  confidence?: string;
+  trusted_sources?: string[];
+  missing_inputs?: string[];
+  next_sync_needed?: string;
+  advisor_warning?: string;
+  [key: string]: unknown;
+};
+
 export type AccountBrain = {
   account_id: number;
   account_rsn: string;
@@ -127,14 +136,7 @@ export type AccountBrain = {
     match_notes?: string[];
     [key: string]: unknown;
   };
-  readiness: {
-    confidence?: string;
-    trusted_sources?: string[];
-    missing_inputs?: string[];
-    next_sync_needed?: string;
-    advisor_warning?: string;
-    [key: string]: unknown;
-  };
+  readiness: AccountReadiness;
   advisor_brief: string;
 };
 
@@ -223,7 +225,10 @@ export type NextActionResponse = {
   goal_title: string | null;
   top_action: NextAction | null;
   actions: NextAction[];
-  context: Record<string, unknown>;
+  context: {
+    account_readiness?: AccountReadiness;
+    [key: string]: unknown;
+  };
 };
 
 export type ChatSession = {

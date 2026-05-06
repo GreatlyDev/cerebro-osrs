@@ -138,3 +138,57 @@ async def test_next_actions_report_snapshot_momentum(client: AsyncClient, db_ses
     assert "magic" in data["context"]["recently_progressed_skills"]
     assert skill_action["supporting_data"]["recent_momentum_detected"] is True
     assert quest_action["supporting_data"]["recent_momentum_detected"] is True
+
+
+@pytest.mark.asyncio
+async def test_next_actions_include_account_readiness_context(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "ReadyRecs"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["bone voyage"],
+            "completed_diaries": {"lumbridge": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": ["abyssal whip"],
+            "equipped_gear": {"weapon": "abyssal whip"},
+            "notable_items": ["amulet of fury"],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion"},
+        },
+    )
+    goal_response = await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "ReadyRecs"},
+    )
+
+    response = await client.get(
+        f"/api/recommendations/next-actions?goal_id={goal_response.json()['id']}&limit=4"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    readiness = data["context"]["account_readiness"]
+    assert readiness["confidence"] == "high"
+    assert readiness["next_sync_needed"] == "bank sync"
+    assert "bank sync" in readiness["missing_inputs"]
+    gear_action = next(action for action in data["actions"] if action["action_type"] == "gear")
+    assert "readiness_warning" in gear_action["supporting_data"]
+    assert "bank state is missing" in gear_action["supporting_data"]["readiness_warning"].lower()
+
+
+@pytest.mark.asyncio
+async def test_next_actions_warn_when_account_readiness_is_sparse(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "SparseRecs"})
+    account_id = account_response.json()["id"]
+
+    response = await client.get(f"/api/recommendations/next-actions?account_rsn=SparseRecs&limit=4")
+
+    assert response.status_code == 200
+    readiness = response.json()["context"]["account_readiness"]
+    assert readiness["confidence"] == "low"
+    assert readiness["next_sync_needed"] == "hiscores sync"
+    assert "hiscores sync" in readiness["missing_inputs"]
+    assert "runelite companion sync" in readiness["missing_inputs"]
+    assert "not assume quest completion" in readiness["advisor_warning"].lower()

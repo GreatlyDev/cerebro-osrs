@@ -13,6 +13,8 @@ from app.schemas.recommendation import (
 )
 from app.schemas.teleport import TeleportRouteRequest
 from app.services.account_context import account_context_service
+from app.services.account_brain import account_brain_service
+from app.services.knowledge_models import KnowledgeRetrievalPacket
 from app.services.gear import gear_service
 from app.services.planner import planner_service
 from app.services.quests import quest_service
@@ -52,9 +54,27 @@ class RecommendationService:
             user=user,
             account_rsn=account_rsn,
         )
+        account = await account_context_service.get_account_by_rsn(
+            db_session=db_session,
+            user=user,
+            account_rsn=account_rsn,
+        )
         snapshot_delta = self._build_snapshot_delta(
             latest_snapshot=snapshot,
             previous_snapshot=previous_snapshot,
+        )
+        account_brain = account_brain_service.build_packet(
+            user=user,
+            profile=profile,
+            account=account,
+            latest_goal=goal,
+            latest_snapshot=snapshot,
+            previous_snapshot=previous_snapshot,
+            progress=progress,
+            session_intent="progression",
+            session_focus_summary=f"Next-action recommendations for {account_rsn or 'the workspace'}.",
+            retrieval_packet=KnowledgeRetrievalPacket(),
+            planning_state={},
         )
 
         goal_like = goal or self._build_default_goal(account_rsn=account_rsn, profile=profile)
@@ -72,6 +92,7 @@ class RecommendationService:
             recommendations=recommendations,
             progress=progress,
             snapshot_delta=snapshot_delta,
+            account_readiness=account_brain.readiness,
         )
         ordered = sorted(actions, key=lambda action: action.score, reverse=True)
         trimmed = ordered[: payload.limit]
@@ -98,6 +119,7 @@ class RecommendationService:
                     progress is not None
                     and progress.companion_state.get("source") == "runelite_companion"
                 ),
+                "account_readiness": account_brain.readiness,
                 "goal_influenced": goal is not None,
                 "returned_action_count": len(trimmed),
             },
@@ -161,6 +183,7 @@ class RecommendationService:
         recommendations: dict[str, object],
         progress,
         snapshot_delta: dict[str, object] | None,
+        account_readiness: dict[str, object],
     ) -> list[NextActionRecommendation]:
         skill = recommendations["recommended_skill"]
         quest = recommendations["recommended_quest"]
@@ -199,6 +222,7 @@ class RecommendationService:
         skill_score = 78 if skill_has_momentum else 86 if current_level is not None else 74
         if skill_stalled:
             skill_score += 6
+        readiness_warning = self._readiness_warning(account_readiness)
 
         actions = [
             NextActionRecommendation(
@@ -224,6 +248,7 @@ class RecommendationService:
                     "goal_type": goal.goal_type if goal else None,
                     "active_unlock_match": quest_matches_active_unlock,
                     "recent_momentum_detected": skill_has_momentum or overall_level_delta > 0,
+                    "readiness_warning": readiness_warning,
                 },
             ),
             NextActionRecommendation(
@@ -240,6 +265,7 @@ class RecommendationService:
                     "recommended_method": skill["method"],
                     "recent_momentum_detected": skill_has_momentum,
                     "skill_stalled": skill_stalled,
+                    "readiness_warning": readiness_warning,
                 },
             ),
             NextActionRecommendation(
@@ -253,6 +279,7 @@ class RecommendationService:
                 supporting_data={
                     "account_rsn": account_rsn,
                     "already_owned": gear_owned,
+                    "readiness_warning": readiness_warning,
                 },
             ),
             NextActionRecommendation(
@@ -274,10 +301,15 @@ class RecommendationService:
                 supporting_data={
                     "account_rsn": account_rsn,
                     "active_unlock_match": travel_matches_active_unlock,
+                    "readiness_warning": readiness_warning,
                 },
             ),
         ]
         return actions
+
+    def _readiness_warning(self, account_readiness: dict[str, object]) -> str | None:
+        warning = account_readiness.get("advisor_warning")
+        return warning if isinstance(warning, str) and warning else None
 
     def _quest_matches_known_unlock(
         self,

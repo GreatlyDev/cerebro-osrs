@@ -1,6 +1,6 @@
 import { RecommendationThumb } from "../components/dashboard/RecommendationThumb";
 import { Button } from "../components/ui/Button";
-import type { NextAction, NextActionResponse } from "../types";
+import type { AccountReadiness, NextAction, NextActionResponse } from "../types";
 
 type RecommendationsPageProps = {
   nextActions: NextActionResponse | null;
@@ -67,6 +67,59 @@ function buildRecommendationSummary(action: NextAction) {
   }
 
   return snippets.length === 0 ? action.summary : snippets.join(" ");
+}
+
+function formatReadinessText(value: string | undefined | null, fallback: string) {
+  return value ? value.replaceAll("_", " ") : fallback;
+}
+
+function ReadinessPanel({ readiness }: { readiness: AccountReadiness }) {
+  const trustedSources = readiness.trusted_sources ?? [];
+  const missingInputs = readiness.missing_inputs ?? [];
+
+  return (
+    <section className="border border-white/8 bg-[#101010] px-5 py-5">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+        <div className="max-w-3xl">
+          <p className="font-mono text-[0.58rem] uppercase tracking-[0.24em] text-osrs-gold">Account brain readiness</p>
+          <h2 className="mt-3 font-display text-[1.65rem] font-bold uppercase tracking-[0.05em] text-white">
+            Planning confidence is {formatReadinessText(readiness.confidence, "unknown")}
+          </h2>
+          {readiness.advisor_warning ? (
+            <p className="mt-3 text-sm leading-7 text-osrs-text-soft">{readiness.advisor_warning}</p>
+          ) : (
+            <p className="mt-3 text-sm leading-7 text-osrs-text-soft">
+              Cerebro has enough account context to rank actions without adding an extra caution note.
+            </p>
+          )}
+        </div>
+        <div className="grid min-w-[18rem] gap-3 sm:grid-cols-2 xl:grid-cols-1">
+          <div className="border border-white/8 bg-[#0b0b0b] px-4 py-4">
+            <p className="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-osrs-gold-soft">Next sync</p>
+            <p className="mt-2 font-display text-lg uppercase text-white">
+              {formatReadinessText(readiness.next_sync_needed, "none queued")}
+            </p>
+          </div>
+          <div className="border border-white/8 bg-[#0b0b0b] px-4 py-4">
+            <p className="font-mono text-[0.56rem] uppercase tracking-[0.2em] text-osrs-gold-soft">Trusted sources</p>
+            <p className="mt-2 text-sm uppercase tracking-[0.08em] text-white">
+              {trustedSources.length > 0 ? trustedSources.join(" / ") : "None yet"}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {missingInputs.length > 0 ? (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {missingInputs.map((input) => (
+            <span className="border border-osrs-gold/25 bg-[rgba(212,175,55,0.08)] px-3 py-1.5 font-mono text-[0.58rem] uppercase tracking-[0.16em] text-osrs-gold-soft" key={input}>
+              Needs {input}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
 }
 
 function SupportingData({ action }: { action: NextAction }) {
@@ -138,6 +191,7 @@ export function RecommendationsView({
   onOpenNextAction,
 }: RecommendationsPageProps) {
   const actions = nextActions?.actions ?? [];
+  const accountReadiness = nextActions?.context.account_readiness ?? null;
 
   return (
     <div className="space-y-8">
@@ -184,6 +238,8 @@ export function RecommendationsView({
           <p className="mt-3 font-display text-[1.35rem] uppercase text-white">{actions.length}</p>
         </div>
       </div>
+
+      {accountReadiness ? <ReadinessPanel readiness={accountReadiness} /> : null}
 
       {actions.length === 0 ? (
         <section className="border border-white/8 bg-[#101010] px-6 py-6 text-sm leading-7 text-osrs-text-soft">
