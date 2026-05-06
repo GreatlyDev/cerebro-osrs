@@ -15,6 +15,7 @@ from app.models.account_snapshot import AccountSnapshot
 from app.models.companion_connection import CompanionConnection
 from app.models.user import User
 from app.schemas.account import (
+    AccountBrainResponse,
     AccountCreateRequest,
     AccountListResponse,
     AccountResponse,
@@ -23,6 +24,9 @@ from app.schemas.account import (
     AccountSyncResponse,
 )
 from app.schemas.account_progress import AccountProgressResponse, AccountProgressUpdateRequest
+from app.services.account_brain import account_brain_service
+from app.services.knowledge_models import KnowledgeRetrievalPacket
+from app.services.user_context import user_context_service
 
 
 class AccountService:
@@ -281,6 +285,58 @@ class AccountService:
         return AccountSnapshotListResponse(
             items=[AccountSnapshotResponse.model_validate(snapshot) for snapshot in snapshots],
             total=len(snapshots),
+        )
+
+    async def get_account_brain(
+        self,
+        db_session: AsyncSession,
+        user: User,
+        account_id: int,
+    ) -> AccountBrainResponse:
+        account = await self._get_account_or_404(
+            db_session=db_session,
+            user=user,
+            account_id=account_id,
+        )
+        profile = await user_context_service.get_profile(db_session=db_session, user=user)
+        latest_goal = await user_context_service.get_latest_goal(db_session=db_session, user=user)
+        if latest_goal is not None and latest_goal.target_account_rsn not in {None, account.rsn}:
+            latest_goal = None
+        progress = await self._get_or_create_progress(db_session=db_session, account_id=account.id)
+        snapshots = list(
+            (
+                await db_session.scalars(
+                    select(AccountSnapshot)
+                    .where(AccountSnapshot.account_id == account.id)
+                    .order_by(desc(AccountSnapshot.created_at), desc(AccountSnapshot.id))
+                    .limit(2)
+                )
+            ).all()
+        )
+        latest_snapshot = snapshots[0] if snapshots else None
+        previous_snapshot = snapshots[1] if len(snapshots) > 1 else None
+        packet = account_brain_service.build_packet(
+            user=user,
+            profile=profile,
+            account=account,
+            latest_goal=latest_goal,
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+            progress=progress,
+            session_intent=None,
+            session_focus_summary=f"Account brain inspection for {account.rsn}.",
+            retrieval_packet=KnowledgeRetrievalPacket(),
+            planning_state={},
+        )
+        return AccountBrainResponse(
+            account_id=account.id,
+            account_rsn=account.rsn,
+            identity=packet.identity,
+            stats=packet.stats,
+            companion_awareness=packet.companion_awareness,
+            planning_signals=packet.planning_signals,
+            knowledge_route=packet.knowledge_route,
+            advisor_brief=packet.advisor_brief,
         )
 
 

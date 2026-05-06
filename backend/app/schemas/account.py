@@ -54,3 +54,14 @@ class AccountSnapshotResponse(BaseModel):
 class AccountSnapshotListResponse(BaseModel):
     items: list[AccountSnapshotResponse]
     total: int
+
+
+class AccountBrainResponse(BaseModel):
+    account_id: int
+    account_rsn: str
+    identity: dict[str, Any]
+    stats: dict[str, Any]
+    companion_awareness: dict[str, Any]
+    planning_signals: dict[str, Any]
+    knowledge_route: dict[str, Any]
+    advisor_brief: str

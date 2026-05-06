@@ -5,6 +5,7 @@ from app.api.deps.auth import get_current_user
 from app.db.session import get_db_session
 from app.models.user import User
 from app.schemas.account import (
+    AccountBrainResponse,
     AccountCreateRequest,
     AccountListResponse,
     AccountResponse,
@@ -55,6 +56,23 @@ async def get_account(
     current_user: User = Depends(get_current_user),
 ) -> AccountResponse:
     return await account_service.get_account(
+        db_session=db_session,
+        user=current_user,
+        account_id=account_id,
+    )
+
+
+@router.get(
+    "/{account_id}/brain",
+    response_model=AccountBrainResponse,
+    summary="Get the unified account brain packet",
+)
+async def get_account_brain(
+    account_id: int,
+    db_session: AsyncSession = Depends(get_db_session),
+    current_user: User = Depends(get_current_user),
+) -> AccountBrainResponse:
+    return await account_service.get_account_brain(
         db_session=db_session,
         user=current_user,
         account_id=account_id,

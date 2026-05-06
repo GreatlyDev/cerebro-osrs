@@ -160,3 +160,75 @@ async def test_update_account_progress_preserves_companion_fields_when_omitted(
     assert payload["equipped_gear"] == {"weapon": "dragon scimitar"}
     assert payload["notable_items"] == ["barrows gloves"]
     assert payload["companion_state"] == {"source": "runelite_companion", "quest_points": 200}
+
+
+@pytest.mark.asyncio
+async def test_get_account_brain_returns_unified_account_context(client: AsyncClient) -> None:
+    create_response = await client.post("/api/accounts", json={"rsn": "BrainView"})
+    account_id = create_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        "/api/profile",
+        json={
+            "primary_account_rsn": "BrainView",
+            "play_style": "balanced",
+            "goals_focus": "progression",
+            "prefers_afk_methods": True,
+        },
+    )
+    await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "BrainView"},
+    )
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["bone voyage"],
+            "completed_diaries": {"lumbridge": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": ["abyssal whip"],
+            "equipped_gear": {"weapon": "abyssal whip"},
+            "notable_items": ["amulet of fury"],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion", "last_sync_status": "ok"},
+        },
+    )
+
+    response = await client.get(f"/api/accounts/{account_id}/brain")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["account_id"] == account_id
+    assert payload["account_rsn"] == "BrainView"
+    assert payload["identity"]["active_goal"] == "Quest Cape"
+    assert payload["identity"]["play_style"] == "balanced"
+    assert payload["stats"]["overall_level"] == 2277
+    assert payload["stats"]["combat_level"] == 126
+    assert payload["companion_awareness"]["sync_active"] is True
+    assert payload["companion_awareness"]["completed_quest_count"] == 1
+    assert "fairy rings" in payload["companion_awareness"]["transport_unlocks"]
+    assert "abyssal whip" in payload["companion_awareness"]["owned_gear"]
+    assert "fossil island access" in payload["planning_signals"]["avoid_known_unlocks"]
+    assert "Account brain packet" in payload["advisor_brief"]
+
+
+@pytest.mark.asyncio
+async def test_get_account_brain_rejects_other_users_account(
+    client: AsyncClient,
+    unauthenticated_client: AsyncClient,
+) -> None:
+    create_response = await client.post("/api/accounts", json={"rsn": "PrivateBrain"})
+    account_id = create_response.json()["id"]
+    second_login = await unauthenticated_client.post(
+        "/api/auth/dev-login",
+        json={"email": "brain-second@example.com", "display_name": "Second Brain"},
+    )
+    second_headers = {"Authorization": f"Bearer {second_login.json()['session_token']}"}
+
+    response = await unauthenticated_client.get(
+        f"/api/accounts/{account_id}/brain",
+        headers=second_headers,
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Account not found."
