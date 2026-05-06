@@ -68,6 +68,68 @@ export type AccountSnapshotListResponse = {
   total: number;
 };
 
+export type AccountBrain = {
+  account_id: number;
+  account_rsn: string;
+  identity: {
+    player?: string | null;
+    account_rsn?: string | null;
+    profile_display_name?: string | null;
+    primary_account_rsn?: string | null;
+    play_style?: string | null;
+    goals_focus?: string | null;
+    prefers_afk_methods?: boolean | null;
+    prefers_profitable_methods?: boolean | null;
+    active_goal?: string | null;
+    active_goal_type?: string | null;
+    [key: string]: unknown;
+  };
+  stats: {
+    overall_level?: number | null;
+    combat_level?: number | null;
+    top_skills?: string[];
+    highest_skill?: string | null;
+    lowest_tracked_skill?: string | null;
+    skills_at_99?: number | null;
+    [key: string]: unknown;
+  };
+  companion_awareness: {
+    source?: string | null;
+    sync_active?: boolean;
+    completed_quest_count?: number;
+    completed_quest_preview?: string[];
+    diary_regions?: string[];
+    transport_unlocks?: string[];
+    owned_gear?: string[];
+    equipped_gear?: Record<string, string>;
+    notable_items?: string[];
+    active_unlocks?: string[];
+    companion_state?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+  planning_signals: {
+    session_intent?: string | null;
+    session_focus?: string | null;
+    last_recommended_skill?: string | null;
+    last_quest_id?: string | null;
+    last_destination?: string | null;
+    last_priority_label?: string | null;
+    last_blockers?: string[];
+    avoid_known_unlocks?: string[];
+    [key: string]: unknown;
+  };
+  knowledge_route: {
+    question_mode?: string | null;
+    primary_domain?: string | null;
+    secondary_domains?: string[];
+    entry_matches?: string[];
+    document_matches?: string[];
+    match_notes?: string[];
+    [key: string]: unknown;
+  };
+  advisor_brief: string;
+};
+
 export type AccountProgress = {
   id: number;
   account_id: number;

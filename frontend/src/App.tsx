@@ -25,6 +25,7 @@ import { TeleportDetailView } from "./pages/TeleportDetail";
 import { TeleportsView } from "./pages/Teleports";
 import type {
   Account,
+  AccountBrain,
   AccountProgress,
   AccountSnapshot,
   AuthUser,
@@ -362,6 +363,7 @@ export function App() {
   const [selectedSnapshot, setSelectedSnapshot] = useState<AccountSnapshot | null>(null);
   const [selectedSnapshotHistory, setSelectedSnapshotHistory] = useState<AccountSnapshot[]>([]);
   const [selectedProgress, setSelectedProgress] = useState<AccountProgress | null>(null);
+  const [selectedAccountBrain, setSelectedAccountBrain] = useState<AccountBrain | null>(null);
   const [selectedAccountId, setSelectedAccountId] = useState<number | null>(() => {
     if (typeof window === "undefined") {
       return null;
@@ -599,14 +601,16 @@ export function App() {
         const latestAccount =
           accountsResponse.items.find((account) => account.id === selectedAccountId) ??
           accountsResponse.items[accountsResponse.items.length - 1];
-        const [latestSnapshot, latestProgress, latestHistory] = await Promise.all([
+        const [latestSnapshot, latestProgress, latestHistory, latestBrain] = await Promise.all([
           api.getAccountSnapshot(latestAccount.id).catch(() => null),
           api.getAccountProgress(latestAccount.id).catch(() => null),
           api.listAccountSnapshots(latestAccount.id, 2).then((response) => response.items).catch(() => []),
+          api.getAccountBrain(latestAccount.id).catch(() => null),
         ]);
         setSelectedSnapshot(latestSnapshot);
         setSelectedSnapshotHistory(latestHistory);
         setSelectedProgress(latestProgress);
+        setSelectedAccountBrain(latestBrain);
         setProgressDraft({
           completed_quests: formatListDraft(latestProgress?.completed_quests ?? []),
           unlocked_transports: formatListDraft(latestProgress?.unlocked_transports ?? []),
@@ -618,6 +622,7 @@ export function App() {
         setSelectedSnapshot(null);
         setSelectedSnapshotHistory([]);
         setSelectedProgress(null);
+        setSelectedAccountBrain(null);
         setSelectedAccountId(null);
         setProgressDraft(emptyProgressDraft());
       }
@@ -651,20 +656,23 @@ export function App() {
         setSelectedSnapshot(null);
         setSelectedSnapshotHistory([]);
         setSelectedProgress(null);
+        setSelectedAccountBrain(null);
         setProgressDraft(emptyProgressDraft());
         return;
       }
 
-      const [snapshot, progress, history, nextActionsResponse] = await Promise.all([
+      const [snapshot, progress, history, brain, nextActionsResponse] = await Promise.all([
         api.getAccountSnapshot(refreshedAccount.id).catch(() => null),
         api.getAccountProgress(refreshedAccount.id).catch(() => null),
         api.listAccountSnapshots(refreshedAccount.id, 2).then((response) => response.items).catch(() => []),
+        api.getAccountBrain(refreshedAccount.id).catch(() => null),
         api.getNextActions({ limit: 4 }).catch(() => null),
       ]);
 
       setSelectedSnapshot(snapshot);
       setSelectedSnapshotHistory(history);
       setSelectedProgress(progress);
+      setSelectedAccountBrain(brain);
       setNextActions(nextActionsResponse);
       setProgressDraft({
         completed_quests: formatListDraft(progress?.completed_quests ?? []),
@@ -755,6 +763,7 @@ export function App() {
       setSelectedSnapshot(null);
       setSelectedSnapshotHistory([]);
       setSelectedProgress(null);
+      setSelectedAccountBrain(null);
       setSelectedAccountId(null);
       setChatSessions([]);
       setChatHistory([]);
@@ -840,14 +849,16 @@ export function App() {
     setError(null);
     try {
       await api.syncAccount(account.id);
-      const [snapshot, progress, history] = await Promise.all([
+      const [snapshot, progress, history, brain] = await Promise.all([
         api.getAccountSnapshot(account.id),
         api.getAccountProgress(account.id).catch(() => null),
         api.listAccountSnapshots(account.id, 2).then((response) => response.items).catch(() => []),
+        api.getAccountBrain(account.id).catch(() => null),
       ]);
       setSelectedSnapshot(snapshot);
       setSelectedSnapshotHistory(history);
       setSelectedProgress(progress);
+      setSelectedAccountBrain(brain);
       setProgressDraft({
         completed_quests: formatListDraft(progress?.completed_quests ?? []),
         unlocked_transports: formatListDraft(progress?.unlocked_transports ?? []),
@@ -1042,14 +1053,16 @@ export function App() {
     setBusyAction(`inspect-${account.id}`);
     setError(null);
     try {
-      const [snapshot, progress, history] = await Promise.all([
+      const [snapshot, progress, history, brain] = await Promise.all([
         api.getAccountSnapshot(account.id),
         api.getAccountProgress(account.id).catch(() => null),
         api.listAccountSnapshots(account.id, 2).then((response) => response.items).catch(() => []),
+        api.getAccountBrain(account.id).catch(() => null),
       ]);
       setSelectedSnapshot(snapshot);
       setSelectedSnapshotHistory(history);
       setSelectedProgress(progress);
+      setSelectedAccountBrain(brain);
       setProgressDraft({
         completed_quests: formatListDraft(progress?.completed_quests ?? []),
         unlocked_transports: formatListDraft(progress?.unlocked_transports ?? []),
@@ -1205,7 +1218,9 @@ export function App() {
         active_unlocks: parseListDraft(progressDraft.active_unlocks),
         companion_state: selectedProgress?.companion_state ?? {},
       });
+      const brain = await api.getAccountBrain(selectedAccount.id).catch(() => null);
       setSelectedProgress(updated);
+      setSelectedAccountBrain(brain);
       setProgressDraft({
         completed_quests: formatListDraft(updated.completed_quests),
         unlocked_transports: formatListDraft(updated.unlocked_transports),
@@ -1437,6 +1452,7 @@ export function App() {
       setSelectedSnapshot(null);
       setSelectedSnapshotHistory([]);
       setSelectedProgress(null);
+      setSelectedAccountBrain(null);
       setProgressDraft(emptyProgressDraft());
       return;
     }
@@ -1654,6 +1670,7 @@ export function App() {
               onRunChatPrompt={handleRunChatPrompt}
               profile={profile}
               selectedAccount={selectedAccount}
+              selectedAccountBrain={selectedAccountBrain}
               selectedProgress={selectedProgress}
               selectedSnapshot={selectedSnapshot}
               workspaceChecklist={workspaceChecklist}

@@ -1,4 +1,4 @@
-import type { Account, AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
+import type { Account, AccountBrain, AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
 import { Button } from "../ui/Button";
 import { CompanionStatusPanel } from "./CompanionStatusPanel";
 import { RecommendationThumb } from "./RecommendationThumb";
@@ -14,6 +14,7 @@ type TelemetryBoardProps = {
   selectedAccount: Account | null;
   snapshot: AccountSnapshot | null;
   progress: AccountProgress | null;
+  accountBrain: AccountBrain | null;
   nextActions: NextActionResponse | null;
 };
 
@@ -22,6 +23,22 @@ function skillFill(level: number) {
     return 100;
   }
   return Math.max(8, Math.min(100, Math.round((level / 99) * 100)));
+}
+
+function previewList(values: string[] | undefined, limit = 3) {
+  if (!values || values.length === 0) {
+    return "none";
+  }
+  const preview = values.slice(0, limit).join(", ");
+  return values.length > limit ? `${preview} +${values.length - limit}` : preview;
+}
+
+function formatBrainSource(accountBrain: AccountBrain | null) {
+  const source = accountBrain?.companion_awareness.source;
+  if (!source) {
+    return "Hiscores + profile";
+  }
+  return source;
 }
 
 export function TelemetryBoard({
@@ -34,6 +51,7 @@ export function TelemetryBoard({
   selectedAccount,
   snapshot,
   progress,
+  accountBrain,
   nextActions,
 }: TelemetryBoardProps) {
   const selectedAccountRsn = selectedAccount?.rsn ?? null;
@@ -239,6 +257,76 @@ export function TelemetryBoard({
             selectedAccount={selectedAccount}
             selectedProgress={progress}
           />
+
+          <section className="border border-white/8 bg-[#101010]">
+            <div className="flex items-center justify-between gap-3 border-b border-white/8 px-5 py-4">
+              <div>
+                <p className="font-mono text-[0.58rem] uppercase tracking-[0.2em] text-osrs-gold">Account brain</p>
+                <h3 className="mt-2 font-display text-[1.25rem] font-bold uppercase leading-none text-white">
+                  {accountBrain ? "Cerebro read loaded" : "Awaiting brain read"}
+                </h3>
+              </div>
+              <span className="border border-emerald-400/35 bg-emerald-400/10 px-3 py-1 font-mono text-[0.55rem] uppercase tracking-[0.18em] text-emerald-200">
+                {accountBrain ? "live" : "standby"}
+              </span>
+            </div>
+            {accountBrain ? (
+              <div className="space-y-4 px-5 py-5">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="border border-white/8 bg-black/30 px-4 py-3">
+                    <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-osrs-text-soft">Source</p>
+                    <p className="mt-2 text-sm font-semibold uppercase text-white">{formatBrainSource(accountBrain)}</p>
+                  </div>
+                  <div className="border border-white/8 bg-black/30 px-4 py-3">
+                    <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-osrs-text-soft">Quests</p>
+                    <p className="mt-2 text-sm font-semibold uppercase text-white">
+                      {accountBrain.companion_awareness.completed_quest_count ?? 0} tracked
+                    </p>
+                  </div>
+                  <div className="border border-white/8 bg-black/30 px-4 py-3">
+                    <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-osrs-text-soft">Goal</p>
+                    <p className="mt-2 truncate text-sm font-semibold uppercase text-white">
+                      {accountBrain.identity.active_goal ?? "none"}
+                    </p>
+                  </div>
+                  <div className="border border-white/8 bg-black/30 px-4 py-3">
+                    <p className="font-mono text-[0.52rem] uppercase tracking-[0.2em] text-osrs-text-soft">Known unlocks</p>
+                    <p className="mt-2 text-sm font-semibold uppercase text-white">
+                      {accountBrain.planning_signals.avoid_known_unlocks?.length ?? 0}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-3 text-[0.82rem] leading-6 text-osrs-text-soft">
+                  <p>
+                    <span className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-gold">Avoid</span>{" "}
+                    {previewList(accountBrain.planning_signals.avoid_known_unlocks)}
+                  </p>
+                  <p>
+                    <span className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-gold">Gear</span>{" "}
+                    {previewList(accountBrain.companion_awareness.owned_gear)}
+                  </p>
+                  <p>
+                    <span className="font-mono text-[0.58rem] uppercase tracking-[0.18em] text-osrs-gold">Routes</span>{" "}
+                    {previewList(accountBrain.companion_awareness.transport_unlocks)}
+                  </p>
+                </div>
+                <div className="max-h-32 overflow-hidden border border-white/8 bg-black/30 px-4 py-3 text-[0.72rem] leading-5 text-osrs-text-soft">
+                  {accountBrain.advisor_brief.split("\n").slice(0, 4).join(" ")}
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={() => onAskAdvisor(`Use your account brain read for ${accountBrain.account_rsn}. What matters most right now?`)}
+                  variant="secondary"
+                >
+                  Ask from brain read
+                </Button>
+              </div>
+            ) : (
+              <div className="px-5 py-5 text-sm leading-6 text-osrs-text-soft">
+                Sync or refresh the active account to load Cerebro's consolidated account read.
+              </div>
+            )}
+          </section>
 
           <section className="space-y-4">
             <div className="flex items-center gap-4">

@@ -1,5 +1,6 @@
 import type {
   Account,
+  AccountBrain,
   AccountProgress,
   AccountProgressUpdate,
   CompanionLinkSession,
@@ -172,6 +173,8 @@ export const api = {
     request<AccountSnapshot>(`/accounts/${accountId}/snapshot`),
   listAccountSnapshots: (accountId: number, limit = 5) =>
     request<AccountSnapshotListResponse>(`/accounts/${accountId}/snapshots?limit=${limit}`),
+  getAccountBrain: (accountId: number) =>
+    request<AccountBrain>(`/accounts/${accountId}/brain`),
   getAccountProgress: (accountId: number) =>
     request<AccountProgress>(`/accounts/${accountId}/progress`),
   updateAccountProgress: (accountId: number, payload: AccountProgressUpdate) =>

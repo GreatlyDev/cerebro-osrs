@@ -1,5 +1,6 @@
 import type {
   Account,
+  AccountBrain,
   AccountProgress,
   AccountSnapshot,
   AuthUser,
@@ -42,6 +43,7 @@ type DashboardPageProps = {
   onQuickstartAccount: () => void;
   onQuickstartGoal: () => void;
   selectedAccount: Account | null;
+  selectedAccountBrain: AccountBrain | null;
   workspaceChecklist: Array<{ title: string; done: boolean; detail: string }>;
   workspaceProgress: number;
 };
@@ -98,6 +100,7 @@ export function DashboardPage(props: DashboardPageProps) {
     nextActions,
     selectedProgress,
     selectedSnapshot,
+    selectedAccountBrain,
     selectedAccount,
     workspaceChecklist,
     workspaceProgress,
@@ -124,6 +127,7 @@ export function DashboardPage(props: DashboardPageProps) {
         onRefreshCompanionStatus={onRefreshCompanionStatus}
         onQuickstartAccount={onQuickstartAccount}
         progress={selectedProgress}
+        accountBrain={selectedAccountBrain}
         selectedAccount={selectedAccount}
         snapshot={selectedSnapshot}
       />
