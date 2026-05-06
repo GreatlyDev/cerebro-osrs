@@ -4295,6 +4295,129 @@ async def test_gear_recommendations_see_companion_notable_items(client: AsyncCli
 
 
 @pytest.mark.asyncio
+async def test_ai_context_receives_unified_account_brain_summary(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["account_brain_summary"] = context.account_brain_summary
+        return "Captured account brain."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Brain User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "BrainRsn"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    await client.patch(
+        "/api/profile",
+        cookies=cookies,
+        json={
+            "primary_account_rsn": "BrainRsn",
+            "play_style": "balanced",
+            "goals_focus": "progression",
+            "prefers_afk_methods": True,
+        },
+    )
+    await client.post(
+        "/api/goals",
+        cookies=cookies,
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "BrainRsn"},
+    )
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        cookies=cookies,
+        json={
+            "completed_quests": ["bone voyage", "fairytale i - growing pains"],
+            "completed_diaries": {"lumbridge": ["easy"], "ardougne": ["easy"]},
+            "unlocked_transports": ["fairy rings", "fossil island barge"],
+            "owned_gear": ["abyssal whip"],
+            "equipped_gear": {"weapon": "abyssal whip"},
+            "notable_items": ["abyssal whip", "amulet of fury"],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion", "last_sync_status": "ok"},
+        },
+    )
+    session = await client.post("/api/chat/sessions", json={"title": "Brain AI"}, cookies=cookies)
+
+    response = await client.post(
+        f"/api/chat/sessions/{session.json()['id']}/messages",
+        cookies=cookies,
+        json={"content": "What should I work on next?"},
+    )
+
+    assert response.status_code == 201
+    brain = str(captured["account_brain_summary"]).lower()
+    assert "brainrsn" in brain
+    assert "quest cape" in brain
+    assert "balanced" in brain
+    assert "runelite companion" in brain
+    assert "2 completed quests" in brain
+    assert "fairy rings" in brain
+    assert "abyssal whip" in brain
+    assert "fossil island access" in brain
+
+
+@pytest.mark.asyncio
+async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["account_brain_summary"] = context.account_brain_summary
+        return "Captured avoided unlocks."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Avoid User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "AvoidRsn"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        cookies=cookies,
+        json={
+            "completed_quests": ["bone voyage"],
+            "completed_diaries": {},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": [],
+            "equipped_gear": {},
+            "notable_items": [],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion"},
+        },
+    )
+    session = await client.post("/api/chat/sessions", json={"title": "Avoid Brain"}, cookies=cookies)
+
+    response = await client.post(
+        f"/api/chat/sessions/{session.json()['id']}/messages",
+        cookies=cookies,
+        json={"content": "What unlock should I push next?"},
+    )
+
+    assert response.status_code == 201
+    brain = str(captured["account_brain_summary"]).lower()
+    assert "avoid recommending already-known unlocks" in brain
+    assert "bone voyage" in brain
+    assert "fairy rings" in brain
+    assert "fossil island access" in brain
+
+
+@pytest.mark.asyncio
 async def test_ai_context_receives_session_intent_summary(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

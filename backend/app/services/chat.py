@@ -26,6 +26,7 @@ from app.services.quests import QUEST_CATALOG, quest_service
 from app.services.recommendations import recommendation_service
 from app.services.skills import skill_service
 from app.services.teleports import teleport_service
+from app.services.account_brain import account_brain_service
 from app.services.account_context import account_context_service
 from app.services.user_context import user_context_service
 from app.services.assistant import AssistantChatContext, assistant_service
@@ -201,6 +202,19 @@ class ChatService:
             latest_account=focus_account,
             latest_snapshot=latest_snapshot,
         )
+        account_brain_packet = account_brain_service.build_packet(
+            user=user,
+            profile=profile,
+            account=focus_account,
+            latest_goal=latest_goal,
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+            progress=progress,
+            session_intent=session_intent,
+            session_focus_summary=session_focus_summary,
+            retrieval_packet=effective_retrieval_packet,
+            planning_state=structured_state,
+        )
         ai_response = await assistant_service.generate_chat_reply(
             AssistantChatContext(
                 session_title=session.title,
@@ -210,6 +224,7 @@ class ChatService:
                 recent_messages=recent_messages,
                 profile_summary=self._summarize_profile(profile),
                 account_summary=self._summarize_account(focus_account),
+                account_brain_summary=account_brain_packet.advisor_brief,
                 snapshot_summary=self._summarize_snapshot(latest_snapshot),
                 skills_summary=self._summarize_skills(latest_snapshot),
                 progress_summary=self._summarize_progress(progress),

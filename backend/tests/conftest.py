@@ -8,7 +8,16 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.db.base import Base
 from app.db.session import get_db_session
 from app.main import app
+from app.core.config import get_settings
 from app.services.accounts import account_service
+
+
+@pytest.fixture(autouse=True)
+def disable_live_ai_for_tests(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("OPENAI_CHAT_ENABLED", "false")
+    get_settings.cache_clear()
+    yield
+    get_settings.cache_clear()
 
 
 @pytest_asyncio.fixture

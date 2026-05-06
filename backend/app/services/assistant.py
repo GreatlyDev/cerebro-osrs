@@ -15,6 +15,7 @@ class AssistantChatContext:
     recent_messages: list[tuple[str, str]] = field(default_factory=list)
     profile_summary: str | None = None
     account_summary: str | None = None
+    account_brain_summary: str | None = None
     snapshot_summary: str | None = None
     skills_summary: str | None = None
     progress_summary: str | None = None
@@ -58,6 +59,7 @@ class AssistantService:
             "If context is missing, say what is missing and give the safest useful next step. "
             "If the player asks a direct account question about a stat, unlock, quest count, gear, or recent progress, "
             "answer that question directly first using the exact data provided. "
+            "Treat the unified account brain as the consolidated source-of-truth brief for player state and planning signals. "
             "Goal context is optional background, not the default center of every answer, so only lean on it when the player is clearly asking for planning or goal-directed advice. "
             "If retrieved OSRS reference context is present, use it as supporting knowledge, but never let it override the player's actual account state. "
             "Prefer practical coaching over generic hype, and write like a capable in-game advisor."
@@ -73,6 +75,7 @@ class AssistantService:
             f"Player display name: {context.user_display_name}",
             f"Profile context: {context.profile_summary or 'No profile summary yet.'}",
             f"Account context: {context.account_summary or 'No linked account summary yet.'}",
+            f"Unified account brain: {context.account_brain_summary or 'No unified account brain packet yet.'}",
             f"Snapshot context: {context.snapshot_summary or 'No synced snapshot yet.'}",
             f"Skill readout: {context.skills_summary or 'No detailed skill readout yet.'}",
             f"Progress context: {context.progress_summary or 'No tracked progress state yet.'}",
