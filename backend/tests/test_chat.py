@@ -4476,6 +4476,53 @@ async def test_chat_follow_up_uses_saved_action_context_for_recommendation_chang
 
 
 @pytest.mark.asyncio
+async def test_chat_focus_summary_recaps_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Recap User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionRecap"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Recap"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionRecap"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    recap_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What are we focused on?"},
+    )
+
+    assert recap_response.status_code == 201
+    content = recap_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "skill" in content
+    assert "critical" in content
+    assert "bank state missing" in content
+    assert "bank state is missing" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

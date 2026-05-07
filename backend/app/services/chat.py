@@ -926,6 +926,7 @@ class ChatService:
             latest_goal=latest_goal,
             session_focus=session_focus,
             session_intent=session_intent,
+            session_state=session_state,
         )
         if focus_answer is not None:
             return focus_answer
@@ -2385,6 +2386,7 @@ class ChatService:
         latest_goal: Goal | None,
         session_focus: dict[str, str | None],
         session_intent: str | None,
+        session_state: dict[str, object],
     ) -> str | None:
         normalized = message.lower()
         if not any(
@@ -2404,6 +2406,12 @@ class ChatService:
         ):
             return None
 
+        action_focus = self._build_action_context_focus_summary(session_state=session_state)
+        if action_focus is not None:
+            if "priority" in normalized and session_intent is not None:
+                return f"{action_focus} Right now, the session priority is {self._humanize_session_intent(session_intent)}."
+            return action_focus
+
         focus_summary = self._summarize_session_focus(
             session_focus=session_focus,
             latest_goal=latest_goal,
@@ -2417,6 +2425,35 @@ class ChatService:
         if "priority" in normalized and session_intent is not None:
             return f"{focus_summary} Right now, the session priority is {self._humanize_session_intent(session_intent)}."
         return focus_summary
+
+    def _build_action_context_focus_summary(self, *, session_state: dict[str, object]) -> str | None:
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        action_type = action_context.get("action_type")
+        priority = action_context.get("priority")
+        blockers = action_context.get("blockers")
+        readiness_warning = action_context.get("readiness_warning")
+        score = action_context.get("score")
+
+        action_type_text = f" as a {action_type} action" if isinstance(action_type, str) else ""
+        priority_text = f" It is marked {priority} priority" if isinstance(priority, str) else ""
+        if isinstance(score, int | float):
+            priority_text = f"{priority_text} with score {score}" if priority_text else f" It has score {score}"
+        priority_text = f"{priority_text}." if priority_text else ""
+
+        blocker_text = ""
+        if isinstance(blockers, list) and blockers:
+            blocker_text = f" The main blocker I have saved is {str(blockers[0])}."
+
+        readiness_text = f" {readiness_warning}" if isinstance(readiness_warning, str) and readiness_warning else ""
+
+        return f"We are focused on {title}{action_type_text}.{priority_text}{blocker_text}{readiness_text}".strip()
 
     def _summarize_biggest_blockers(
         self,
