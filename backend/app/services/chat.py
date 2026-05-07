@@ -1036,6 +1036,13 @@ class ChatService:
         if why_now_answer is not None:
             return why_now_answer
 
+        action_change_answer = self._build_action_context_change_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_change_answer is not None:
+            return action_change_answer
+
         change_answer = self._build_snapshot_change_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -2301,6 +2308,53 @@ class ChatService:
         return (
             f"Because {self._action_label(current_action)} creates more immediate value for {goal_title} than {self._action_label(alternate_action)}. "
             f"{self._ordering_reason(current_action)}"
+        )
+
+    def _build_action_context_change_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what would make this recommendation change",
+                "what would make that recommendation change",
+                "what would make this change",
+                "what would make that change",
+                "what would change this recommendation",
+                "what would change that recommendation",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        action_title = str(title) if isinstance(title, str) and title else "this recommendation"
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        priority = action_context.get("priority")
+        priority_text = f" It is currently marked {priority} priority." if isinstance(priority, str) else ""
+
+        change_triggers = [
+            "a fresh sync showing a stronger blocker or better momentum elsewhere",
+            "a new goal that values a different lane more",
+        ]
+        if blockers:
+            change_triggers.insert(0, f"clearing or replacing {blockers[0]}")
+        if readiness_warning:
+            change_triggers.insert(0, readiness_warning)
+
+        return (
+            f"{action_title} is the saved recommendation in this thread, so the recommendation would change if "
+            f"{'; '.join(change_triggers[:3])}.{priority_text}"
         )
 
     def _build_account_focus_answer(
