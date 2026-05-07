@@ -4429,6 +4429,48 @@ async def test_chat_message_action_context_updates_session_memory_and_account_br
 
 
 @pytest.mark.asyncio
+async def test_chat_why_ranked_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Why User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionWhy"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Why"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionWhy"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "ranked highly" in content
+    assert "score 91" in content
+    assert "critical priority" in content
+    assert "high alchemy" in content
+    assert "bank state missing" in content
+    assert "bank state is missing" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_follow_up_uses_saved_action_context_for_recommendation_change_question(
     client: AsyncClient,
 ) -> None:

@@ -931,6 +931,13 @@ class ChatService:
         if focus_answer is not None:
             return focus_answer
 
+        action_rank_answer = self._build_action_context_rank_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_rank_answer is not None:
+            return action_rank_answer
+
         if latest_snapshot is None:
             if progress is not None:
                 return self._build_progress_answer(message=message, progress=progress)
@@ -2454,6 +2461,54 @@ class ChatService:
         readiness_text = f" {readiness_warning}" if isinstance(readiness_warning, str) and readiness_warning else ""
 
         return f"We are focused on {title}{action_type_text}.{priority_text}{blocker_text}{readiness_text}".strip()
+
+    def _build_action_context_rank_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "why is this ranked so highly",
+                "why is that ranked so highly",
+                "why is this ranked this highly",
+                "why is that ranked this highly",
+                "why does this rank so highly",
+                "why does that rank so highly",
+                "why this recommendation",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        score = action_context.get("score")
+        priority = action_context.get("priority")
+        blockers = action_context.get("blockers")
+        readiness_warning = action_context.get("readiness_warning")
+
+        score_text = f" with score {score}" if isinstance(score, int | float) else ""
+        priority_text = f" and {priority} priority" if isinstance(priority, str) else ""
+        summary_text = f" {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = ""
+        if isinstance(blockers, list) and blockers:
+            blocker_text = f" The clearest saved blocker is {str(blockers[0])}."
+        readiness_text = f" {readiness_warning}" if isinstance(readiness_warning, str) and readiness_warning else ""
+
+        return (
+            f"{title} is ranked highly{score_text}{priority_text} because it is the selected recommendation "
+            f"that best matches the current account read.{summary_text}{blocker_text}{readiness_text}"
+        )
 
     def _summarize_biggest_blockers(
         self,
