@@ -97,6 +97,10 @@ class ChatService:
             session=session,
             message=payload.content,
         )
+        session_state_update = self._merge_session_state(
+            existing_state=action_context_state,
+            update=session_state_update,
+        )
         session.session_state = self._merge_session_state(
             existing_state=session.session_state,
             update=session_state_update,
@@ -2237,6 +2241,10 @@ class ChatService:
         ):
             return None
 
+        action_blocker_answer = self._build_action_context_blocker_answer(session_state=session_state)
+        if action_blocker_answer is not None:
+            return action_blocker_answer
+
         next_actions = await recommendation_service.get_next_actions(
             db_session=db_session,
             user=user,
@@ -2265,6 +2273,29 @@ class ChatService:
             f"There isn't a single hard blocker I would clear first right now. "
             f"{self._action_label(current_action).capitalize()} is already fairly actionable from your current account state."
         )
+
+    def _build_action_context_blocker_answer(self, *, session_state: dict[str, object]) -> str | None:
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        if blockers:
+            warning_text = f" {readiness_warning}" if readiness_warning else ""
+            return (
+                f"For {title}, I'd clear {blockers[0]} first. "
+                f"That is the saved blocker most directly holding this recommendation back.{warning_text}"
+            )
+
+        return None
 
     async def _build_why_now_answer(
         self,
