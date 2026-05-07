@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -12,8 +14,20 @@ class ChatSessionCreateRequest(BaseModel):
         return " ".join(value.strip().split())
 
 
+class ChatActionContext(BaseModel):
+    action_type: str | None = None
+    title: str | None = None
+    summary: str | None = None
+    score: int | float | None = None
+    priority: str | None = None
+    target: dict[str, Any] = Field(default_factory=dict)
+    blockers: list[str] = Field(default_factory=list)
+    supporting_data: dict[str, Any] = Field(default_factory=dict)
+
+
 class ChatMessageCreateRequest(BaseModel):
     content: str = Field(min_length=1)
+    action_context: ChatActionContext | None = None
 
     @field_validator("content")
     @classmethod

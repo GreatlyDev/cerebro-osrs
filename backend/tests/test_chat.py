@@ -4366,6 +4366,69 @@ async def test_ai_context_receives_unified_account_brain_summary(
 
 
 @pytest.mark.asyncio
+async def test_chat_message_action_context_updates_session_memory_and_account_brain(
+    client: AsyncClient,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str | None] = {}
+
+    async def fake_generate_chat_reply(context) -> str:
+        captured["account_brain_summary"] = context.account_brain_summary
+        return "Captured action memory."
+
+    async def fake_direct_stat_answer(*args, **kwargs) -> str | None:
+        return None
+
+    monkeypatch.setattr(assistant_service, "generate_chat_reply", fake_generate_chat_reply)
+    monkeypatch.setattr(chat_service, "_build_direct_stat_answer", fake_direct_stat_answer)
+
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Memory User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionMem"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Memory"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionMem"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+
+    assert response.status_code == 201
+    sessions = await client.get("/api/chat/sessions", cookies=cookies)
+    stored_session = next(item for item in sessions.json()["items"] if item["id"] == session_id)
+    action_memory = stored_session["session_state"]["last_action_context"]
+    assert action_memory["title"] == "Train Magic"
+    assert action_memory["action_type"] == "skill"
+    assert action_memory["score"] == 91
+    assert action_memory["readiness_warning"].startswith("Bank state is missing")
+    assert stored_session["session_state"]["last_recommended_skill"] == "magic"
+
+    brain = str(captured["account_brain_summary"]).lower()
+    assert "current_action=train magic" in brain
+    assert "action_type=skill" in brain
+    assert "score=91" in brain
+    assert "bank state is missing" in brain
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

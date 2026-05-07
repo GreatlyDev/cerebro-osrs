@@ -79,6 +79,14 @@ class ChatService:
 
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found.")
 
+        action_context_state = self._state_from_action_context(
+            payload.action_context.model_dump() if payload.action_context is not None else None
+        )
+        session.session_state = self._merge_session_state(
+            existing_state=session.session_state,
+            update=action_context_state,
+        )
+
         user_message = ChatMessage(session_id=session_id, role="user", content=payload.content)
         db_session.add(user_message)
         await db_session.flush()
@@ -213,7 +221,10 @@ class ChatService:
             session_intent=session_intent,
             session_focus_summary=session_focus_summary,
             retrieval_packet=effective_retrieval_packet,
-            planning_state=structured_state,
+            planning_state=self._merge_session_state(
+                existing_state=session.session_state or {},
+                update=structured_state,
+            ),
         )
         ai_response = await assistant_service.generate_chat_reply(
             AssistantChatContext(
@@ -6052,10 +6063,12 @@ class ChatService:
         }
 
     def _state_from_next_action(self, top_action) -> dict[str, object]:
+        action_context = self._action_context_from_next_action(top_action)
         update: dict[str, object] = {
             "last_session_intent": "progression",
             "last_blockers": (top_action.blockers or [])[:3],
             "last_priority_label": top_action.priority,
+            "last_action_context": action_context,
         }
         if top_action.action_type == "quest":
             target = top_action.target or {}
@@ -6070,6 +6083,90 @@ class ChatService:
             supporting = top_action.supporting_data or {}
             update["last_combat_style"] = supporting.get("combat_style")
         return update
+
+    def _state_from_action_context(self, action_context: dict[str, object] | None) -> dict[str, object]:
+        if not action_context:
+            return {}
+
+        target = action_context.get("target")
+        supporting_data = action_context.get("supporting_data")
+        target = target if isinstance(target, dict) else {}
+        supporting_data = supporting_data if isinstance(supporting_data, dict) else {}
+
+        normalized_context = self._normalize_action_context(
+            action_type=action_context.get("action_type"),
+            title=action_context.get("title"),
+            summary=action_context.get("summary"),
+            score=action_context.get("score"),
+            priority=action_context.get("priority"),
+            target=target,
+            blockers=action_context.get("blockers"),
+            supporting_data=supporting_data,
+        )
+        update: dict[str, object] = {
+            "last_session_intent": "progression",
+            "last_action_context": normalized_context,
+            "last_blockers": normalized_context.get("blockers"),
+            "last_priority_label": normalized_context.get("priority"),
+        }
+
+        action_type = normalized_context.get("action_type")
+        if action_type == "quest":
+            quest_id = target.get("quest_id")
+            if isinstance(quest_id, str):
+                update["last_quest_id"] = quest_id
+        elif action_type == "skill":
+            skill = target.get("skill") or supporting_data.get("recommended_skill")
+            if isinstance(skill, str):
+                update["last_recommended_skill"] = skill
+        elif action_type == "travel":
+            destination = target.get("destination")
+            if isinstance(destination, str):
+                update["last_destination"] = destination
+        elif action_type == "gear":
+            combat_style = supporting_data.get("combat_style")
+            if isinstance(combat_style, str):
+                update["last_combat_style"] = combat_style
+
+        return update
+
+    def _action_context_from_next_action(self, action) -> dict[str, object]:
+        return self._normalize_action_context(
+            action_type=action.action_type,
+            title=action.title,
+            summary=action.summary,
+            score=action.score,
+            priority=action.priority,
+            target=action.target or {},
+            blockers=action.blockers or [],
+            supporting_data=action.supporting_data or {},
+        )
+
+    def _normalize_action_context(
+        self,
+        *,
+        action_type: object,
+        title: object,
+        summary: object,
+        score: object,
+        priority: object,
+        target: dict[object, object],
+        blockers: object,
+        supporting_data: dict[object, object],
+    ) -> dict[str, object]:
+        readiness_warning = supporting_data.get("readiness_warning")
+        account_rsn = target.get("account_rsn") or supporting_data.get("account_rsn")
+        normalized: dict[str, object] = {
+            "action_type": action_type if isinstance(action_type, str) else None,
+            "title": title if isinstance(title, str) else None,
+            "summary": summary if isinstance(summary, str) else None,
+            "score": score if isinstance(score, int | float) else None,
+            "priority": priority if isinstance(priority, str) else None,
+            "account_rsn": account_rsn if isinstance(account_rsn, str) else None,
+            "blockers": [str(item) for item in blockers[:5]] if isinstance(blockers, list) else [],
+            "readiness_warning": readiness_warning if isinstance(readiness_warning, str) else None,
+        }
+        return {key: value for key, value in normalized.items() if value is not None}
 
     def _focus_from_session_state(self, session_state: dict[str, object]) -> dict[str, str | None]:
         return {

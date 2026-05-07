@@ -219,6 +219,17 @@ export type NextAction = {
   supporting_data: Record<string, unknown>;
 };
 
+export type ChatActionContext = {
+  action_type?: string | null;
+  title?: string | null;
+  summary?: string | null;
+  score?: number | null;
+  priority?: string | null;
+  target?: Record<string, unknown>;
+  blockers?: string[];
+  supporting_data?: Record<string, unknown>;
+};
+
 export type NextActionResponse = {
   account_rsn: string | null;
   goal_id: number | null;

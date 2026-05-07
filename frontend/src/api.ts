@@ -8,6 +8,7 @@ import type {
   AccountSnapshotListResponse,
   AuthSession,
   AuthUser,
+  ChatActionContext,
   ChatReply,
   ChatSession,
   GearRecommendationResponse,
@@ -216,10 +217,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ title }),
     }),
-  sendChatMessage: (sessionId: number, content: string) =>
+  sendChatMessage: (sessionId: number, content: string, actionContext?: ChatActionContext | null) =>
     request<ChatReply>(`/chat/sessions/${sessionId}/messages`, {
       method: "POST",
-      body: JSON.stringify({ content }),
+      body: JSON.stringify({ content, ...(actionContext ? { action_context: actionContext } : {}) }),
     }),
   listSkills: () => request<{ items: SkillCatalogItem[]; total: number }>("/skills"),
   getSkillRecommendations: (skill: string, accountRsn?: string | null) => {

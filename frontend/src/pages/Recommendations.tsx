@@ -5,7 +5,7 @@ import type { AccountReadiness, NextAction, NextActionResponse } from "../types"
 type RecommendationsPageProps = {
   nextActions: NextActionResponse | null;
   selectedAccountRsn: string | null;
-  onAskAdvisor: (prompt: string) => void;
+  onAskAdvisor: (prompt: string, action?: NextAction) => void;
   onGoToGoals: () => void;
   onOpenNextAction: (action: NextAction) => void;
 };
@@ -282,7 +282,7 @@ export function RecommendationsView({
                   <div className="flex flex-col gap-2">
                     <Button onClick={() => onOpenNextAction(action)}>Open</Button>
                     <Button
-                      onClick={() => onAskAdvisor(`Why is ${action.title} ranked this highly for my account right now?`)}
+                      onClick={() => onAskAdvisor(`Why is ${action.title} ranked this highly for my account right now?`, action)}
                       variant="secondary"
                     >
                       Ask why

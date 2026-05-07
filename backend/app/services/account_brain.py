@@ -160,6 +160,8 @@ class AccountBrainService:
     ) -> dict[str, object]:
         known_unlocks = sorted(user_context_service.tracked_known_unlocks(progress)) if progress is not None else []
         planning_state = planning_state or {}
+        action_context = planning_state.get("last_action_context")
+        action_context = action_context if isinstance(action_context, dict) else {}
         return {
             "session_intent": session_intent,
             "session_focus": session_focus_summary,
@@ -168,6 +170,7 @@ class AccountBrainService:
             "last_destination": planning_state.get("last_destination"),
             "last_priority_label": planning_state.get("last_priority_label"),
             "last_blockers": planning_state.get("last_blockers"),
+            "last_action_context": action_context,
             "avoid_known_unlocks": known_unlocks[:8],
         }
 
@@ -297,6 +300,7 @@ class AccountBrainService:
                 f"priority={planning_signals.get('last_priority_label') or 'none'}; "
                 f"blockers={self._join(planning_signals.get('last_blockers'))}."
             ),
+            self._format_action_context_line(planning_signals.get("last_action_context")),
             (
                 "- Avoid recommending already-known unlocks: "
                 f"{self._join(planning_signals.get('avoid_known_unlocks'))}."
@@ -321,6 +325,20 @@ class AccountBrainService:
         if active_unlocks != "none":
             lines.insert(4, f"- Active unlocks: {active_unlocks}.")
         return "\n".join(lines)
+
+    def _format_action_context_line(self, action_context: object) -> str:
+        if not isinstance(action_context, dict) or not action_context:
+            return "- Current action memory: none."
+        return (
+            "- Current action memory: "
+            f"current_action={action_context.get('title') or 'none'}; "
+            f"action_type={action_context.get('action_type') or 'unknown'}; "
+            f"score={action_context.get('score') or 'unknown'}; "
+            f"priority={action_context.get('priority') or 'none'}; "
+            f"account={action_context.get('account_rsn') or 'none'}; "
+            f"blockers={self._join(action_context.get('blockers'))}; "
+            f"readiness_warning={action_context.get('readiness_warning') or 'none'}."
+        )
 
     def _next_sync_needed(self, missing_inputs: list[str]) -> str:
         priority = (

@@ -29,6 +29,7 @@ import type {
   AccountProgress,
   AccountSnapshot,
   AuthUser,
+  ChatActionContext,
   ChatExchange,
   ChatSession,
   GearRecommendationResponse,
@@ -216,6 +217,26 @@ function buildChatSessionTitle(prompt: string, entryContextLabel?: string | null
   }
 
   return trimmed.length > 42 ? `${trimmed.slice(0, 42).trimEnd()}...` : trimmed;
+}
+
+function buildChatActionContext(action: NextAction | null, selectedAccountRsn: string | null): ChatActionContext | null {
+  if (!action) {
+    return null;
+  }
+
+  return {
+    action_type: action.action_type,
+    title: action.title,
+    summary: action.summary,
+    score: action.score,
+    priority: action.priority,
+    target: {
+      ...action.target,
+      ...(selectedAccountRsn ? { account_rsn: selectedAccountRsn } : {}),
+    },
+    blockers: action.blockers,
+    supporting_data: action.supporting_data,
+  };
 }
 
 type UtilityRailContext = {
@@ -417,6 +438,7 @@ export function App() {
   const [notice, setNotice] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<"online" | "offline" | "checking">("checking");
   const [advisorEntryContext, setAdvisorEntryContext] = useState<AdvisorEntryContext | null>(null);
+  const [pendingAdvisorAction, setPendingAdvisorAction] = useState<NextAction | null>(null);
 
   useEffect(() => {
     void initializeApplication();
@@ -941,7 +963,7 @@ export function App() {
     }
   }
 
-  async function handleRunChatPrompt(promptOverride?: string) {
+  async function handleRunChatPrompt(promptOverride?: string, actionOverride?: NextAction | null) {
     const prompt = (promptOverride ?? chatPrompt).trim();
     if (!prompt) {
       return;
@@ -962,10 +984,13 @@ export function App() {
           }
         }
         setSelectedChatSessionId(session.id);
-        const reply = await api.sendChatMessage(session.id, prompt);
+        const activeAction = actionOverride === undefined ? pendingAdvisorAction : actionOverride;
+        const actionContext = buildChatActionContext(activeAction, selectedAccountRsn);
+        const reply = await api.sendChatMessage(session.id, prompt, actionContext);
         const sessionsResponse = await api.listChatSessions();
         setChatSessions(sessionsResponse.items);
         setChatReply(reply.assistant_message.content);
+        setPendingAdvisorAction(null);
         if (promptOverride === undefined) {
           setChatPrompt("");
         }
@@ -985,16 +1010,18 @@ export function App() {
   }
 
   function handleAskAdvisorFromRail() {
+    setPendingAdvisorAction(null);
     setAdvisorEntryContext({
       surfaceLabel: utilityRailContext.surfaceLabel,
       suggestedPrompt: chatPrompt.trim() || (utilityRailContext.prompts[0] ?? null),
     });
     setSelectedChatSessionId(null);
     navigateToView("ask-cerebro");
-    void handleRunChatPrompt();
+    void handleRunChatPrompt(undefined, null);
   }
 
   function handleRunAdvisorPromptFromRail(prompt: string) {
+    setPendingAdvisorAction(null);
     setAdvisorEntryContext({
       surfaceLabel: utilityRailContext.surfaceLabel,
       suggestedPrompt: prompt,
@@ -1002,10 +1029,11 @@ export function App() {
     setSelectedChatSessionId(null);
     setChatPrompt(prompt);
     navigateToView("ask-cerebro");
-    void handleRunChatPrompt(prompt);
+    void handleRunChatPrompt(prompt, null);
   }
 
   function handleOpenAdvisorFromRail() {
+    setPendingAdvisorAction(null);
     setAdvisorEntryContext({
       surfaceLabel: utilityRailContext.surfaceLabel,
       suggestedPrompt: utilityRailContext.prompts[0] ?? null,
@@ -1016,14 +1044,16 @@ export function App() {
 
   function handleSelectChatSession(sessionId: number) {
     setAdvisorEntryContext(null);
+    setPendingAdvisorAction(null);
     setSelectedChatSessionId(sessionId);
   }
 
-  function openAdvisorWithPrompt(prompt?: string) {
+  function openAdvisorWithPrompt(prompt?: string, action?: NextAction) {
     setAdvisorEntryContext({
       surfaceLabel: utilityRailContext.surfaceLabel,
       suggestedPrompt: prompt ?? utilityRailContext.prompts[0] ?? null,
     });
+    setPendingAdvisorAction(action ?? null);
     setSelectedChatSessionId(null);
     if (prompt) {
       setChatPrompt(prompt);
