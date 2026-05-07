@@ -1007,6 +1007,13 @@ class ChatService:
         if plan_order_answer is not None:
             return plan_order_answer
 
+        action_short_session_answer = self._build_action_context_short_session_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_short_session_answer is not None:
+            return action_short_session_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -2658,6 +2665,60 @@ class ChatService:
         sync_text = " Then take a fresh sync so the next ranked action is based on the updated account state."
 
         return f"After {title}, use this as the setup lane first.{summary_text}{blocker_text}{readiness_text}{sync_text}"
+
+    def _build_action_context_short_session_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "only have 30 minutes",
+                "only got 30 minutes",
+                "only have 20 minutes",
+                "only got 20 minutes",
+                "only have 15 minutes",
+                "only got 15 minutes",
+                "short session",
+                "quick session",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        time_text = "30 minutes"
+        if "20 minutes" in normalized:
+            time_text = "20 minutes"
+        elif "15 minutes" in normalized:
+            time_text = "15 minutes"
+        elif "short session" in normalized:
+            time_text = "a short session"
+        elif "quick session" in normalized:
+            time_text = "a quick session"
+
+        summary_text = f" {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Keep the saved blocker in view: {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        return (
+            f"With {time_text}, stay on {title} instead of opening a new lane.{summary_text}"
+            f"{blocker_text}{readiness_text}"
+        )
 
     def _summarize_biggest_blockers(
         self,
