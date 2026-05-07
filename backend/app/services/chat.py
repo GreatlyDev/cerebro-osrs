@@ -942,6 +942,13 @@ class ChatService:
         if action_rank_answer is not None:
             return action_rank_answer
 
+        action_next_step_answer = self._build_action_context_next_step_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_next_step_answer is not None:
+            return action_next_step_answer
+
         if latest_snapshot is None:
             if progress is not None:
                 return self._build_progress_answer(message=message, progress=progress)
@@ -2540,6 +2547,47 @@ class ChatService:
             f"{title} is ranked highly{score_text}{priority_text} because it is the selected recommendation "
             f"that best matches the current account read.{summary_text}{blocker_text}{readiness_text}"
         )
+
+    def _build_action_context_next_step_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what comes after this",
+                "what comes next after this",
+                "what should i do after this",
+                "what comes after that",
+                "what comes next after that",
+                "what should i do after that",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Before moving on, clear {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        sync_text = " Then take a fresh sync so the next ranked action is based on the updated account state."
+
+        return f"After {title}, use this as the setup lane first.{summary_text}{blocker_text}{readiness_text}{sync_text}"
 
     def _summarize_biggest_blockers(
         self,
