@@ -1062,6 +1062,15 @@ class ChatService:
         if action_change_answer is not None:
             return action_change_answer
 
+        action_sync_change_answer = self._build_action_context_sync_change_answer(
+            message=message,
+            session_state=session_state,
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+        )
+        if action_sync_change_answer is not None:
+            return action_sync_change_answer
+
         change_answer = self._build_snapshot_change_answer(
             message=message,
             latest_snapshot=latest_snapshot,
@@ -2402,6 +2411,67 @@ class ChatService:
             f"{action_title} is the saved recommendation in this thread, so the recommendation would change if "
             f"{'; '.join(change_triggers[:3])}.{priority_text}"
         )
+
+    def _build_action_context_sync_change_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+        latest_snapshot: AccountSnapshot,
+        previous_snapshot: AccountSnapshot | None,
+    ) -> str | None:
+        normalized = message.lower()
+        if "changed since" not in normalized and "last sync" not in normalized:
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        if previous_snapshot is None:
+            return f"{title} is the saved recommendation, but I only have one synced snapshot so far, so I cannot compare changes yet."
+
+        overall_delta, combat_delta, improved_skills = self._snapshot_delta_bits(
+            latest_snapshot=latest_snapshot,
+            previous_snapshot=previous_snapshot,
+        )
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        target_skill = self._action_context_skill(action_context) or self._state_str(
+            session_state,
+            "last_recommended_skill",
+        )
+        improved_lookup = {skill.lower(): skill for skill in improved_skills}
+
+        support_text = "The saved recommendation still looks stable from this sync."
+        if target_skill is not None:
+            target_label = target_skill.replace("_", " ").title()
+            if target_label.lower() in improved_lookup:
+                support_text = f"{target_label} moved up, so the latest sync directly supports this lane."
+            elif improved_skills:
+                support_text = (
+                    f"The visible gains were {self._preview_list(improved_skills)}, while the saved lane is still {target_label}."
+                )
+
+        blocker_text = f" The blocker I still have saved is {blockers[0]}." if blockers else ""
+        gain_text = self._preview_list(improved_skills) if improved_skills else "none"
+        return (
+            f"Since your last sync, {title} is still the saved recommendation. "
+            f"Overall moved {overall_delta:+d}, combat moved {combat_delta:+d}, and visible gains were {gain_text}. "
+            f"{support_text}{blocker_text}"
+        )
+
+    def _action_context_skill(self, action_context: dict[str, object]) -> str | None:
+        target = action_context.get("target")
+        supporting_data = action_context.get("supporting_data")
+        target = target if isinstance(target, dict) else {}
+        supporting_data = supporting_data if isinstance(supporting_data, dict) else {}
+        skill = target.get("skill") or supporting_data.get("recommended_skill")
+        return skill if isinstance(skill, str) and skill else None
 
     def _build_account_focus_answer(
         self,

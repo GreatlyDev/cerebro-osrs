@@ -4656,6 +4656,75 @@ async def test_chat_next_step_answer_uses_saved_action_context(client: AsyncClie
 
 
 @pytest.mark.asyncio
+async def test_chat_sync_change_answer_uses_saved_action_context(
+    client: AsyncClient,
+    db_session: AsyncSession,
+) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Sync User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionSync"}, cookies=cookies)
+    account_id = account.json()["id"]
+
+    db_session.add(
+        AccountSnapshot(
+            account_id=account_id,
+            source="manual",
+            sync_status="completed",
+            summary={
+                "overall_level": 1797,
+                "combat_level": 102,
+                "skills": {
+                    "overall": {"level": 1797},
+                    "magic": {"level": 80},
+                    "woodcutting": {"level": 74},
+                    "attack": {"level": 82},
+                },
+            },
+        )
+    )
+    await db_session.commit()
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Sync"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionSync"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    change_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What changed since my last sync for this recommendation?"},
+    )
+
+    assert change_response.status_code == 201
+    content = change_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "overall" in content
+    assert "combat" in content
+    assert "magic" in content
+    assert "directly supports" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,
