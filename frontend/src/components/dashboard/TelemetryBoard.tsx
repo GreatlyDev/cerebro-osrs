@@ -1,4 +1,4 @@
-import type { Account, AccountBrain, AccountProgress, AccountSnapshot, NextActionResponse } from "../../types";
+import type { Account, AccountBrain, AccountProgress, AccountSnapshot, NextAction, NextActionResponse } from "../../types";
 import { Button } from "../ui/Button";
 import { CompanionStatusPanel } from "./CompanionStatusPanel";
 import { RecommendationThumb } from "./RecommendationThumb";
@@ -7,7 +7,7 @@ import { SkillIcon } from "./skillIcons";
 type TelemetryBoardProps = {
   busyAction: string | null;
   newAccountRsn: string;
-  onAskAdvisor: (prompt: string) => void;
+  onAskAdvisor: (prompt: string, action?: NextAction) => void;
   onChangeNewAccountRsn: (value: string) => void;
   onRefreshCompanionStatus: () => Promise<void> | void;
   onQuickstartAccount: () => void;
@@ -115,6 +115,7 @@ export function TelemetryBoard({
                           topAction
                             ? `Why is ${topAction.title} the best next move for this account right now?`
                             : "What should I actually focus on first on this account right now?",
+                          topAction ?? undefined,
                         )
                       }
                       variant="secondary"
@@ -123,7 +124,12 @@ export function TelemetryBoard({
                     </Button>
                     {selectedAccountRsn ? (
                       <Button
-                        onClick={() => onAskAdvisor(`What should ${selectedAccountRsn} actually focus on after ${topAction?.title ?? "this"}?`)}
+                        onClick={() =>
+                          onAskAdvisor(
+                            `What should ${selectedAccountRsn} actually focus on after ${topAction?.title ?? "this"}?`,
+                            topAction ?? undefined,
+                          )
+                        }
                         variant="ghost"
                       >
                         Ask what comes after
@@ -382,7 +388,7 @@ export function TelemetryBoard({
                   <div className="mt-3">
                     <Button
                       className="w-full"
-                      onClick={() => onAskAdvisor(`Why should I do ${action.title} before the other recommendations?`)}
+                      onClick={() => onAskAdvisor(`Why should I do ${action.title} before the other recommendations?`, action)}
                       variant="secondary"
                     >
                       Ask why this action
