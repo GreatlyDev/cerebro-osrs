@@ -1070,6 +1070,13 @@ class ChatService:
         if action_success_check_answer is not None:
             return action_success_check_answer
 
+        action_guardrail_answer = self._build_action_context_guardrail_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_guardrail_answer is not None:
+            return action_guardrail_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3123,6 +3130,49 @@ class ChatService:
         return (
             f"Success check for {title}: you should see visible progress in the saved lane after the next focused session, "
             f"then confirm it with a fresh sync before changing priorities.{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_guardrail_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what should i avoid messing up",
+                "what should i avoid with this recommendation",
+                "what should i not mess up",
+                "what mistake should i avoid",
+                "what mistakes should i avoid",
+                "what should i be careful about",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Do not ignore {blockers[0]} while judging the lane." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"For {title}, avoid changing lanes before the saved recommendation has a clean proof point."
+            f"{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
