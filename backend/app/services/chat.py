@@ -1084,6 +1084,13 @@ class ChatService:
         if action_prep_answer is not None:
             return action_prep_answer
 
+        action_stop_condition_answer = self._build_action_context_stop_condition_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_stop_condition_answer is not None:
+            return action_stop_condition_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3223,6 +3230,43 @@ class ChatService:
         return (
             f"Prep for {title}: confirm the inputs for the saved recommendation, set up one focused session, "
             f"and avoid starting until the account state you rely on is clear enough to judge."
+            f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_stop_condition_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("stop", "switch away", "change lanes", "move on"))
+            and any(token in normalized for token in ("recommendation", "this", "it"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" If {blockers[0]} remains unresolved, do not treat the lane as fully judged yet." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"Stop {title} only after a focused push and a fresh sync show that the saved lane no longer leads. "
+            f"Until then, switch away only if the blocker changes, the goal changes, or the next sync surfaces a stronger action."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
