@@ -1091,6 +1091,13 @@ class ChatService:
         if action_stop_condition_answer is not None:
             return action_stop_condition_answer
 
+        action_tracking_signal_answer = self._build_action_context_tracking_signal_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_tracking_signal_answer is not None:
+            return action_tracking_signal_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3268,6 +3275,44 @@ class ChatService:
             f"Stop {title} only after a focused push and a fresh sync show that the saved lane no longer leads. "
             f"Until then, switch away only if the blocker changes, the goal changes, or the next sync surfaces a stronger action."
             f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_tracking_signal_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            "track" in normalized
+            and any(token in normalized for token in ("recommendation", "this", "it", "doing"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        target_skill = self._action_context_skill(action_context)
+
+        skill_text = f" Track {target_skill.replace('_', ' ')} movement first." if target_skill else ""
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Keep {blockers[0]} visible as the main blocker signal." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"Track {title} by watching whether the saved lane moves after a focused session and a fresh sync."
+            f"{skill_text}{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
