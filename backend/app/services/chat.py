@@ -1147,6 +1147,13 @@ class ChatService:
         if action_missing_data_answer is not None:
             return action_missing_data_answer
 
+        action_ignore_consequence_answer = self._build_action_context_ignore_consequence_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_ignore_consequence_answer is not None:
+            return action_ignore_consequence_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3642,6 +3649,46 @@ class ChatService:
         return (
             f"For {title}, the next confidence step is a fresh sync that clears the saved uncertainty before making exact calls."
             f"{blocker_text}{readiness_text}{summary_text}"
+        )
+
+    def _build_action_context_ignore_consequence_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("ignore", "skip", "pass on", "put off"))
+            and any(token in normalized for token in ("this", "recommendation", "action", "it"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        priority = action_context.get("priority")
+        priority_text = f" It is saved as {priority} priority" if isinstance(priority, str) and priority else ""
+        score = action_context.get("score")
+        score_text = f" with a score of {score}." if isinstance(score, int | float) else "."
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        summary = action_context.get("summary")
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" If you skip it because of {blockers[0]}, take a fresh sync before replacing the lane." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"If you ignore {title}, the main cost is delaying the saved account lane rather than creating an immediate failure."
+            f"{priority_text}{score_text}{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(

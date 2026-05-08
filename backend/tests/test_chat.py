@@ -5276,6 +5276,54 @@ async def test_chat_missing_data_answer_uses_saved_action_context(client: AsyncC
 
 
 @pytest.mark.asyncio
+async def test_chat_ignore_consequence_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Ignore User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionSkip"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Ignore"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionSkip"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    ignore_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What happens if I ignore this recommendation?"},
+    )
+
+    assert ignore_response.status_code == 201
+    content = ignore_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "ignore" in content or "skip" in content
+    assert "critical" in content
+    assert "91" in content
+    assert "bank state missing" in content
+    assert "fresh sync" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_sync_change_answer_uses_saved_action_context(
     client: AsyncClient,
     db_session: AsyncSession,
