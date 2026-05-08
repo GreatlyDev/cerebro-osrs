@@ -1168,6 +1168,13 @@ class ChatService:
         if action_review_window_answer is not None:
             return action_review_window_answer
 
+        action_change_mind_answer = self._build_action_context_change_mind_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_change_mind_answer is not None:
+            return action_change_mind_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3779,6 +3786,51 @@ class ChatService:
         return (
             f"Try {title} for one focused session, then take a fresh sync before deciding whether to keep going."
             f"{skill_text}{blocker_text}{readiness_text}{summary_text}"
+        )
+
+    def _build_action_context_change_mind_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            "change" in normalized
+            and "mind" in normalized
+            and any(token in normalized for token in ("this", "recommendation", "action", "it"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        priority = action_context.get("priority")
+        priority_text = f" It is currently saved as {priority} priority" if isinstance(priority, str) and priority else ""
+        score = action_context.get("score")
+        score_text = f" with a score of {score}." if isinstance(score, int | float) else "."
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        summary = action_context.get("summary")
+
+        blocker_text = (
+            f" The fastest thing that would change my mind is a fresh sync showing {blockers[0]} is resolved or no longer relevant."
+            if blockers
+            else " A fresh sync showing a stronger account lane would change my mind."
+        )
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+
+        return (
+            f"For {title}, I would change the recommendation when the account data proves a better lane."
+            f"{priority_text}{score_text}{blocker_text}{readiness_text}{summary_text}"
         )
 
     def _summarize_biggest_blockers(
