@@ -1077,6 +1077,13 @@ class ChatService:
         if action_guardrail_answer is not None:
             return action_guardrail_answer
 
+        action_prep_answer = self._build_action_context_prep_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_prep_answer is not None:
+            return action_prep_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3172,6 +3179,50 @@ class ChatService:
 
         return (
             f"For {title}, avoid changing lanes before the saved recommendation has a clean proof point."
+            f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_prep_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "what should i prep before doing this recommendation",
+                "what should i prep before this recommendation",
+                "what should i prepare before doing this recommendation",
+                "what should i prepare before this recommendation",
+                "what do i prep before this recommendation",
+                "how should i prep before this recommendation",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" Prep around the saved read: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" First prep item: resolve or explicitly account for {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"Prep for {title}: confirm the inputs for the saved recommendation, set up one focused session, "
+            f"and avoid starting until the account state you rely on is clear enough to judge."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
