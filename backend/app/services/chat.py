@@ -1161,6 +1161,13 @@ class ChatService:
         if action_report_back_answer is not None:
             return action_report_back_answer
 
+        action_review_window_answer = self._build_action_context_review_window_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_review_window_answer is not None:
+            return action_review_window_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3733,6 +3740,44 @@ class ChatService:
 
         return (
             f"After {title}, report back with the fresh sync result, what changed, and whether the saved lane still feels actionable."
+            f"{skill_text}{blocker_text}{readiness_text}{summary_text}"
+        )
+
+    def _build_action_context_review_window_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("how long", "try this", "checking back", "check back", "review"))
+            and any(token in normalized for token in ("this", "recommendation", "it", "before"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        target_skill = self._action_context_skill(action_context)
+        skill_text = f" Watch whether {target_skill.replace('_', ' ')} actually moves." if target_skill else ""
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        summary = action_context.get("summary")
+
+        blocker_text = f" If {blockers[0]} is still present, treat the result as incomplete rather than failed." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+
+        return (
+            f"Try {title} for one focused session, then take a fresh sync before deciding whether to keep going."
             f"{skill_text}{blocker_text}{readiness_text}{summary_text}"
         )
 
