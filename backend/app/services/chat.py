@@ -1014,6 +1014,13 @@ class ChatService:
         if action_short_session_answer is not None:
             return action_short_session_answer
 
+        action_afk_answer = self._build_action_context_afk_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_afk_answer is not None:
+            return action_afk_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -2719,6 +2726,53 @@ class ChatService:
             f"With {time_text}, stay on {title} instead of opening a new lane.{summary_text}"
             f"{blocker_text}{readiness_text}"
         )
+
+    def _build_action_context_afk_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "want afk progress",
+                "want afk",
+                "prefer afk",
+                "low attention progress",
+                "something afk",
+                "afk progress",
+                "low-attention",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        action_type = action_context.get("action_type")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        fit_text = (
+            "It is not necessarily a full AFK lane, but it is the saved recommendation I would keep as the low-friction focus."
+        )
+        if action_type == "skill":
+            fit_text = "Treat it as the low-attention version of the saved skill lane rather than opening a new plan."
+
+        summary_text = f" {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Keep the saved blocker in view: {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        return f"For AFK progress, stay anchored to {title}. {fit_text}{summary_text}{blocker_text}{readiness_text}"
 
     def _summarize_biggest_blockers(
         self,
