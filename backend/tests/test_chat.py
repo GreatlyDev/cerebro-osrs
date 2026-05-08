@@ -5037,6 +5037,54 @@ async def test_chat_blocker_fallback_answer_uses_saved_action_context(client: As
 
 
 @pytest.mark.asyncio
+async def test_chat_alternative_path_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Alternative User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionAlt"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Alternative"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionAlt"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    alternative_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What is an alternative if I don't want to do this exact method?"},
+    )
+
+    assert alternative_response.status_code == 201
+    content = alternative_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "alternative" in content
+    assert "magic" in content
+    assert "high alchemy" in content
+    assert "bank state missing" in content
+    assert "fresh sync" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_sync_change_answer_uses_saved_action_context(
     client: AsyncClient,
     db_session: AsyncSession,

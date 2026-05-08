@@ -1112,6 +1112,13 @@ class ChatService:
         if action_blocker_fallback_answer is not None:
             return action_blocker_fallback_answer
 
+        action_alternative_path_answer = self._build_action_context_alternative_path_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_alternative_path_answer is not None:
+            return action_alternative_path_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3406,6 +3413,45 @@ class ChatService:
             f"For {title}, use a fallback path: run a smaller, lower-risk version of the recommendation, "
             f"avoid expensive assumptions, and take a fresh sync before scaling it up."
             f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_alternative_path_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("alternative", "instead", "different", "other"))
+            and any(token in normalized for token in ("method", "path", "route", "recommendation", "this", "it"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        target_skill = self._action_context_skill(action_context)
+
+        skill_text = f" Keep the alternative pointed at {target_skill.replace('_', ' ')} so it still serves the same account need." if target_skill else ""
+        summary_text = f" The original read was: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Keep {blockers[0]} visible while choosing the lower-risk route." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"Use an alternative to {title} only if the exact method is annoying, too expensive, or blocked right now. "
+            f"Pick a slower but safer route, do one short session, then take a fresh sync before replacing the saved recommendation."
+            f"{skill_text}{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
