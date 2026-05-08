@@ -1140,6 +1140,13 @@ class ChatService:
         if action_account_fit_answer is not None:
             return action_account_fit_answer
 
+        action_missing_data_answer = self._build_action_context_missing_data_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_missing_data_answer is not None:
+            return action_missing_data_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3599,6 +3606,42 @@ class ChatService:
         return (
             f"Yes, {title} fits the saved account read{account_text}{skill_text}."
             f"{priority_text}{score_text}{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_missing_data_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("data", "missing", "need", "confidence", "confident"))
+            and any(token in normalized for token in ("this", "recommendation", "action", "more confident"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        summary = action_context.get("summary")
+
+        blocker_text = f" The main missing data point is {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        summary_text = f" The saved read is still: {summary}" if isinstance(summary, str) and summary else ""
+
+        return (
+            f"For {title}, the next confidence step is a fresh sync that clears the saved uncertainty before making exact calls."
+            f"{blocker_text}{readiness_text}{summary_text}"
         )
 
     def _summarize_biggest_blockers(
