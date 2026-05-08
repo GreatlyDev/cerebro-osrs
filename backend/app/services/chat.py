@@ -1098,6 +1098,13 @@ class ChatService:
         if action_tracking_signal_answer is not None:
             return action_tracking_signal_answer
 
+        action_bank_uncertainty_answer = self._build_action_context_bank_uncertainty_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_bank_uncertainty_answer is not None:
+            return action_bank_uncertainty_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3313,6 +3320,42 @@ class ChatService:
         return (
             f"Track {title} by watching whether the saved lane moves after a focused session and a fresh sync."
             f"{skill_text}{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_bank_uncertainty_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            ("bank" in normalized or "wealth" in normalized)
+            and any(token in normalized for token in ("sync", "missing", "without", "unknown"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" The saved blocker is {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"You can still approach {title} without bank sync, but keep it cautious and avoid exact cost or profit calls."
+            f"{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
