@@ -1133,6 +1133,13 @@ class ChatService:
         if action_worth_time_answer is not None:
             return action_worth_time_answer
 
+        action_account_fit_answer = self._build_action_context_account_fit_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_account_fit_answer is not None:
+            return action_account_fit_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3548,6 +3555,50 @@ class ChatService:
         return (
             f"{title} is worth your time if your next session is meant to move the saved account lane forward."
             f"{priority_text}{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_account_fit_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("fit", "fits", "suited", "right for"))
+            and any(token in normalized for token in ("account", "me", "goal", "right now"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        account_rsn = action_context.get("account_rsn")
+        account_text = f" for {account_rsn}" if isinstance(account_rsn, str) and account_rsn else ""
+        target_skill = self._action_context_skill(action_context)
+        skill_text = f" because it keeps the account pointed at {target_skill.replace('_', ' ')}" if target_skill else ""
+        priority = action_context.get("priority")
+        priority_text = f" It is marked {priority} priority" if isinstance(priority, str) and priority else ""
+        score = action_context.get("score")
+        score_text = f" with a saved score of {score}." if isinstance(score, int | float) else "."
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        summary = action_context.get("summary")
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" The fit is conditional on accounting for {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"Yes, {title} fits the saved account read{account_text}{skill_text}."
+            f"{priority_text}{score_text}{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
