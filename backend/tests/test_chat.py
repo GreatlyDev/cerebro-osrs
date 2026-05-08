@@ -4865,6 +4865,55 @@ async def test_chat_deprioritize_answer_uses_saved_action_context(client: AsyncC
 
 
 @pytest.mark.asyncio
+async def test_chat_profit_progression_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Profit User"})
+    cookies = auth.cookies
+    await client.patch("/api/profile", cookies=cookies, json={"prefers_profitable_methods": True})
+    account = await client.post("/api/accounts", json={"rsn": "ActionProfit"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Profit"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionProfit"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "recommended_method": "High Alchemy",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    tradeoff_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What should I do if I want both profit and progression with this recommendation?"},
+    )
+
+    assert tradeoff_response.status_code == 201
+    content = tradeoff_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "profit" in content
+    assert "progression" in content
+    assert "support" in content or "reset" in content
+    assert "bank state missing" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

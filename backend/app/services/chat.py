@@ -965,6 +965,13 @@ class ChatService:
         if progress_answer is not None:
             return progress_answer
 
+        action_profit_progression_answer = self._build_action_context_profit_progression_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_profit_progression_answer is not None:
+            return action_profit_progression_answer
+
         knowledge_unlock_answer = knowledge_answering_service.build_utility_unlock_answer(
             message=message,
             packet=retrieval_packet,
@@ -2819,6 +2826,41 @@ class ChatService:
         return (
             f"I would not deprioritize {title} this week. Deprioritize any new lane or distraction "
             f"that pulls you away from finishing the saved recommendation.{priority_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_profit_progression_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("profit", "money", "gp"))
+            and any(token in normalized for token in ("progression", "progress"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Do not treat profit as solved until you clear {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        return (
+            f"If you want both profit and progression, keep {title} as the progression anchor and use profit as the support lane. "
+            f"The money side should fund or reset the saved recommendation, not replace it.{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
