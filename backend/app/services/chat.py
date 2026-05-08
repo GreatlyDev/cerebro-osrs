@@ -1140,6 +1140,13 @@ class ChatService:
         if action_account_fit_answer is not None:
             return action_account_fit_answer
 
+        action_evidence_answer = self._build_action_context_evidence_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_evidence_answer is not None:
+            return action_evidence_answer
+
         action_missing_data_answer = self._build_action_context_missing_data_answer(
             message=message,
             session_state=session_state,
@@ -3670,6 +3677,48 @@ class ChatService:
         return (
             f"For {title}, the next confidence step is a fresh sync that clears the saved uncertainty before making exact calls."
             f"{blocker_text}{readiness_text}{summary_text}"
+        )
+
+    def _build_action_context_evidence_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if any(token in normalized for token in ("still need", "need", "missing", "confidence", "confident")):
+            return None
+        if not (
+            any(token in normalized for token in ("what data", "which data", "evidence", "using", "based on"))
+            and any(token in normalized for token in ("this", "recommendation", "action", "it"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        score = action_context.get("score")
+        score_text = f"the saved score is {score}" if isinstance(score, int | float) else "the saved score is not set"
+        priority = action_context.get("priority")
+        priority_text = f", priority is {priority}" if isinstance(priority, str) and priority else ""
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        summary = action_context.get("summary")
+
+        blocker_text = f", and the main saved blocker is {blockers[0]}" if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        summary_text = f" The recommendation summary is: {summary}" if isinstance(summary, str) and summary else ""
+
+        return (
+            f"For {title}, I am using the saved advisor packet: {score_text}{priority_text}{blocker_text}."
+            f"{readiness_text}{summary_text}"
         )
 
     def _build_action_context_ignore_consequence_answer(

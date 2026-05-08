@@ -5468,6 +5468,54 @@ async def test_chat_change_mind_answer_uses_saved_action_context(client: AsyncCl
 
 
 @pytest.mark.asyncio
+async def test_chat_action_evidence_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Evidence User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionProof"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Evidence"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionProof"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    evidence_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What data are you using for this recommendation?"},
+    )
+
+    assert evidence_response.status_code == 201
+    content = evidence_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "score" in content
+    assert "91" in content
+    assert "critical" in content
+    assert "bank state missing" in content
+    assert "wealth assumptions" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_sync_change_answer_uses_saved_action_context(
     client: AsyncClient,
     db_session: AsyncSession,
