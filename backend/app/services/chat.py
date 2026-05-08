@@ -3249,6 +3249,7 @@ class ChatService:
             for phrase in (
                 "what should i avoid messing up",
                 "what should i avoid with this recommendation",
+                "what should i avoid while doing this recommendation",
                 "what should i not mess up",
                 "what mistake should i avoid",
                 "what mistakes should i avoid",

@@ -4786,7 +4786,7 @@ async def test_chat_guardrail_answer_uses_saved_action_context(client: AsyncClie
     guardrail_response = await client.post(
         f"/api/chat/sessions/{session_id}/messages",
         cookies=cookies,
-        json={"content": "What should I avoid messing up with this recommendation?"},
+        json={"content": "What should I avoid while doing this recommendation?"},
     )
 
     assert guardrail_response.status_code == 201
