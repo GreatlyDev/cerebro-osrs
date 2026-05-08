@@ -1063,6 +1063,13 @@ class ChatService:
         if action_checklist_answer is not None:
             return action_checklist_answer
 
+        action_success_check_answer = self._build_action_context_success_check_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_success_check_answer is not None:
+            return action_success_check_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3073,6 +3080,49 @@ class ChatService:
             f"Checklist for {title}: First, keep the saved recommendation as the active lane.{summary_text} "
             f"Second, do the smallest session that proves the lane is moving. Third, sync again before changing lanes."
             f"{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_success_check_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "how will i know this recommendation is working",
+                "how do i know this recommendation is working",
+                "how will i know this is working",
+                "how do i know this is working",
+                "what would prove this is working",
+                "what proves this is working",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" If {blockers[0]} is still unresolved, treat the result as incomplete." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"Success check for {title}: you should see visible progress in the saved lane after the next focused session, "
+            f"then confirm it with a fresh sync before changing priorities.{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
