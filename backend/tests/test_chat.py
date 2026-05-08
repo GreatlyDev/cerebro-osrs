@@ -4990,6 +4990,53 @@ async def test_chat_bank_uncertainty_answer_uses_saved_action_context(client: As
 
 
 @pytest.mark.asyncio
+async def test_chat_blocker_fallback_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Fallback User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionFall"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Fallback"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionFall"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    fallback_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What should I do if I can't clear this blocker yet?"},
+    )
+
+    assert fallback_response.status_code == 201
+    content = fallback_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "bank state missing" in content
+    assert "fallback" in content or "smaller" in content or "lighter" in content
+    assert "fresh sync" in content
+    assert "wealth assumptions" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_sync_change_answer_uses_saved_action_context(
     client: AsyncClient,
     db_session: AsyncSession,

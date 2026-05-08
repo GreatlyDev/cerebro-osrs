@@ -1105,6 +1105,13 @@ class ChatService:
         if action_bank_uncertainty_answer is not None:
             return action_bank_uncertainty_answer
 
+        action_blocker_fallback_answer = self._build_action_context_blocker_fallback_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_blocker_fallback_answer is not None:
+            return action_blocker_fallback_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3355,6 +3362,49 @@ class ChatService:
 
         return (
             f"You can still approach {title} without bank sync, but keep it cautious and avoid exact cost or profit calls."
+            f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_blocker_fallback_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        blocker_terms = ("blocker", "blocked", "clear", "fix", "resolve", "stuck")
+        fallback_terms = ("can't", "cant", "cannot", "not able", "unable", "yet", "fallback")
+        if not (
+            any(token in normalized for token in blocker_terms)
+            and any(token in normalized for token in fallback_terms)
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" Keep the saved read in view: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = (
+            f" If {blockers[0]} cannot be cleared yet, mark it as the active blocker instead of forcing the full lane."
+            if blockers
+            else ""
+        )
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"For {title}, use a fallback path: run a smaller, lower-risk version of the recommendation, "
+            f"avoid expensive assumptions, and take a fresh sync before scaling it up."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
