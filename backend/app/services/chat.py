@@ -1056,6 +1056,13 @@ class ChatService:
         if action_time_horizon_answer is not None:
             return action_time_horizon_answer
 
+        action_checklist_answer = self._build_action_context_checklist_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_checklist_answer is not None:
+            return action_checklist_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3021,6 +3028,50 @@ class ChatService:
 
         return (
             f"For tonight, take a practical slice of {title} instead of opening a new lane.{summary_text}"
+            f"{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_checklist_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(
+            phrase in normalized
+            for phrase in (
+                "turn this recommendation into a checklist",
+                "turn this into a checklist",
+                "make this a checklist",
+                "give me a checklist",
+                "step by step plan",
+                "step-by-step plan",
+            )
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" Start from the saved read: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" First clear or account for {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"Checklist for {title}: First, keep the saved recommendation as the active lane.{summary_text} "
+            f"Second, do the smallest session that proves the lane is moving. Third, sync again before changing lanes."
             f"{blocker_text}{readiness_text}"
         )
 
