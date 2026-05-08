@@ -1126,6 +1126,13 @@ class ChatService:
         if action_urgency_answer is not None:
             return action_urgency_answer
 
+        action_worth_time_answer = self._build_action_context_worth_time_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_worth_time_answer is not None:
+            return action_worth_time_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3500,6 +3507,47 @@ class ChatService:
             f"{title} is a {priority} saved recommendation{score_text}, so treat it as important but not panic-now urgent. "
             f"Do it next when the account state is clear; if you wait, take a fresh sync before judging whether it still leads."
             f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_worth_time_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            "worth" in normalized
+            and any(token in normalized for token in ("time", "doing", "it", "this", "recommendation"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        priority = action_context.get("priority")
+        priority = priority if isinstance(priority, str) and priority else None
+        score = action_context.get("score")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        score_text = f" and scored {score}" if isinstance(score, int | float) else ""
+        priority_text = f" It is marked {priority} priority{score_text}." if priority else ""
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" It is worth doing after you account for {blockers[0]}, not by ignoring that blocker." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"{title} is worth your time if your next session is meant to move the saved account lane forward."
+            f"{priority_text}{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
