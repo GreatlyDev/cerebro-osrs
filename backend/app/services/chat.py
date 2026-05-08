@@ -1035,6 +1035,13 @@ class ChatService:
         if action_deprioritize_answer is not None:
             return action_deprioritize_answer
 
+        action_xp_unlock_answer = self._build_action_context_xp_unlock_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_xp_unlock_answer is not None:
+            return action_xp_unlock_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -2861,6 +2868,48 @@ class ChatService:
         return (
             f"If you want both profit and progression, keep {title} as the progression anchor and use profit as the support lane. "
             f"The money side should fund or reset the saved recommendation, not replace it.{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_xp_unlock_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            ("xp" in normalized or "experience" in normalized)
+            and ("unlock" in normalized or "unlocks" in normalized)
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        action_type = action_context.get("action_type")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        lane_text = "treat it as the current XP/stat lane"
+        if action_type == "quest":
+            lane_text = "treat it as the current unlock lane"
+        elif action_type not in {"skill", "quest"}:
+            lane_text = "treat it as the current progression lane"
+
+        summary_text = f" {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" The saved blocker is still {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+        return (
+            f"For {title}, {lane_text}. Keep unlocks as the follow-up lane behind it unless a fresh sync changes the ranking."
+            f"{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
