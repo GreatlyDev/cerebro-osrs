@@ -1119,6 +1119,13 @@ class ChatService:
         if action_alternative_path_answer is not None:
             return action_alternative_path_answer
 
+        action_urgency_answer = self._build_action_context_urgency_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_urgency_answer is not None:
+            return action_urgency_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -3452,6 +3459,47 @@ class ChatService:
             f"Use an alternative to {title} only if the exact method is annoying, too expensive, or blocked right now. "
             f"Pick a slower but safer route, do one short session, then take a fresh sync before replacing the saved recommendation."
             f"{skill_text}{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_urgency_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("urgent", "urgency", "priority", "wait", "delay"))
+            and any(token in normalized for token in ("this", "it", "recommendation", "action"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        priority = action_context.get("priority")
+        priority = priority if isinstance(priority, str) and priority else "current"
+        score = action_context.get("score")
+        score_text = f" with a saved score of {score}" if isinstance(score, int | float) else ""
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        summary = action_context.get("summary")
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" If {blockers[0]} is still unresolved, it can wait for a cleaner sync rather than forcing it blind." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"{title} is a {priority} saved recommendation{score_text}, so treat it as important but not panic-now urgent. "
+            f"Do it next when the account state is clear; if you wait, take a fresh sync before judging whether it still leads."
+            f"{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
