@@ -1049,6 +1049,13 @@ class ChatService:
         if action_lower_effort_answer is not None:
             return action_lower_effort_answer
 
+        action_time_horizon_answer = self._build_action_context_time_horizon_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_time_horizon_answer is not None:
+            return action_time_horizon_answer
+
         coaching_answer = await self._build_coaching_answer(
             db_session=db_session,
             user=user,
@@ -2958,6 +2965,63 @@ class ChatService:
         return (
             f"For lower effort but still useful progress, keep {title} and do the smallest useful version of that lane."
             f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_time_horizon_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        asks_tonight = any(
+            phrase in normalized
+            for phrase in (
+                "what should i do tonight",
+                "what do i do tonight",
+                "what should i focus on tonight",
+                "what should i work on tonight",
+            )
+        )
+        asks_weekend = any(
+            phrase in normalized
+            for phrase in (
+                "what should i do this weekend",
+                "what do i do this weekend",
+                "what should i focus on this weekend",
+                "what should i work on this weekend",
+            )
+        )
+        if not asks_tonight and not asks_weekend:
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Keep the saved blocker visible: {blockers[0]}." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        if asks_weekend:
+            return (
+                f"For this weekend, build around {title} as the main push.{summary_text}"
+                f"{blocker_text}{readiness_text}"
+            )
+
+        return (
+            f"For tonight, take a practical slice of {title} instead of opening a new lane.{summary_text}"
+            f"{blocker_text}{readiness_text}"
         )
 
     def _summarize_biggest_blockers(
