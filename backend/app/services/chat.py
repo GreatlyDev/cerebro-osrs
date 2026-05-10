@@ -1140,6 +1140,13 @@ class ChatService:
         if action_account_fit_answer is not None:
             return action_account_fit_answer
 
+        action_account_mode_answer = self._build_action_context_account_mode_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_account_mode_answer is not None:
+            return action_account_mode_answer
+
         action_evidence_answer = self._build_action_context_evidence_answer(
             message=message,
             session_state=session_state,
@@ -3666,6 +3673,39 @@ class ChatService:
         return (
             f"Yes, {title} fits the saved account read{account_text}{skill_text}."
             f"{priority_text}{score_text}{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_account_mode_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient")):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Treat {blockers[0]} as extra important because ironman routing depends on what you can self-supply." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"For an ironman, keep {title} only if the setup is self-sufficient or self-supplied enough to repeat."
+            f"{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _build_action_context_missing_data_answer(
