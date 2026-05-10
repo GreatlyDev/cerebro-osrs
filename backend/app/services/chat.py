@@ -3423,7 +3423,18 @@ class ChatService:
                 "not enough money",
             )
         )
-        if not (has_bank_uncertainty or has_low_gp_concern):
+        has_budget_concern = any(
+            phrase in normalized
+            for phrase in (
+                "budget version",
+                "budget option",
+                "cheap version",
+                "cheapest way",
+                "cheapest version",
+                "cheaper way",
+            )
+        )
+        if not (has_bank_uncertainty or has_low_gp_concern or has_budget_concern):
             return None
 
         action_context = session_state.get("last_action_context")
@@ -3445,7 +3456,7 @@ class ChatService:
         readiness_text = f" {readiness_warning}" if readiness_warning else ""
 
         return (
-            f"You can still approach {title} with a low-GP or unknown-bank state, but keep it cautious and avoid exact cost or profit calls."
+            f"You can still approach {title} with a budget, low-GP, or unknown-bank state, but keep it cautious and avoid exact cost or profit calls."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
