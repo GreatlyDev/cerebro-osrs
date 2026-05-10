@@ -3682,7 +3682,11 @@ class ChatService:
         session_state: dict[str, object],
     ) -> str | None:
         normalized = message.lower()
-        if not any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient")):
+        is_hardcore = any(token in normalized for token in ("hardcore", "hcim"))
+        if not (
+            is_hardcore
+            or any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient"))
+        ):
             return None
 
         action_context = session_state.get("last_action_context")
@@ -3702,6 +3706,12 @@ class ChatService:
         summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
         blocker_text = f" Treat {blockers[0]} as extra important because ironman routing depends on what you can self-supply." if blockers else ""
         readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        if is_hardcore:
+            return (
+                f"For a hardcore ironman, keep {title} only if the route is safe, repeatable, and does not add avoidable death risk."
+                f"{summary_text}{blocker_text}{readiness_text}"
+            )
 
         return (
             f"For an ironman, keep {title} only if the setup is self-sufficient or self-supplied enough to repeat."
