@@ -3407,10 +3407,23 @@ class ChatService:
         session_state: dict[str, object],
     ) -> str | None:
         normalized = message.lower()
-        if not (
+        has_bank_uncertainty = (
             ("bank" in normalized or "wealth" in normalized)
             and any(token in normalized for token in ("sync", "missing", "without", "unknown"))
-        ):
+        )
+        has_low_gp_concern = any(
+            phrase in normalized
+            for phrase in (
+                "don't have much gp",
+                "dont have much gp",
+                "low on gp",
+                "low gp",
+                "not much gp",
+                "not enough gp",
+                "not enough money",
+            )
+        )
+        if not (has_bank_uncertainty or has_low_gp_concern):
             return None
 
         action_context = session_state.get("last_action_context")
@@ -3432,7 +3445,7 @@ class ChatService:
         readiness_text = f" {readiness_warning}" if readiness_warning else ""
 
         return (
-            f"You can still approach {title} without bank sync, but keep it cautious and avoid exact cost or profit calls."
+            f"You can still approach {title} with a low-GP or unknown-bank state, but keep it cautious and avoid exact cost or profit calls."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
