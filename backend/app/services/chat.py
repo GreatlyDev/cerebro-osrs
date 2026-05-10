@@ -3683,8 +3683,13 @@ class ChatService:
     ) -> str | None:
         normalized = message.lower()
         is_hardcore = any(token in normalized for token in ("hardcore", "hcim"))
+        is_ultimate = any(
+            token in normalized
+            for token in ("ultimate ironman", "ultimate iron man", "uim")
+        )
         if not (
             is_hardcore
+            or is_ultimate
             or any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient"))
         ):
             return None
@@ -3710,6 +3715,12 @@ class ChatService:
         if is_hardcore:
             return (
                 f"For a hardcore ironman, keep {title} only if the route is safe, repeatable, and does not add avoidable death risk."
+                f"{summary_text}{blocker_text}{readiness_text}"
+            )
+
+        if is_ultimate:
+            return (
+                f"For an ultimate ironman, keep {title} only if the inventory, storage, and setup flow are clean enough to repeat."
                 f"{summary_text}{blocker_text}{readiness_text}"
             )
 
