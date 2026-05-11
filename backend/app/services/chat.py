@@ -3695,11 +3695,13 @@ class ChatService:
             token in normalized
             for token in ("1 defence", "1 defense", "one defence", "one defense", "pure")
         )
+        is_zerker = any(token in normalized for token in ("zerker", "berserker"))
         if not (
             is_hardcore
             or is_ultimate
             or is_group
             or is_pure
+            or is_zerker
             or any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient"))
         ):
             return None
@@ -3743,6 +3745,12 @@ class ChatService:
         if is_pure:
             return (
                 f"For a pure build, keep {title} only if it preserves the account build and does not add unwanted defence experience."
+                f"{summary_text}{blocker_text}{readiness_text}"
+            )
+
+        if is_zerker:
+            return (
+                f"For a zerker build, keep {title} only if it preserves the Defence bracket and does not break the account build."
                 f"{summary_text}{blocker_text}{readiness_text}"
             )
 
