@@ -3697,6 +3697,7 @@ class ChatService:
         )
         is_zerker = any(token in normalized for token in ("zerker", "berserker"))
         is_skiller = any(token in normalized for token in ("skiller", "level 3", "level-3"))
+        is_f2p = any(token in normalized for token in ("f2p", "free-to-play", "free to play"))
         if not (
             is_hardcore
             or is_ultimate
@@ -3704,6 +3705,7 @@ class ChatService:
             or is_pure
             or is_zerker
             or is_skiller
+            or is_f2p
             or any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient"))
         ):
             return None
@@ -3759,6 +3761,12 @@ class ChatService:
         if is_skiller:
             return (
                 f"For a level 3 skiller, keep {title} only if it avoids combat XP and preserves the account identity."
+                f"{summary_text}{blocker_text}{readiness_text}"
+            )
+
+        if is_f2p:
+            return (
+                f"For F2P, keep {title} only if every requirement is free-to-play and you remove members-only assumptions from the route."
                 f"{summary_text}{blocker_text}{readiness_text}"
             )
 

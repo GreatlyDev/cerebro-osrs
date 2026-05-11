@@ -5232,6 +5232,54 @@ async def test_chat_skiller_action_answer_uses_saved_action_context(client: Asyn
 
 
 @pytest.mark.asyncio
+async def test_chat_f2p_action_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action F2P User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionF2P"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action F2P"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Magic",
+                "summary": "Use High Alchemy as the next efficient training method.",
+                "score": 91,
+                "priority": "critical",
+                "target": {"skill": "magic", "account_rsn": "ActionF2P"},
+                "blockers": ["bank state missing"],
+                "supporting_data": {
+                    "recommended_skill": "magic",
+                    "readiness_warning": "Bank state is missing, so do not make exact wealth assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    f2p_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What if I'm F2P for this recommendation?"},
+    )
+
+    assert f2p_response.status_code == 201
+    content = f2p_response.json()["assistant_message"]["content"].lower()
+    assert "train magic" in content
+    assert "f2p" in content or "free-to-play" in content
+    assert "members-only" in content or "members only" in content
+    assert "requirement" in content or "assumption" in content
+    assert "bank state missing" in content
+    assert "wealth assumptions" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_prep_answer_uses_saved_action_context(client: AsyncClient) -> None:
     auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Prep User"})
     cookies = auth.cookies
