@@ -1105,6 +1105,13 @@ class ChatService:
         if action_bank_uncertainty_answer is not None:
             return action_bank_uncertainty_answer
 
+        action_missing_requirements_answer = self._build_action_context_missing_requirements_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_missing_requirements_answer is not None:
+            return action_missing_requirements_answer
+
         action_blocker_fallback_answer = self._build_action_context_blocker_fallback_answer(
             message=message,
             session_state=session_state,
@@ -3507,6 +3514,61 @@ class ChatService:
         return (
             f"For {title}, use a fallback path: run a smaller, lower-risk version of the recommendation, "
             f"avoid expensive assumptions, and take a fresh sync before scaling it up."
+            f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_missing_requirements_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        has_requirement_gap = (
+            any(token in normalized for token in ("requirement", "requirements", "req", "reqs"))
+            and any(
+                token in normalized
+                for token in (
+                    "don't have",
+                    "dont have",
+                    "missing",
+                    "not have",
+                    "lack",
+                    "lacking",
+                    "can't",
+                    "cant",
+                    "cannot",
+                )
+            )
+        )
+        if not has_requirement_gap:
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = (
+            f" Treat {blockers[0]} as the active blocker before forcing the full route."
+            if blockers
+            else ""
+        )
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"For {title}, if the requirements are not met, use a smaller fallback version first "
+            f"instead of forcing the full recommendation."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
