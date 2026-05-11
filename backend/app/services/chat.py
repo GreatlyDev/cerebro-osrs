@@ -3687,9 +3687,14 @@ class ChatService:
             token in normalized
             for token in ("ultimate ironman", "ultimate iron man", "uim")
         )
+        is_group = any(
+            token in normalized
+            for token in ("group ironman", "group iron man", "gim")
+        )
         if not (
             is_hardcore
             or is_ultimate
+            or is_group
             or any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient"))
         ):
             return None
@@ -3721,6 +3726,12 @@ class ChatService:
         if is_ultimate:
             return (
                 f"For an ultimate ironman, keep {title} only if the inventory, storage, and setup flow are clean enough to repeat."
+                f"{summary_text}{blocker_text}{readiness_text}"
+            )
+
+        if is_group:
+            return (
+                f"For a group ironman, keep {title} if the team supply plan is clear and the shared setup does not bottleneck the group."
                 f"{summary_text}{blocker_text}{readiness_text}"
             )
 
