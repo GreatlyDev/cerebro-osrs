@@ -3691,10 +3691,15 @@ class ChatService:
             token in normalized
             for token in ("group ironman", "group iron man", "gim")
         )
+        is_pure = any(
+            token in normalized
+            for token in ("1 defence", "1 defense", "one defence", "one defense", "pure")
+        )
         if not (
             is_hardcore
             or is_ultimate
             or is_group
+            or is_pure
             or any(token in normalized for token in ("ironman", "iron man", "self-sufficient", "self sufficient"))
         ):
             return None
@@ -3732,6 +3737,12 @@ class ChatService:
         if is_group:
             return (
                 f"For a group ironman, keep {title} if the team supply plan is clear and the shared setup does not bottleneck the group."
+                f"{summary_text}{blocker_text}{readiness_text}"
+            )
+
+        if is_pure:
+            return (
+                f"For a pure build, keep {title} only if it preserves the account build and does not add unwanted defence experience."
                 f"{summary_text}{blocker_text}{readiness_text}"
             )
 
