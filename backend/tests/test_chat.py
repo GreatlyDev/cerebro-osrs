@@ -6490,6 +6490,54 @@ async def test_chat_weekend_answer_uses_saved_action_context(client: AsyncClient
 
 
 @pytest.mark.asyncio
+async def test_chat_risk_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Risk User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionRisk"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Risk"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "boss",
+                "title": "Try Barrows",
+                "summary": "Use Barrows as a cautious PvM bridge for the account.",
+                "score": 84,
+                "priority": "high",
+                "target": {"boss": "barrows", "account_rsn": "ActionRisk"},
+                "blockers": ["gear state missing"],
+                "supporting_data": {
+                    "recommended_activity": "barrows",
+                    "readiness_warning": "Gear state is missing, so keep death and supply risk conservative.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    risk_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "Is this risky for my account?"},
+    )
+
+    assert risk_response.status_code == 201
+    content = risk_response.json()["assistant_message"]["content"].lower()
+    assert "try barrows" in content
+    assert "risk" in content
+    assert "safe" in content or "conservative" in content
+    assert "smaller" in content or "scout" in content
+    assert "gear state missing" in content
+    assert "death and supply risk" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

@@ -1126,6 +1126,13 @@ class ChatService:
         if action_alternative_path_answer is not None:
             return action_alternative_path_answer
 
+        action_risk_answer = self._build_action_context_risk_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_risk_answer is not None:
+            return action_risk_answer
+
         action_urgency_answer = self._build_action_context_urgency_answer(
             message=message,
             session_state=session_state,
@@ -3649,6 +3656,43 @@ class ChatService:
         return (
             f"{title} is a {priority} saved recommendation{score_text}, so treat it as important but not panic-now urgent. "
             f"Do it next when the account state is clear; if you wait, take a fresh sync before judging whether it still leads."
+            f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_risk_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("risk", "risky", "safe", "danger", "death"))
+            and any(token in normalized for token in ("this", "it", "recommendation", "action", "account"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Treat {blockers[0]} as the live risk blocker." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"{title} can be safe enough if you treat it as a small scout first, not a full-send push. "
+            f"Keep the risk conservative, prove one repeatable run, then scale only after the account state is clearer."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
