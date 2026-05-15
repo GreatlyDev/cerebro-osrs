@@ -6538,6 +6538,54 @@ async def test_chat_risk_answer_uses_saved_action_context(client: AsyncClient) -
 
 
 @pytest.mark.asyncio
+async def test_chat_gear_supplies_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Gear User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionGear"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Gear"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "boss",
+                "title": "Try Barrows",
+                "summary": "Use Barrows as a cautious PvM bridge for the account.",
+                "score": 84,
+                "priority": "high",
+                "target": {"boss": "barrows", "account_rsn": "ActionGear"},
+                "blockers": ["gear state missing"],
+                "supporting_data": {
+                    "recommended_activity": "barrows",
+                    "readiness_warning": "Gear state is missing, so do not assume the account owns the ideal setup.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    gear_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What gear or supplies do I need for this recommendation?"},
+    )
+
+    assert gear_response.status_code == 201
+    content = gear_response.json()["assistant_message"]["content"].lower()
+    assert "try barrows" in content
+    assert "gear" in content
+    assert "supplies" in content
+    assert "minimum" in content or "baseline" in content
+    assert "gear state missing" in content
+    assert "ideal setup" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

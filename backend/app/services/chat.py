@@ -1168,6 +1168,13 @@ class ChatService:
         if action_evidence_answer is not None:
             return action_evidence_answer
 
+        action_gear_supplies_answer = self._build_action_context_gear_supplies_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_gear_supplies_answer is not None:
+            return action_gear_supplies_answer
+
         action_missing_data_answer = self._build_action_context_missing_data_answer(
             message=message,
             session_state=session_state,
@@ -3915,6 +3922,43 @@ class ChatService:
         return (
             f"For {title}, the next confidence step is a fresh sync that clears the saved uncertainty before making exact calls."
             f"{blocker_text}{readiness_text}{summary_text}"
+        )
+
+    def _build_action_context_gear_supplies_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("gear", "equipment", "setup", "supplies", "inventory"))
+            and any(token in normalized for token in ("need", "bring", "use", "recommendation", "this", "it"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Treat {blockers[0]} as the setup blocker until a fresh sync proves ownership." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"For {title}, start from a minimum baseline gear and supplies setup before chasing an ideal loadout. "
+            f"Use conservative food, teleports, and the safest version of the route until Cerebro can verify what the account owns."
+            f"{summary_text}{blocker_text}{readiness_text}"
         )
 
     def _build_action_context_evidence_answer(
