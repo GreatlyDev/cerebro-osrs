@@ -11,7 +11,7 @@ Cerebro is an AI-powered Old School RuneScape account advisor. It combines struc
 
 ## Account Awareness
 
-Cerebro merges multiple sync sources into one account context:
+Cerebro merges multiple sync sources into one account context: Amazing! 
 
 - `hiscores sync`
   - public skills and progression signals
