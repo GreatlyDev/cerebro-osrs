@@ -179,6 +179,46 @@ async def test_next_actions_include_account_readiness_context(client: AsyncClien
 
 
 @pytest.mark.asyncio
+async def test_next_actions_include_account_fit_signals(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "FitSignals"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["bone voyage"],
+            "completed_diaries": {"lumbridge": ["easy"]},
+            "unlocked_transports": ["fairy rings"],
+            "owned_gear": ["abyssal whip"],
+            "equipped_gear": {"weapon": "abyssal whip"},
+            "notable_items": ["amulet of fury"],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion"},
+        },
+    )
+    goal_response = await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "FitSignals"},
+    )
+
+    response = await client.get(
+        f"/api/recommendations/next-actions?goal_id={goal_response.json()['id']}&limit=4"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["actions"]
+    for action in data["actions"]:
+        account_fit = action["supporting_data"]["account_fit"]
+        assert account_fit["confidence"] == data["context"]["account_readiness"]["confidence"]
+        assert account_fit["fit_reasons"]
+        assert account_fit["caution_reasons"]
+        assert "bank sync missing" in account_fit["caution_reasons"]
+        assert "FitSignals" in account_fit["signal_summary"]
+        assert action["action_type"] in account_fit["signal_summary"]
+
+
+@pytest.mark.asyncio
 async def test_next_actions_warn_when_account_readiness_is_sparse(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "SparseRecs"})
     account_id = account_response.json()["id"]

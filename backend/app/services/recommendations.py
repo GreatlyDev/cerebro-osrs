@@ -192,6 +192,13 @@ class RecommendationService:
         readiness = quest["readiness"]
         owned_gear = user_context_service.tracked_owned_gear(progress)
         known_unlocks = user_context_service.tracked_known_unlocks(progress)
+        account_fit = self._build_account_fit_signals(
+            goal=goal,
+            account_rsn=account_rsn,
+            progress=progress,
+            snapshot_delta=snapshot_delta,
+            account_readiness=account_readiness,
+        )
 
         skill_blockers = []
         current_level = skill.get("current_level")
@@ -249,6 +256,11 @@ class RecommendationService:
                     "active_unlock_match": quest_matches_active_unlock,
                     "recent_momentum_detected": skill_has_momentum or overall_level_delta > 0,
                     "readiness_warning": readiness_warning,
+                    "account_fit": self._account_fit_for_action(
+                        account_fit,
+                        action_type="quest",
+                        title=f"Push toward {quest['name']}",
+                    ),
                 },
             ),
             NextActionRecommendation(
@@ -266,6 +278,11 @@ class RecommendationService:
                     "recent_momentum_detected": skill_has_momentum,
                     "skill_stalled": skill_stalled,
                     "readiness_warning": readiness_warning,
+                    "account_fit": self._account_fit_for_action(
+                        account_fit,
+                        action_type="skill",
+                        title=f"Train {skill['skill']}",
+                    ),
                 },
             ),
             NextActionRecommendation(
@@ -280,6 +297,11 @@ class RecommendationService:
                     "account_rsn": account_rsn,
                     "already_owned": gear_owned,
                     "readiness_warning": readiness_warning,
+                    "account_fit": self._account_fit_for_action(
+                        account_fit,
+                        action_type="gear",
+                        title=f"Upgrade into {gear['item_name']}",
+                    ),
                 },
             ),
             NextActionRecommendation(
@@ -302,6 +324,11 @@ class RecommendationService:
                     "account_rsn": account_rsn,
                     "active_unlock_match": travel_matches_active_unlock,
                     "readiness_warning": readiness_warning,
+                    "account_fit": self._account_fit_for_action(
+                        account_fit,
+                        action_type="travel",
+                        title=f"Set up {teleport['method']}",
+                    ),
                 },
             ),
         ]
@@ -310,6 +337,79 @@ class RecommendationService:
     def _readiness_warning(self, account_readiness: dict[str, object]) -> str | None:
         warning = account_readiness.get("advisor_warning")
         return warning if isinstance(warning, str) and warning else None
+
+    def _build_account_fit_signals(
+        self,
+        *,
+        goal: Goal | None,
+        account_rsn: str | None,
+        progress,
+        snapshot_delta: dict[str, object] | None,
+        account_readiness: dict[str, object],
+    ) -> dict[str, object]:
+        trusted_sources = [
+            str(source)
+            for source in account_readiness.get("trusted_sources", [])
+            if source
+        ]
+        missing_inputs = [
+            str(item)
+            for item in account_readiness.get("missing_inputs", [])
+            if item
+        ]
+        fit_reasons: list[str] = []
+        caution_reasons: list[str] = []
+
+        if goal is not None:
+            fit_reasons.append(f"matches active goal {goal.title}")
+        if account_rsn:
+            fit_reasons.append(f"targets account {account_rsn}")
+        if trusted_sources:
+            fit_reasons.append(f"grounded by {', '.join(trusted_sources[:3])}")
+        if progress is not None and progress.companion_state.get("source") == "runelite_companion":
+            fit_reasons.append("runelite companion state is active")
+        if snapshot_delta is not None and int(snapshot_delta.get("overall_level_delta", 0) or 0) > 0:
+            fit_reasons.append("recent account momentum detected")
+
+        if "bank sync" in missing_inputs:
+            caution_reasons.append("bank sync missing")
+        for item in missing_inputs:
+            if item != "bank sync":
+                caution_reasons.append(f"{item} missing")
+        if not caution_reasons:
+            caution_reasons.append("no major missing inputs")
+
+        confidence = account_readiness.get("confidence")
+        return {
+            "confidence": confidence if isinstance(confidence, str) else "unknown",
+            "fit_reasons": fit_reasons or ["general account progression"],
+            "caution_reasons": caution_reasons,
+            "account_rsn": account_rsn,
+        }
+
+    def _account_fit_for_action(
+        self,
+        account_fit: dict[str, object],
+        *,
+        action_type: str,
+        title: str,
+    ) -> dict[str, object]:
+        account_rsn = account_fit.get("account_rsn")
+        fit_reasons = list(account_fit.get("fit_reasons", []))
+        caution_reasons = list(account_fit.get("caution_reasons", []))
+        confidence = account_fit.get("confidence")
+        summary_account = account_rsn if isinstance(account_rsn, str) and account_rsn else "the selected account"
+        signal_summary = (
+            f"{title} is a {action_type} action for {summary_account}; "
+            f"confidence={confidence}; fit={'; '.join(str(reason) for reason in fit_reasons[:2])}; "
+            f"caution={'; '.join(str(reason) for reason in caution_reasons[:2])}."
+        )
+        return {
+            "confidence": confidence,
+            "fit_reasons": fit_reasons,
+            "caution_reasons": caution_reasons,
+            "signal_summary": signal_summary,
+        }
 
     def _quest_matches_known_unlock(
         self,
