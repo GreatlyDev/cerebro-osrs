@@ -6635,6 +6635,54 @@ async def test_chat_rate_expectation_answer_uses_saved_action_context(client: As
 
 
 @pytest.mark.asyncio
+async def test_chat_enjoyment_friction_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Enjoyment User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionJoy"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Enjoyment"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "skill",
+                "title": "Train Runecraft",
+                "summary": "Use Guardians of the Rift as the main account progression lane.",
+                "score": 86,
+                "priority": "high",
+                "target": {"skill": "runecraft", "account_rsn": "ActionJoy"},
+                "blockers": ["stamina supply unknown"],
+                "supporting_data": {
+                    "recommended_skill": "runecraft",
+                    "readiness_warning": "Supply state is missing, so keep the substitute route conservative.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    enjoyment_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What if I hate doing this recommendation?"},
+    )
+
+    assert enjoyment_response.status_code == 201
+    content = enjoyment_response.json()["assistant_message"]["content"].lower()
+    assert "train runecraft" in content
+    assert "hate" in content or "enjoy" in content
+    assert "substitute" in content or "lower-friction" in content
+    assert "same account need" in content or "same account goal" in content
+    assert "stamina supply unknown" in content
+    assert "substitute route conservative" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

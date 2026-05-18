@@ -1126,6 +1126,13 @@ class ChatService:
         if action_blocker_fallback_answer is not None:
             return action_blocker_fallback_answer
 
+        action_enjoyment_friction_answer = self._build_action_context_enjoyment_friction_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_enjoyment_friction_answer is not None:
+            return action_enjoyment_friction_answer
+
         action_alternative_path_answer = self._build_action_context_alternative_path_answer(
             message=message,
             session_state=session_state,
@@ -3666,6 +3673,49 @@ class ChatService:
         return (
             f"Use an alternative to {title} only if the exact method is annoying, too expensive, or blocked right now. "
             f"Pick a slower but safer route, do one short session, then take a fresh sync before replacing the saved recommendation."
+            f"{skill_text}{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_enjoyment_friction_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("hate", "boring", "annoying", "dislike", "don't enjoy", "dont enjoy"))
+            and any(token in normalized for token in ("this", "it", "recommendation", "method", "route"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+        target_skill = self._action_context_skill(action_context)
+
+        skill_text = (
+            f" Keep the substitute pointed at {target_skill.replace('_', ' ')} so it still serves the same account goal."
+            if target_skill
+            else " Keep the substitute pointed at the same account need instead of drifting into a new lane."
+        )
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Keep {blockers[0]} visible while choosing the lower-friction route." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"If you hate {title}, do not force the exact method just because it is ranked well. "
+            f"Use a lower-friction substitute for the same account need, run a shorter session, and only return to the original route if it feels sustainable."
             f"{skill_text}{summary_text}{blocker_text}{readiness_text}"
         )
 
