@@ -6586,6 +6586,55 @@ async def test_chat_gear_supplies_answer_uses_saved_action_context(client: Async
 
 
 @pytest.mark.asyncio
+async def test_chat_rate_expectation_answer_uses_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Rate User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionRate"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Rate"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    first_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "money_maker",
+                "title": "Run Vorkath",
+                "summary": "Use Vorkath as the account's main profit reset.",
+                "score": 88,
+                "priority": "high",
+                "target": {"activity": "vorkath", "account_rsn": "ActionRate"},
+                "blockers": ["gear state missing"],
+                "supporting_data": {
+                    "recommended_activity": "vorkath",
+                    "readiness_warning": "Gear state is missing, so do not make exact GP/hr assumptions.",
+                },
+            },
+        },
+    )
+    assert first_response.status_code == 201
+
+    rate_response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={"content": "What GP/hr or XP/hr should I expect from this recommendation?"},
+    )
+
+    assert rate_response.status_code == 201
+    content = rate_response.json()["assistant_message"]["content"].lower()
+    assert "run vorkath" in content
+    assert "rate" in content
+    assert "baseline" in content
+    assert "session" in content
+    assert "exact" in content
+    assert "gear state missing" in content
+    assert "gp/hr assumptions" in content
+
+
+@pytest.mark.asyncio
 async def test_ai_context_account_brain_marks_completed_unlocks_to_avoid(
     client: AsyncClient,
     monkeypatch: pytest.MonkeyPatch,

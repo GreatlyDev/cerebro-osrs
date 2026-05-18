@@ -972,6 +972,13 @@ class ChatService:
         if action_profit_progression_answer is not None:
             return action_profit_progression_answer
 
+        action_rate_expectation_answer = self._build_action_context_rate_expectation_answer(
+            message=message,
+            session_state=session_state,
+        )
+        if action_rate_expectation_answer is not None:
+            return action_rate_expectation_answer
+
         knowledge_unlock_answer = knowledge_answering_service.build_utility_unlock_answer(
             message=message,
             packet=retrieval_packet,
@@ -3077,6 +3084,43 @@ class ChatService:
         readiness_text = f" {readiness_warning}" if readiness_warning else ""
         return (
             f"For {title}, {lane_text}. Keep unlocks as the follow-up lane behind it unless a fresh sync changes the ranking."
+            f"{summary_text}{blocker_text}{readiness_text}"
+        )
+
+    def _build_action_context_rate_expectation_answer(
+        self,
+        *,
+        message: str,
+        session_state: dict[str, object],
+    ) -> str | None:
+        normalized = message.lower()
+        if not (
+            any(token in normalized for token in ("xp/hr", "gp/hr", "xp per hour", "gp per hour", "rate", "rates"))
+            and any(token in normalized for token in ("expect", "estimate", "this", "recommendation", "it"))
+        ):
+            return None
+
+        action_context = session_state.get("last_action_context")
+        if not isinstance(action_context, dict) or not action_context:
+            return None
+
+        title = action_context.get("title")
+        if not isinstance(title, str) or not title:
+            return None
+
+        summary = action_context.get("summary")
+        blockers = action_context.get("blockers")
+        blockers = [str(item) for item in blockers] if isinstance(blockers, list) else []
+        readiness_warning = action_context.get("readiness_warning")
+        readiness_warning = readiness_warning if isinstance(readiness_warning, str) else None
+
+        summary_text = f" The saved read is: {summary}" if isinstance(summary, str) and summary else ""
+        blocker_text = f" Treat {blockers[0]} as the rate blocker before trusting any estimate." if blockers else ""
+        readiness_text = f" {readiness_warning}" if readiness_warning else ""
+
+        return (
+            f"For {title}, use your first focused session as the baseline rate instead of trusting an exact XP/hr or GP/hr number. "
+            f"Track one clean session, compare the result after a fresh sync, then tighten the estimate once gear, supplies, and execution are known."
             f"{summary_text}{blocker_text}{readiness_text}"
         )
 
