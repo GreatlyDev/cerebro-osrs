@@ -219,6 +219,48 @@ async def test_next_actions_include_account_fit_signals(client: AsyncClient) -> 
 
 
 @pytest.mark.asyncio
+async def test_next_actions_include_score_breakdowns(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "ScoreSignals"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    await client.patch(
+        f"/api/accounts/{account_id}/progress",
+        json={
+            "completed_quests": ["bone voyage"],
+            "unlocked_transports": ["fairy rings"],
+            "active_unlocks": ["fossil island access"],
+            "companion_state": {"source": "runelite_companion"},
+        },
+    )
+    goal_response = await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "ScoreSignals"},
+    )
+
+    response = await client.get(
+        f"/api/recommendations/next-actions?goal_id={goal_response.json()['id']}&limit=4"
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["actions"]
+    for action in data["actions"]:
+        score_breakdown = action["supporting_data"]["score_breakdown"]
+        assert isinstance(score_breakdown["base_score"], int)
+        assert score_breakdown["final_score"] == action["score"]
+        assert score_breakdown["adjustments"]
+        assert action["action_type"] in score_breakdown["score_summary"]
+
+    quest_action = next(action for action in data["actions"] if action["action_type"] == "quest")
+    quest_adjustments = {
+        adjustment["label"]: adjustment["value"]
+        for adjustment in quest_action["supporting_data"]["score_breakdown"]["adjustments"]
+    }
+    assert "already-known unlock penalty" in quest_adjustments
+    assert quest_adjustments["already-known unlock penalty"] < 0
+
+
+@pytest.mark.asyncio
 async def test_next_actions_warn_when_account_readiness_is_sparse(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "SparseRecs"})
     account_id = account_response.json()["id"]

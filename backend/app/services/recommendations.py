@@ -227,8 +227,31 @@ class RecommendationService:
         skill_stalled = snapshot_delta is not None and not skill_has_momentum and overall_level_delta == 0
         quest_momentum_bonus = 6 if skill_has_momentum or overall_level_delta > 0 else 0
         skill_score = 78 if skill_has_momentum else 86 if current_level is not None else 74
+        skill_adjustments = [{"label": "stalled account nudge", "value": 6 if skill_stalled else 0}]
         if skill_stalled:
-            skill_score += 6
+            skill_score += skill_adjustments[0]["value"]
+        quest_score_raw = (
+            92
+            - (len(quest_blockers) * 8)
+            - (18 if quest_matches_active_unlock else 0)
+            + quest_momentum_bonus
+        )
+        quest_score = max(40, quest_score_raw)
+        quest_adjustments = [
+            {"label": "blocker penalty", "value": -(len(quest_blockers) * 8)},
+            {"label": "already-known unlock penalty", "value": -18 if quest_matches_active_unlock else 0},
+            {"label": "momentum bonus", "value": quest_momentum_bonus},
+        ]
+        if quest_score != quest_score_raw:
+            quest_adjustments.append({"label": "minimum score floor", "value": quest_score - quest_score_raw})
+        gear_base_score = 72
+        gear_adjustments = [{"label": "already-owned gear penalty", "value": -28 if gear_owned else 0}]
+        gear_score = gear_base_score + gear_adjustments[0]["value"]
+        travel_base_score = 68 if "fallback" not in teleport.get("route_type", "") else 58
+        travel_adjustments = [
+            {"label": "already-known travel penalty", "value": -18 if travel_matches_active_unlock else 0}
+        ]
+        travel_score = travel_base_score + travel_adjustments[0]["value"]
         readiness_warning = self._readiness_warning(account_readiness)
 
         actions = [
@@ -236,13 +259,7 @@ class RecommendationService:
                 action_type="quest",
                 title=f"Push toward {quest['name']}",
                 summary=quest["why_it_matters"],
-                score=max(
-                    40,
-                    92
-                    - (len(quest_blockers) * 8)
-                    - (18 if quest_matches_active_unlock else 0)
-                    + quest_momentum_bonus,
-                ),
+                score=quest_score,
                 priority="low" if quest_matches_active_unlock else "high" if len(quest_blockers) <= 2 else "medium",
                 target={"quest_id": quest["id"], "goal_title": goal.title if goal else None},
                 blockers=(
@@ -260,6 +277,12 @@ class RecommendationService:
                         account_fit,
                         action_type="quest",
                         title=f"Push toward {quest['name']}",
+                    ),
+                    "score_breakdown": self._score_breakdown(
+                        action_type="quest",
+                        base_score=92,
+                        adjustments=quest_adjustments,
+                        final_score=quest_score,
                     ),
                 },
             ),
@@ -283,13 +306,19 @@ class RecommendationService:
                         action_type="skill",
                         title=f"Train {skill['skill']}",
                     ),
+                    "score_breakdown": self._score_breakdown(
+                        action_type="skill",
+                        base_score=78 if skill_has_momentum else 86 if current_level is not None else 74,
+                        adjustments=skill_adjustments,
+                        final_score=skill_score,
+                    ),
                 },
             ),
             NextActionRecommendation(
                 action_type="gear",
                 title=f"Upgrade into {gear['item_name']}",
                 summary=gear["upgrade_reason"],
-                score=44 if gear_owned else 72,
+                score=gear_score,
                 priority="low" if gear_owned else "medium",
                 target={"item_name": gear["item_name"], "slot": gear["slot"]},
                 blockers=["Already tracked as owned"] if gear_owned else [],
@@ -302,14 +331,19 @@ class RecommendationService:
                         action_type="gear",
                         title=f"Upgrade into {gear['item_name']}",
                     ),
+                    "score_breakdown": self._score_breakdown(
+                        action_type="gear",
+                        base_score=gear_base_score,
+                        adjustments=gear_adjustments,
+                        final_score=gear_score,
+                    ),
                 },
             ),
             NextActionRecommendation(
                 action_type="travel",
                 title=f"Set up {teleport['method']}",
                 summary=f"Travel plan for {teleport['destination']}: {teleport['travel_notes']}",
-                score=(68 if "fallback" not in teleport.get("route_type", "") else 58)
-                - (18 if travel_matches_active_unlock else 0),
+                score=travel_score,
                 priority="low" if travel_matches_active_unlock else "medium",
                 target={
                     "destination": teleport["destination"],
@@ -329,6 +363,12 @@ class RecommendationService:
                         action_type="travel",
                         title=f"Set up {teleport['method']}",
                     ),
+                    "score_breakdown": self._score_breakdown(
+                        action_type="travel",
+                        base_score=travel_base_score,
+                        adjustments=travel_adjustments,
+                        final_score=travel_score,
+                    ),
                 },
             ),
         ]
@@ -337,6 +377,34 @@ class RecommendationService:
     def _readiness_warning(self, account_readiness: dict[str, object]) -> str | None:
         warning = account_readiness.get("advisor_warning")
         return warning if isinstance(warning, str) and warning else None
+
+    def _score_breakdown(
+        self,
+        *,
+        action_type: str,
+        base_score: int,
+        adjustments: list[dict[str, int | str]],
+        final_score: int,
+    ) -> dict[str, object]:
+        adjustment_total = sum(
+            int(adjustment.get("value", 0))
+            for adjustment in adjustments
+            if isinstance(adjustment, dict)
+        )
+        adjustment_summary = ", ".join(
+            f"{adjustment.get('label')}: {adjustment.get('value')}"
+            for adjustment in adjustments[:4]
+        )
+        return {
+            "base_score": base_score,
+            "adjustments": adjustments,
+            "adjustment_total": adjustment_total,
+            "final_score": final_score,
+            "score_summary": (
+                f"{action_type} score starts at {base_score}, adjusts by {adjustment_total}, "
+                f"and lands at {final_score}. Signals: {adjustment_summary}."
+            ),
+        }
 
     def _build_account_fit_signals(
         self,
