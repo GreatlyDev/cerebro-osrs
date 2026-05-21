@@ -2821,6 +2821,7 @@ class ChatService:
         priority = action_context.get("priority")
         blockers = action_context.get("blockers")
         readiness_warning = action_context.get("readiness_warning")
+        score_breakdown = action_context.get("score_breakdown")
 
         score_text = f" with score {score}" if isinstance(score, int | float) else ""
         priority_text = f" and {priority} priority" if isinstance(priority, str) else ""
@@ -2829,10 +2830,12 @@ class ChatService:
         if isinstance(blockers, list) and blockers:
             blocker_text = f" The clearest saved blocker is {str(blockers[0])}."
         readiness_text = f" {readiness_warning}" if isinstance(readiness_warning, str) and readiness_warning else ""
+        score_breakdown_text = self._format_score_breakdown_for_rank_answer(score_breakdown)
 
         return (
             f"{title} is ranked highly{score_text}{priority_text} because it is the selected recommendation "
-            f"that best matches the current account read.{summary_text}{blocker_text}{readiness_text}"
+            f"that best matches the current account read.{summary_text}{score_breakdown_text}"
+            f"{blocker_text}{readiness_text}"
         )
 
     def _build_action_context_next_step_answer(
@@ -8050,6 +8053,7 @@ class ChatService:
     ) -> dict[str, object]:
         readiness_warning = supporting_data.get("readiness_warning")
         account_rsn = target.get("account_rsn") or supporting_data.get("account_rsn")
+        score_breakdown = self._normalize_score_breakdown(supporting_data.get("score_breakdown"))
         normalized: dict[str, object] = {
             "action_type": action_type if isinstance(action_type, str) else None,
             "title": title if isinstance(title, str) else None,
@@ -8059,8 +8063,62 @@ class ChatService:
             "account_rsn": account_rsn if isinstance(account_rsn, str) else None,
             "blockers": [str(item) for item in blockers[:5]] if isinstance(blockers, list) else [],
             "readiness_warning": readiness_warning if isinstance(readiness_warning, str) else None,
+            "score_breakdown": score_breakdown,
         }
         return {key: value for key, value in normalized.items() if value is not None}
+
+    def _normalize_score_breakdown(self, score_breakdown: object) -> dict[str, object] | None:
+        if not isinstance(score_breakdown, dict):
+            return None
+
+        normalized: dict[str, object] = {}
+        for key in ("base_score", "adjustment_total", "final_score"):
+            value = score_breakdown.get(key)
+            if isinstance(value, int | float):
+                normalized[key] = value
+
+        score_summary = score_breakdown.get("score_summary")
+        if isinstance(score_summary, str) and score_summary:
+            normalized["score_summary"] = score_summary
+
+        adjustments = score_breakdown.get("adjustments")
+        if isinstance(adjustments, list):
+            normalized_adjustments: list[dict[str, object]] = []
+            for adjustment in adjustments[:5]:
+                if not isinstance(adjustment, dict):
+                    continue
+                label = adjustment.get("label")
+                value = adjustment.get("value")
+                if isinstance(label, str) and isinstance(value, int | float):
+                    normalized_adjustments.append({"label": label, "value": value})
+            if normalized_adjustments:
+                normalized["adjustments"] = normalized_adjustments
+
+        return normalized or None
+
+    def _format_score_breakdown_for_rank_answer(self, score_breakdown: object) -> str:
+        if not isinstance(score_breakdown, dict):
+            return ""
+
+        summary = score_breakdown.get("score_summary")
+        summary_text = str(summary).strip() if isinstance(summary, str) and summary.strip() else ""
+
+        adjustments = score_breakdown.get("adjustments")
+        labels: list[str] = []
+        if isinstance(adjustments, list):
+            for adjustment in adjustments[:3]:
+                if not isinstance(adjustment, dict):
+                    continue
+                label = adjustment.get("label")
+                value = adjustment.get("value")
+                if isinstance(label, str) and isinstance(value, int | float):
+                    labels.append(f"{label} ({value:+g})")
+
+        if not summary_text and not labels:
+            return ""
+
+        adjustment_text = f" Key scoring signals: {', '.join(labels)}." if labels else ""
+        return f" Score detail: {summary_text}{adjustment_text}"
 
     def _focus_from_session_state(self, session_state: dict[str, object]) -> dict[str, str | None]:
         return {

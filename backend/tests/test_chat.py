@@ -4471,6 +4471,56 @@ async def test_chat_why_ranked_answer_uses_saved_action_context(client: AsyncCli
 
 
 @pytest.mark.asyncio
+async def test_chat_why_ranked_answer_uses_score_breakdown_from_saved_action_context(client: AsyncClient) -> None:
+    auth = await client.post("/api/auth/dev-login", json={"display_name": "Action Score User"})
+    cookies = auth.cookies
+    account = await client.post("/api/accounts", json={"rsn": "ActionScore"}, cookies=cookies)
+    account_id = account.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync", cookies=cookies)
+    session = await client.post("/api/chat/sessions", json={"title": "Action Score"}, cookies=cookies)
+    session_id = session.json()["id"]
+
+    response = await client.post(
+        f"/api/chat/sessions/{session_id}/messages",
+        cookies=cookies,
+        json={
+            "content": "Why is this ranked so highly?",
+            "action_context": {
+                "action_type": "quest",
+                "title": "Push toward Bone Voyage",
+                "summary": "Unlock Fossil Island so the account can open better utility routing.",
+                "score": 74,
+                "priority": "medium",
+                "target": {"quest_id": "bone-voyage", "account_rsn": "ActionScore"},
+                "blockers": [],
+                "supporting_data": {
+                    "score_breakdown": {
+                        "base_score": 92,
+                        "adjustments": [
+                            {"label": "blocker penalty", "value": -8},
+                            {"label": "already-known unlock penalty", "value": -18},
+                            {"label": "momentum bonus", "value": 8},
+                        ],
+                        "adjustment_total": -18,
+                        "final_score": 74,
+                        "score_summary": (
+                            "quest score starts at 92, adjusts by -18, and lands at 74."
+                        ),
+                    },
+                },
+            },
+        },
+    )
+
+    assert response.status_code == 201
+    content = response.json()["assistant_message"]["content"].lower()
+    assert "starts at 92" in content
+    assert "adjusts by -18" in content
+    assert "lands at 74" in content
+    assert "already-known unlock penalty" in content
+
+
+@pytest.mark.asyncio
 async def test_chat_follow_up_uses_saved_action_context_for_recommendation_change_question(
     client: AsyncClient,
 ) -> None:
