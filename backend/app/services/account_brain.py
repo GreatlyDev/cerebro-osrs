@@ -329,6 +329,8 @@ class AccountBrainService:
     def _format_action_context_line(self, action_context: object) -> str:
         if not isinstance(action_context, dict) or not action_context:
             return "- Current action memory: none."
+        score_breakdown = self._format_score_breakdown(action_context.get("score_breakdown"))
+        score_breakdown_text = f" {score_breakdown}" if score_breakdown else ""
         return (
             "- Current action memory: "
             f"current_action={action_context.get('title') or 'none'}; "
@@ -338,7 +340,32 @@ class AccountBrainService:
             f"account={action_context.get('account_rsn') or 'none'}; "
             f"blockers={self._join(action_context.get('blockers'))}; "
             f"readiness_warning={action_context.get('readiness_warning') or 'none'}."
+            f"{score_breakdown_text}"
         )
+
+    def _format_score_breakdown(self, score_breakdown: object) -> str:
+        if not isinstance(score_breakdown, dict):
+            return ""
+
+        summary = score_breakdown.get("score_summary")
+        summary_text = str(summary).strip() if isinstance(summary, str) and summary.strip() else ""
+
+        adjustments = score_breakdown.get("adjustments")
+        adjustment_labels: list[str] = []
+        if isinstance(adjustments, list):
+            for adjustment in adjustments[:4]:
+                if not isinstance(adjustment, dict):
+                    continue
+                label = adjustment.get("label")
+                value = adjustment.get("value")
+                if isinstance(label, str) and isinstance(value, int | float):
+                    adjustment_labels.append(f"{label} ({value:+g})")
+
+        if not summary_text and not adjustment_labels:
+            return ""
+
+        adjustment_text = f"; score_adjustments={self._join(adjustment_labels)}" if adjustment_labels else ""
+        return f"score_detail={summary_text}{adjustment_text}."
 
     def _next_sync_needed(self, missing_inputs: list[str]) -> str:
         priority = (
