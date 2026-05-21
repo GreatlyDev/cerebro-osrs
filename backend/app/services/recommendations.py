@@ -95,7 +95,7 @@ class RecommendationService:
             account_readiness=account_brain.readiness,
         )
         ordered = sorted(actions, key=lambda action: action.score, reverse=True)
-        trimmed = ordered[: payload.limit]
+        trimmed = self._with_ranking_context(ordered[: payload.limit])
 
         return NextActionResponse(
             account_rsn=account_rsn,
@@ -373,6 +373,63 @@ class RecommendationService:
             ),
         ]
         return actions
+
+    def _with_ranking_context(self, actions: list[NextActionRecommendation]) -> list[NextActionRecommendation]:
+        if not actions:
+            return []
+
+        top_score = actions[0].score
+        returned_count = len(actions)
+        enriched: list[NextActionRecommendation] = []
+        for index, action in enumerate(actions, start=1):
+            next_action = actions[index] if index < returned_count else None
+            ranking_context = {
+                "rank": index,
+                "returned_action_count": returned_count,
+                "is_top_action": index == 1,
+                "score_gap_from_top": top_score - action.score,
+                "score_gap_to_next": action.score - next_action.score if next_action is not None else None,
+                "rank_summary": self._rank_summary(
+                    action=action,
+                    rank=index,
+                    returned_count=returned_count,
+                    top_score=top_score,
+                    next_action=next_action,
+                ),
+            }
+            enriched.append(
+                action.model_copy(
+                    update={
+                        "supporting_data": {
+                            **(action.supporting_data or {}),
+                            "ranking_context": ranking_context,
+                        }
+                    },
+                    deep=True,
+                )
+            )
+        return enriched
+
+    def _rank_summary(
+        self,
+        *,
+        action: NextActionRecommendation,
+        rank: int,
+        returned_count: int,
+        top_score: int,
+        next_action: NextActionRecommendation | None,
+    ) -> str:
+        if rank == 1:
+            if next_action is None:
+                return f"{action.title} is the top ranked action out of {returned_count} returned option."
+            return (
+                f"{action.title} is the top ranked action out of {returned_count} returned options, "
+                f"ahead of the next option by {action.score - next_action.score} score points."
+            )
+        return (
+            f"{action.title} is ranked {rank} of {returned_count}, "
+            f"{top_score - action.score} score points behind the top action."
+        )
 
     def _readiness_warning(self, account_readiness: dict[str, object]) -> str | None:
         warning = account_readiness.get("advisor_warning")

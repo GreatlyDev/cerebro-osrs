@@ -261,6 +261,37 @@ async def test_next_actions_include_score_breakdowns(client: AsyncClient) -> Non
 
 
 @pytest.mark.asyncio
+async def test_next_actions_include_ranking_context(client: AsyncClient) -> None:
+    account_response = await client.post("/api/accounts", json={"rsn": "RankSignals"})
+    account_id = account_response.json()["id"]
+    await client.post(f"/api/accounts/{account_id}/sync")
+    goal_response = await client.post(
+        "/api/goals",
+        json={"title": "Quest Cape", "goal_type": "quest cape", "target_account_rsn": "RankSignals"},
+    )
+
+    response = await client.get(
+        f"/api/recommendations/next-actions?goal_id={goal_response.json()['id']}&limit=4"
+    )
+
+    assert response.status_code == 200
+    actions = response.json()["actions"]
+    assert len(actions) >= 2
+    top_score = actions[0]["score"]
+    for index, action in enumerate(actions, start=1):
+        ranking_context = action["supporting_data"]["ranking_context"]
+        assert ranking_context["rank"] == index
+        assert ranking_context["returned_action_count"] == len(actions)
+        assert ranking_context["is_top_action"] is (index == 1)
+        assert ranking_context["score_gap_from_top"] == top_score - action["score"]
+        assert action["title"] in ranking_context["rank_summary"]
+
+    top_ranking = actions[0]["supporting_data"]["ranking_context"]
+    assert top_ranking["score_gap_to_next"] == top_score - actions[1]["score"]
+    assert "top ranked" in top_ranking["rank_summary"].lower()
+
+
+@pytest.mark.asyncio
 async def test_next_actions_warn_when_account_readiness_is_sparse(client: AsyncClient) -> None:
     account_response = await client.post("/api/accounts", json={"rsn": "SparseRecs"})
     account_id = account_response.json()["id"]
